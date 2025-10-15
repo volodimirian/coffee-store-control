@@ -17,24 +17,24 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Top bar with language selector only */}
-      <div className="flex justify-start items-center px-6 py-2 bg-white border-b border-gray-200">
-        {/* Language Selector */}
-        <LanguageSelector />
-      </div>
-      
-      {/* Static header with horizontal menu and auth */}
+      {/* Main header with navigation and auth */}
       <header className="w-full bg-blue-600 text-white shadow">
-        <nav className="container mx-auto flex items-center justify-between h-14 px-6">
-          {/* Logo/Brand */}
-          <div className="flex items-center">
-            <span className="font-bold text-xl mr-8">{t('common.brandName')}</span>
+        <nav className="w-full flex items-center justify-between h-16 px-8">
+          {/* Left side: Logo + Navigation */}
+          <div className="flex items-center space-x-8">
+            <span className="font-bold text-xl">{t('common.brandName')}</span>
+            <div className="flex items-center space-x-4">
+              <NavLink to="/dashboard" className={linkClass}>{t('navigation.dashboard')}</NavLink>
+              <NavLink to="/account" className={linkClass}>{t('navigation.account')}</NavLink>
+            </div>
           </div>
           
-          {/* Navigation */}
+          {/* Right side: Language + Auth buttons */}
           <div className="flex items-center space-x-4">
-            <NavLink to="/dashboard" className={linkClass}>{t('navigation.dashboard')}</NavLink>
-            <NavLink to="/account" className={linkClass}>{t('navigation.account')}</NavLink>
+            <LanguageSelector />
+            
+            {/* Separator */}
+            <div className="h-6 w-px bg-white/20"></div>
             
             {/* Auth buttons */}
             {!hasToken() ? (
@@ -54,7 +54,7 @@ export default function Layout() {
               </>
             ) : (
               <>
-                <div className="mr-4 text-sm text-white/90">{t('greetings.hi', { username: user?.username })}</div>
+                <div className="text-sm text-white/90">{t('greetings.hi', { username: user?.username })}</div>
                 <button
                   className={authButtonClass}
                   onClick={logout}
@@ -67,8 +67,10 @@ export default function Layout() {
         </nav>
       </header>
       
-      <main className="flex-1 container mx-auto px-6 py-8">
-        <Outlet />
+      <main className="flex-1 w-full px-8 py-8">
+        <div className="max-w-7xl mx-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

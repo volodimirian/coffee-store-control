@@ -44,13 +44,13 @@ export default function LanguageSelector() {
       {/* Current Language Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="flex items-center space-x-2 px-3 py-2 rounded-lg border border-white/20 hover:border-white/40 hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/30 text-white"
         aria-label="Select language"
       >
         <span className="text-lg">{currentLanguage.flag}</span>
-        <span className="text-sm font-medium text-gray-700">{currentLanguage.code.toUpperCase()}</span>
+        <span className="text-sm font-medium text-white">{currentLanguage.code.toUpperCase()}</span>
         <svg
-          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-white/80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
