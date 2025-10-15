@@ -1,0 +1,57 @@
+[project]
+name = "coffee-store-control-api"
+version = "0.1.0"
+description = "Coffee Store Control API - FastAPI backend with authentication and role-based access"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "alembic>=1.14.1",
+    "asyncpg>=0.30.0",
+    "psycopg2-binary>=2.9.10",
+    "bcrypt<4.0.0",
+    "black>=24.8.0",
+    "fastapi>=0.117.1",
+    "greenlet>=3.1.1",
+    "httpx>=0.28.1",
+    "mypy>=1.14.1",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic-settings>=2.8.1",
+    "pydantic[email]>=2.10.6",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.21.0",
+    "pytest-mock>=3.10.0",
+    "pytest-cov>=4.0.0",
+    "aiosqlite>=0.19.0",
+    "python-jose[cryptography]>=3.4.0",
+    "python-multipart>=0.0.20",
+    "types-python-jose>=3.3.4",
+    "ruff>=0.13.1",
+    "sqlalchemy>=2.0",
+    "uvicorn[standard]>=0.33.0",
+    "types-python-jose>=3.3.4.20240106",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-fail-under=85",
+]
+asyncio_mode = "auto"
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[dependency-groups]
+dev = [
+    "types-python-jose>=3.3.4.20240106",
+]
