@@ -9,7 +9,7 @@
     "no": "No",
     "continue": "Continue",
     "back": "Back",
-    "brandName": "LatAm Crypto"
+    "brandName": "Coffee Control"
   },
   "navigation": {
     "home": "Home",
@@ -39,8 +39,8 @@
     "registerAs": "Register as {{role}}",
     "registerAsCustomer": "Register as a customer",
     "registerAsSeller": "Register as a seller",
-    "findAndPurchase": "Find and purchase products from suppliers",
-    "createAndManage": "Create and manage your product listings",
+    "findAndPurchase": "Find and purchase coffee products from suppliers",
+    "createAndManage": "Create and manage your coffee product listings",
     "signInDescription": "Enter your credentials to access your account",
     "invalidCredentials": "Invalid email or password"
   },
@@ -64,15 +64,15 @@
   "pages": {
     "about": {
       "title": "About",
-      "description": "Marketplace with crypto-fintech for LatAm. This is a public page."
+      "description": "Coffee shop management system. This is a public page."
     },
     "dashboard": {
       "title": "Dashboard (protected)",
-      "description": "Available only with token. We'll add widgets later."
+      "description": "Available only with token. Manage your coffee business here."
     },
     "account": {
       "title": "Account (protected)",
-      "description": "User profile, orders, wallet — coming later."
+      "description": "User profile, orders, inventory — coming later."
     },
     "notFound": {
       "title": "404",
