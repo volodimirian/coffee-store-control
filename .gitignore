@@ -1,0 +1,71 @@
+# Logs
+.github/copilot*
+*.log
+
+# Node
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Builds
+dist/
+build/
+coverage/
+htmlcov/
+.vite/
+.cache/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+.python-version
+.venv/
+.uv/
+uv.lock
+.mypy_cache/
+.pytest_cache/
+.coverage
+*.egg-info/
+
+# Test databases
+test.db
+app.db
+*.db
+*.sqlite
+*.sqlite3
+
+# OS / editors
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# Docker
+dbdata/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

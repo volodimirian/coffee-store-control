@@ -1,0 +1,145 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "continue": "Continue",
+    "back": "Back",
+    "brandName": "LatAm Crypto"
+  },
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "dashboard": "Dashboard",
+    "account": "Account",
+    "signIn": "Sign In",
+    "register": "Register",
+    "logOut": "Log Out",
+    "categories": "Categories"
+  },
+  "auth": {
+    "createAccount": "Create Account",
+    "signIn": "Sign In",
+    "register": "Register",
+    "logOut": "Log Out",
+    "email": "Email",
+    "emailAddress": "Email address",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "creatingAccount": "Creating Account...",
+    "loginFailed": "Login failed",
+    "registrationFailed": "Registration failed",
+    "emailAlreadyRegistered": "This email is already registered",
+    "usernameAlreadyTaken": "This username is already taken",
+    "registerAs": "Register as {{role}}",
+    "registerAsCustomer": "Register as a customer",
+    "registerAsSeller": "Register as a seller",
+    "findAndPurchase": "Find and purchase products from suppliers",
+    "createAndManage": "Create and manage your product listings",
+    "signInDescription": "Enter your credentials to access your account",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "roles": {
+    "buyer": "Buyer",
+    "supplier": "Supplier"
+  },
+  "validation": {
+    "emailRequired": "Email is required",
+    "usernameRequired": "Username is required",
+    "passwordRequired": "Password is required",
+    "passwordConfirmRequired": "Please confirm your password",
+    "emailInvalid": "Please enter a valid email address",
+    "passwordsMismatch": "Passwords do not match",
+    "usernameMinLength": "Username must be at least {{min}} characters long",
+    "usernameMaxLength": "Username must be no more than {{max}} characters long",
+    "passwordMinLength": "Password must be at least {{min}} characters long",
+    "passwordMaxLength": "Password must be no more than {{max}} characters long",
+    "emailMaxLength": "Email must be no more than {{max}} characters long"
+  },
+  "pages": {
+    "about": {
+      "title": "About",
+      "description": "Marketplace with crypto-fintech for LatAm. This is a public page."
+    },
+    "dashboard": {
+      "title": "Dashboard (protected)",
+      "description": "Available only with token. We'll add widgets later."
+    },
+    "account": {
+      "title": "Account (protected)",
+      "description": "User profile, orders, wallet — coming later."
+    },
+    "notFound": {
+      "title": "404",
+      "description": "Page not found.",
+      "goHome": "Go Home"
+    }
+  },
+  "errors": {
+    "_auth_title": "Authentication & Authorization Errors",
+    "UNAUTHORIZED": "Invalid or expired token",
+    "FORBIDDEN": "Access denied",
+    "INVALID_CREDENTIALS": "Invalid email or password",
+    "USER_NOT_FOUND": "User not found",
+
+    "_registration_title": "Registration Errors", 
+    "EMAIL_ALREADY_EXISTS": "Email already registered",
+    "USERNAME_ALREADY_EXISTS": "Username already taken",
+    "INVALID_ROLE": "Invalid role specified",
+
+    "_permissions_title": "Role & Permission Errors",
+    "BUYERS_NOT_ALLOWED": "This operation is not allowed for buyers",
+    "SUPPLIERS_ONLY": "Only suppliers can perform this operation", 
+    "ADMIN_ONLY": "Administrative privileges required",
+
+    "_categories_title": "Category Management Errors",
+    "CATEGORY_NOT_FOUND": "Category not found",
+    "CATEGORY_NAME_EXISTS": "Category with this name already exists",
+    "CATEGORY_HAS_SUBCATEGORIES": "Cannot delete category with subcategories. Delete subcategories first.",
+
+    "_subcategories_title": "Subcategory Management Errors",
+    "SUBCATEGORY_NOT_FOUND": "Subcategory not found",
+    "SUBCATEGORY_NAME_EXISTS": "Subcategory with this name already exists in this category",
+
+    "_products_title": "Product Management Errors",
+    "PRODUCT_NOT_FOUND": "Product not found",
+    "PRODUCT_NOT_OWNED": "You can only modify your own products",
+    "INVALID_PRICE": "Invalid price format",
+    "INVALID_CATEGORY": "Invalid category or subcategory",
+
+    "_validation_title": "Validation Errors",
+    "VALIDATION_ERROR": "Validation failed",
+    "REQUIRED_FIELD": "This field is required",
+    "INVALID_FORMAT": "Invalid format",
+
+    "_custom_fields_title": "Custom Fields Validation Errors",
+    "CUSTOM_FIELD_REQUIRED": "{{fieldName}} is required",
+    "CUSTOM_FIELD_INVALID_NUMBER": "{{fieldName}} must be a number",
+    "CUSTOM_FIELD_NUMBER_TOO_SMALL": "{{fieldName}} must be at least {{min}}",
+    "CUSTOM_FIELD_NUMBER_TOO_LARGE": "{{fieldName}} must be at most {{max}}",
+    "CUSTOM_FIELD_INVALID_EMAIL": "{{fieldName}} must be a valid email address",
+    "CUSTOM_FIELD_INVALID_URL": "{{fieldName}} must be a valid URL",
+    "CUSTOM_FIELD_INVALID_SELECT": "{{fieldName}} must be one of: {{options}}",
+    "CUSTOM_FIELD_INVALID_MULTISELECT": "{{fieldName}} contains invalid options: {{invalidOptions}}",
+
+    "_general_title": "General System Errors",
+    "INTERNAL_ERROR": "Internal server error",
+    "NOT_FOUND": "Resource not found",
+    "CONFLICT": "Resource conflict",
+    "BAD_REQUEST": "Bad request",
+    "FAILED_TO_LOAD_CATEGORIES": "Failed to load categories"
+  },
+  "greetings": {
+    "hi": "Hi, {{username}}!"
+  },
+  "products": {
+    "found": "products found",
+    "noProductsFound": "No products found",
+    "addToCart": "Add to Cart"
+  }
+}
