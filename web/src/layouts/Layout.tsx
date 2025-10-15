@@ -1,11 +1,8 @@
-import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAppContext } from "~/shared/context/AppContext";
 import { hasToken, logout } from "~/shared/lib/helpers";
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from "~/shared/ui/LanguageSelector";
-import HamburgerButton from "~/shared/ui/HamburgerButton";
-import CategorySidebar from "~/widgets/CategorySidebar";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   "px-3 py-2 rounded " +
@@ -15,15 +12,6 @@ export default function Layout() {
   const navigate = useNavigate();
   const { user } = useAppContext();
   const { t } = useTranslation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -66,11 +54,6 @@ export default function Layout() {
       {/* Static header with horizontal menu */}
       <header className="w-full bg-blue-600 text-white shadow">
         <nav className="container mx-auto flex items-center h-14 px-6">
-          {/* Hamburger Button */}
-          <div className="mr-4">
-            <HamburgerButton isOpen={isSidebarOpen} onClick={toggleSidebar} />
-          </div>
-          
           {/* Logo/Brand */}
           <div className="flex items-center">
             <span className="font-bold text-xl mr-8">{t('common.brandName')}</span>
@@ -83,9 +66,6 @@ export default function Layout() {
           </div>
         </nav>
       </header>
-      
-      {/* Category Sidebar */}
-      <CategorySidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
       
       <main className="flex-1 container mx-auto px-6 py-8">
         <Outlet />

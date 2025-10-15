@@ -43,12 +43,12 @@ class TestMainApp:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_app_includes_categories_router(self, client: AsyncClient):
-        """Test that categories routes are included."""
-        response = await client.get("/categories/")
+    async def test_app_includes_users_router(self, client: AsyncClient):
+        """Test that users routes are included."""
+        response = await client.get("/users/me")
         
-        # Should get 200, not 404 (which would mean router not included)
-        assert response.status_code == 200
+        # Should get 401 (unauthorized), not 404 (which would mean router not included)
+        assert response.status_code == 401
 
     def test_app_includes_cors_middleware(self):
         """Test that CORS middleware is configured."""

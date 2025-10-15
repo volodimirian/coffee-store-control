@@ -9,7 +9,7 @@ Base project for coffee shop management system with FastAPI + React architecture
 ### Backend (FastAPI)
 
 - **Authentication**: JWT tokens, registration, login
-- **User Roles**: ADMIN, SUPPLIER, BUYER
+- **User Roles**: ADMIN
 - **Database**: PostgreSQL with SQLAlchemy
 - **Migrations**: Alembic
 - **Tests**: pytest with coverage
