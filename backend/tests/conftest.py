@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.core.db import Base, get_db
-from app.users.models import User
+from app.core_models import User, Role, Permission, UserRole
 from app.core.security import hash_password
 
 # Test database URL
@@ -47,17 +47,28 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.create_all)
     
     async with TestingSessionLocal() as session:
-        # Create default roles
-        from app.users.models import Role, UserRole
+        # Create default roles and permissions
+        from app.core_models import Role, Permission, RolePermission, UserRole
         
+        # Create roles
         roles_to_create = [
-            Role(name=UserRole.BUYER.value, description="Product buyer"),
-            Role(name=UserRole.SUPPLIER.value, description="Product supplier"),
             Role(name=UserRole.ADMIN.value, description="System administrator"),
+            Role(name=UserRole.BUSINESS_OWNER.value, description="Business owner"),
+            Role(name=UserRole.EMPLOYEE.value, description="Employee"),
         ]
         
         for role in roles_to_create:
             session.add(role)
+        
+        # Create sample permissions
+        permissions_to_create = [
+            Permission(name="VIEW_DATA", description="View data", resource="data", action="view"),
+            Permission(name="EDIT_DATA", description="Edit data", resource="data", action="edit"),
+            Permission(name="MANAGE_USERS", description="Manage users", resource="users", action="manage"),
+        ]
+        
+        for permission in permissions_to_create:
+            session.add(permission)
         
         await session.commit()
         yield session
@@ -85,19 +96,18 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession) -> User:
-    """Create a test user."""
-    from app.users.models import Role, UserRole
+    """Create a test user with EMPLOYEE role."""
     from sqlalchemy import select
     
-    # Get existing BUYER role
-    buyer_role = await db_session.scalar(select(Role).where(Role.name == UserRole.BUYER.value))
-    assert buyer_role is not None, "BUYER role not found"
+    # Get existing EMPLOYEE role
+    employee_role = await db_session.scalar(select(Role).where(Role.name == UserRole.EMPLOYEE.value))
+    assert employee_role is not None, "EMPLOYEE role not found"
     
     user = User(
         email="test@example.com",
         username="testuser",
         password_hash=hash_password("testpassword"),
-        role_id=buyer_role.id
+        role_id=employee_role.id
     )
     db_session.add(user)
     await db_session.commit()
@@ -106,20 +116,19 @@ async def test_user(db_session: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture
-async def test_supplier(db_session: AsyncSession) -> User:
-    """Create a test supplier user."""
-    from app.users.models import Role, UserRole
+async def test_business_owner(db_session: AsyncSession) -> User:
+    """Create a test business owner user."""
     from sqlalchemy import select
     
-    # Get existing SUPPLIER role
-    supplier_role = await db_session.scalar(select(Role).where(Role.name == UserRole.SUPPLIER.value))
-    assert supplier_role is not None, "SUPPLIER role not found"
+    # Get existing BUSINESS_OWNER role
+    business_owner_role = await db_session.scalar(select(Role).where(Role.name == UserRole.BUSINESS_OWNER.value))
+    assert business_owner_role is not None, "BUSINESS_OWNER role not found"
     
     user = User(
-        email="supplier@example.com",
-        username="testsupplier",
-        password_hash=hash_password("supplierpassword"),
-        role_id=supplier_role.id
+        email="business@example.com",
+        username="businessowner",
+        password_hash=hash_password("businesspassword"),
+        role_id=business_owner_role.id
     )
     db_session.add(user)
     await db_session.commit()
@@ -130,7 +139,6 @@ async def test_supplier(db_session: AsyncSession) -> User:
 @pytest_asyncio.fixture
 async def test_admin(db_session: AsyncSession) -> User:
     """Create a test admin user."""
-    from app.users.models import Role, UserRole
     from sqlalchemy import select
     
     # Get existing ADMIN role
@@ -147,6 +155,37 @@ async def test_admin(db_session: AsyncSession) -> User:
     await db_session.commit()
     await db_session.refresh(user)
     return user
+
+
+@pytest_asyncio.fixture
+async def sample_user_with_role(db_session: AsyncSession) -> tuple[User, Role]:
+    """Create a sample user with role for testing."""
+    from sqlalchemy import select
+    
+    # Get existing EMPLOYEE role
+    role = await db_session.scalar(select(Role).where(Role.name == UserRole.EMPLOYEE.value))
+    assert role is not None, "EMPLOYEE role not found"
+    
+    user = User(
+        email="sample@example.com",
+        username="sampleuser",
+        password_hash=hash_password("samplepassword"),
+        role_id=role.id
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user, role
+
+
+@pytest_asyncio.fixture
+async def sample_permission(db_session: AsyncSession) -> Permission:
+    """Get a sample permission for testing."""
+    from sqlalchemy import select
+    
+    permission = await db_session.scalar(select(Permission).where(Permission.name == "VIEW_DATA"))
+    assert permission is not None, "VIEW_DATA permission not found"
+    return permission
 
 
 @pytest_asyncio.fixture
