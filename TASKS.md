@@ -56,10 +56,10 @@
 
 #### Backend: Детализированная ролевая система
 
-- [ ] **Backend**: Создать таблицу `permissions` (id, name, description, resource, action)
-- [ ] **Backend**: Создать таблицу `role_permissions` (role_id, permission_id)
-- [ ] **Backend**: Создать таблицу `user_permissions` (user_id, permission_id, coffee_shop_id)
-- [ ] **Backend**: Реализовать 5 основных ролей: admin, business_owner, accountant, employee, supplier
+- [ ] **Backend**: Создать таблицу `permissions` (id, name, description, resource, action, is_active, created_at)
+- [ ] **Backend**: Создать таблицу `role_permissions` (role_id, permission_id, is_active, created_at, updated_at)
+- [ ] **Backend**: Создать таблицу `user_permissions` (user_id, permission_id, coffee_shop_id, is_active, created_at, updated_at)
+- [ ] **Backend**: Реализовать 3 основные роли: admin, business_owner, employee,
 - [ ] **Backend**: Создать детальные права для модуля "Учёт расходов":
   - VIEW_DATA (просмотр данных)
   - ADD_DATA (добавление данных)

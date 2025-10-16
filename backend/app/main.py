@@ -5,12 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.auth.router import router as auth_router
 from app.core.db import engine
 from app.core.config import settings
-from app.users.models import Base
+from app.core_models import Base
 
 app = FastAPI(
     title=settings.app_title,
     version=settings.app_version,
-    description="Coffee Store Control API - expense tracking system for coffee shops with period-based expense management, employee management and analytics",
+    description="Business Control API - expense tracking system for businesses with period-based expense management, employee management and analytics",
     docs_url=settings.docs_url,
     redoc_url=settings.redoc_url,
     openapi_url=settings.openapi_url,

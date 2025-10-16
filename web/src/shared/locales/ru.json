@@ -9,7 +9,7 @@
     "no": "Нет",
     "continue": "Продолжить",
     "back": "Назад",
-    "brandName": "Coffee Control"
+    "brandName": "Business Control"
   },
   "navigation": {
     "home": "Главная",
@@ -45,14 +45,16 @@
     "registerAs": "Регистрация как {{role}}",
     "registerAsCustomer": "Регистрация как покупатель",
     "registerAsSeller": "Регистрация как продавец",
-    "findAndPurchase": "Находите и покупайте кофейные продукты у поставщиков",
-    "createAndManage": "Создавайте и управляйте своими кофейными продуктами",
+    "findAndPurchase": "Находите и покупайте продукты у поставщиков",
+    "createAndManage": "Создавайте и управляйте своими продуктами",
+    "createBusinessAccount": "Создать бизнес аккаунт",
     "signInDescription": "Введите ваши данные для доступа к аккаунту",
     "invalidCredentials": "Неверный email или пароль"
   },
   "roles": {
-    "buyer": "Покупатель",
-    "supplier": "Поставщик"
+    "admin": "Администратор",
+    "businessOwner": "Владелец бизнеса",
+    "employee": "Сотрудник"
   },
   "validation": {
     "emailRequired": "Email обязателен",
@@ -70,11 +72,11 @@
   "pages": {
     "about": {
       "title": "О нас",
-      "description": "Система управления кофейней. Это публичная страница."
+      "description": "Система управления бизнесом. Это публичная страница."
     },
     "dashboard": {
       "title": "Панель управления (защищенная)",
-      "description": "Доступна только с токеном. Управляйте своим кофейным бизнесом здесь."
+      "description": "Доступна только с токеном. Управляйте своим бизнесом здесь."
     },
     "account": {
       "title": "Аккаунт (защищенный)",
@@ -148,9 +150,9 @@
     "noProductsFound": "Продукты не найдены",
     "addToCart": "В корзину",
     "title": "Продукты",
-    "description": "Управляйте кофейными продуктами и инвентарем",
+    "description": "Управляйте продуктами и инвентарем",
     "noProductsYet": "Пока нет продуктов",
-    "getStartedMessage": "Начните с добавления вашего первого кофейного продукта.",
+    "getStartedMessage": "Начните с добавления вашего первого продукта.",
     "addProduct": "Добавить продукт"
   },
   "orders": {
@@ -184,11 +186,11 @@
     "pushNotifications": "Push уведомления",
     "pushNotificationsDescription": "Получайте push-уведомления на устройство.",
     "businessInformation": "Информация о бизнесе",
-    "businessDescription": "Обновите данные вашей кофейни",
+    "businessDescription": "Обновите данные вашего бизнеса",
     "businessName": "Название бизнеса",
-    "businessNamePlaceholder": "Ваша кофейня",
+    "businessNamePlaceholder": "Ваш бизнес",
     "address": "Адрес",
-    "addressPlaceholder": "ул. Кофейная, 123, Город, Страна",
+    "addressPlaceholder": "ул. Главная, 123, Город, Страна",
     "saveSettings": "Сохранить настройки",
     "version": "в0.1.0"
   }

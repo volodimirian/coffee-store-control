@@ -9,7 +9,7 @@
     "no": "No",
     "continue": "Continue",
     "back": "Back",
-    "brandName": "Coffee Control"
+    "brandName": "Business Control"
   },
   "navigation": {
     "home": "Home",
@@ -43,14 +43,16 @@
     "registerAs": "Register as {{role}}",
     "registerAsCustomer": "Register as a customer",
     "registerAsSeller": "Register as a seller",
-    "findAndPurchase": "Find and purchase coffee products from suppliers",
-    "createAndManage": "Create and manage your coffee product listings",
+    "findAndPurchase": "Find and purchase products from suppliers",
+    "createAndManage": "Create and manage your product listings",
+    "createBusinessAccount": "Create Business Account",
     "signInDescription": "Enter your credentials to access your account",
     "invalidCredentials": "Invalid email or password"
   },
   "roles": {
-    "buyer": "Buyer",
-    "supplier": "Supplier"
+    "admin": "Administrator",
+    "businessOwner": "Business Owner", 
+    "employee": "Employee"
   },
   "validation": {
     "emailRequired": "Email is required",
@@ -68,11 +70,11 @@
   "pages": {
     "about": {
       "title": "About",
-      "description": "Coffee shop management system. This is a public page."
+      "description": "Business management system. This is a public page."
     },
     "dashboard": {
       "title": "Dashboard (protected)",
-      "description": "Available only with token. Manage your coffee business here."
+      "description": "Available only with token. Manage your business here."
     },
     "account": {
       "title": "Account (protected)",
@@ -146,9 +148,9 @@
     "noProductsFound": "No products found",
     "addToCart": "Add to Cart",
     "title": "Products",
-    "description": "Manage your coffee products and inventory",
+    "description": "Manage your products and inventory",
     "noProductsYet": "No products yet",
-    "getStartedMessage": "Get started by adding your first coffee product.",
+    "getStartedMessage": "Get started by adding your first product.",
     "addProduct": "Add Product"
   },
   "orders": {
@@ -182,11 +184,11 @@
     "pushNotifications": "Push notifications",
     "pushNotificationsDescription": "Get push notifications on your device.",
     "businessInformation": "Business Information",
-    "businessDescription": "Update your coffee shop details",
+    "businessDescription": "Update your business details",
     "businessName": "Business Name",
-    "businessNamePlaceholder": "Your Coffee Shop",
+    "businessNamePlaceholder": "Your Business",
     "address": "Address",
-    "addressPlaceholder": "123 Coffee Street, City, Country",
+    "addressPlaceholder": "123 Main Street, City, Country",
     "saveSettings": "Save Settings",
     "version": "v0.1.0"
   }

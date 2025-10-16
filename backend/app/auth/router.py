@@ -8,9 +8,10 @@ from sqlalchemy.orm import selectinload
 from app.auth.schemas import RegisterIn, LoginIn, TokenOut
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.error_codes import ErrorCode, create_error_response
+from app.core.permissions import require_permission, require_admin
 from app.deps import get_db_dep
 from app.deps import get_current_user_id
-from app.users.models import User, Role
+from app.core_models import User, Role
 from app.users.schemas import UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -78,3 +79,23 @@ async def me(user_id: str = Depends(get_current_user_id), db: AsyncSession = Dep
             content=create_error_response(ErrorCode.USER_NOT_FOUND)
         )
     return user
+
+
+# was added just for test TODO: need to remove later.
+@router.get("/admin-only")
+async def admin_only(
+    user_id: str = Depends(get_current_user_id), 
+    db: AsyncSession = Depends(get_db_dep),
+    _: bool = Depends(require_admin())
+):
+    """Test endpoint that requires admin permissions."""
+    return {"message": "Hello admin!", "user_id": user_id}
+
+@router.get("/view-data")
+async def view_data(
+    user_id: str = Depends(get_current_user_id), 
+    db: AsyncSession = Depends(get_db_dep),
+    _: bool = Depends(require_permission("VIEW_DATA"))
+):
+    """Test endpoint that requires VIEW_DATA permission."""
+    return {"message": "You can view data!", "user_id": user_id}
