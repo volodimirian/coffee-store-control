@@ -13,13 +13,17 @@
   },
   "navigation": {
     "home": "Home",
-    "about": "About",
     "dashboard": "Dashboard",
+    "products": "Products",
+    "orders": "Orders", 
+    "analytics": "Analytics",
     "account": "Account",
+    "settings": "Settings",
     "signIn": "Sign In",
     "register": "Register",
     "logOut": "Log Out",
-    "categories": "Categories"
+    "openSidebar": "Open sidebar",
+    "closeSidebar": "Close sidebar"
   },
   "auth": {
     "createAccount": "Create Account",
@@ -140,6 +144,50 @@
   "products": {
     "found": "products found",
     "noProductsFound": "No products found",
-    "addToCart": "Add to Cart"
+    "addToCart": "Add to Cart",
+    "title": "Products",
+    "description": "Manage your coffee products and inventory",
+    "noProductsYet": "No products yet",
+    "getStartedMessage": "Get started by adding your first coffee product.",
+    "addProduct": "Add Product"
+  },
+  "orders": {
+    "title": "Orders",
+    "description": "Track and manage customer orders",
+    "noOrdersYet": "No orders yet",
+    "ordersMessage": "Orders will appear here once customers start purchasing."
+  },
+  "analytics": {
+    "title": "Analytics", 
+    "description": "View insights and performance metrics",
+    "totalRevenue": "Total Revenue",
+    "totalOrders": "Total Orders",
+    "customers": "Customers",
+    "salesChart": "Sales Chart",
+    "noDataToDisplay": "No data to display",
+    "chartsMessage": "Charts will appear here once you have sales data."
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your application settings and preferences",
+    "applicationSettings": "Application Settings",
+    "language": "Language",
+    "languageDescription": "Choose your preferred language",
+    "english": "English", 
+    "russian": "Russian",
+    "notifications": "Notifications",
+    "notificationsDescription": "Configure notification preferences",
+    "emailNotifications": "Email notifications",
+    "emailNotificationsDescription": "Get notified about new orders and important updates.",
+    "pushNotifications": "Push notifications",
+    "pushNotificationsDescription": "Get push notifications on your device.",
+    "businessInformation": "Business Information",
+    "businessDescription": "Update your coffee shop details",
+    "businessName": "Business Name",
+    "businessNamePlaceholder": "Your Coffee Shop",
+    "address": "Address",
+    "addressPlaceholder": "123 Coffee Street, City, Country",
+    "saveSettings": "Save Settings",
+    "version": "v0.1.0"
   }
 }

@@ -16,10 +16,16 @@
     "about": "О нас",
     "dashboard": "Панель",
     "account": "Аккаунт",
+    "products": "Продукты",
+    "orders": "Заказы",
+    "analytics": "Аналитика",
+    "settings": "Настройки",
     "signIn": "Войти",
     "register": "Регистрация",
     "logOut": "Выйти",
-    "categories": "Категории"
+    "categories": "Категории",
+    "openSidebar": "Открыть боковую панель",
+    "closeSidebar": "Закрыть боковую панель"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
@@ -140,6 +146,50 @@
   "products": {
     "found": "продуктов найдено",
     "noProductsFound": "Продукты не найдены",
-    "addToCart": "В корзину"
+    "addToCart": "В корзину",
+    "title": "Продукты",
+    "description": "Управляйте кофейными продуктами и инвентарем",
+    "noProductsYet": "Пока нет продуктов",
+    "getStartedMessage": "Начните с добавления вашего первого кофейного продукта.",
+    "addProduct": "Добавить продукт"
+  },
+  "orders": {
+    "title": "Заказы",
+    "description": "Отслеживайте и управляйте заказами клиентов",
+    "noOrdersYet": "Пока нет заказов",
+    "ordersMessage": "Заказы появятся здесь, когда клиенты начнут покупать."
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "description": "Просматривайте аналитику и показатели эффективности",
+    "totalRevenue": "Общий доход",
+    "totalOrders": "Всего заказов",
+    "customers": "Клиенты",
+    "salesChart": "График продаж",
+    "noDataToDisplay": "Нет данных для отображения",
+    "chartsMessage": "Графики появятся здесь, когда у вас будут данные о продажах."
+  },
+  "settings": {
+    "title": "Настройки",
+    "description": "Управляйте настройками приложения и предпочтениями",
+    "applicationSettings": "Настройки приложения",
+    "language": "Язык",
+    "languageDescription": "Выберите предпочитаемый язык",
+    "english": "Английский",
+    "russian": "Русский",
+    "notifications": "Уведомления",
+    "notificationsDescription": "Настройте параметры уведомлений",
+    "emailNotifications": "Email уведомления",
+    "emailNotificationsDescription": "Получайте уведомления о новых заказах и важных обновлениях.",
+    "pushNotifications": "Push уведомления",
+    "pushNotificationsDescription": "Получайте push-уведомления на устройство.",
+    "businessInformation": "Информация о бизнесе",
+    "businessDescription": "Обновите данные вашей кофейни",
+    "businessName": "Название бизнеса",
+    "businessNamePlaceholder": "Ваша кофейня",
+    "address": "Адрес",
+    "addressPlaceholder": "ул. Кофейная, 123, Город, Страна",
+    "saveSettings": "Сохранить настройки",
+    "version": "в0.1.0"
   }
 }
