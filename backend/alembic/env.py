@@ -14,7 +14,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 # ruff: noqa: E402, F401
 # mypy: disable-error-code=import-not-found
 from app.core.db import Base  # type: ignore[import-not-found]
-from app.users.models import User, Role  # Import user models  # type: ignore[import-not-found]
+from app.core_models import User, Role  # Import user models  # type: ignore[import-not-found]
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

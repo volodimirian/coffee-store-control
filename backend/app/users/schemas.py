@@ -4,9 +4,9 @@ from datetime import datetime
 from enum import Enum
 
 class UserRoleEnum(str, Enum):
-    ADMIN = "ADMIN"        # System administrator
-    SUPPLIER = "SUPPLIER"  # Advertisement creator
-    BUYER = "BUYER"        # Customer
+    ADMIN = "ADMIN"                    # System administrator
+    BUSINESS_OWNER = "BUSINESS_OWNER"  # Business owner
+    EMPLOYEE = "EMPLOYEE"              # Regular employee
 
 class RoleOut(BaseModel):
     id: int

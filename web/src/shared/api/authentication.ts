@@ -9,14 +9,14 @@ import type {
 
 export const USER_ROLES = {
   ADMIN: 'ADMIN' as const,
-  BUYER: 'BUYER' as const,
-  SUPPLIER: 'SUPPLIER' as const,
+  BUSINESS_OWNER: 'BUSINESS_OWNER' as const,
+  EMPLOYEE: 'EMPLOYEE' as const,
 } satisfies Record<string, UserRole>;
 
 export const USER_ROLE_LABELS = {
   [USER_ROLES.ADMIN]: 'Administrator',
-  [USER_ROLES.BUYER]: 'Buyer',
-  [USER_ROLES.SUPPLIER]: 'Supplier',
+  [USER_ROLES.BUSINESS_OWNER]: 'Business Owner',
+  [USER_ROLES.EMPLOYEE]: 'Employee',
 } as const;
 
 export async function login(

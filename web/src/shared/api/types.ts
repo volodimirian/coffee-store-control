@@ -52,7 +52,7 @@ export type ErrorCode =
 
 // ============ User & Auth Types ============
 
-export type UserRole = 'ADMIN' | 'SUPPLIER' | 'BUYER';
+export type UserRole = 'ADMIN' | 'BUSINESS_OWNER' | 'EMPLOYEE';
 
 export interface User {
   id: number;

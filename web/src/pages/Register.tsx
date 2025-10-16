@@ -16,7 +16,8 @@ type FieldErrors = {
 
 export default function Register() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<UserRole>(USER_ROLES.BUYER);
+  // Fixed role for registration - only business owners can register
+  const registrationRole: UserRole = USER_ROLES.BUSINESS_OWNER;
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -79,7 +80,7 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      const data: AuthResponse = await register(email, username, password, activeTab);
+      const data: AuthResponse = await register(email, username, password, registrationRole);
       // Store clean token using helper function
       saveToken(data.access_token);
 
@@ -104,46 +105,18 @@ export default function Register() {
     }
   }
 
-  const tabs = [
-    { id: USER_ROLES.BUYER, label: t('roles.buyer'), description: t('auth.registerAsCustomer') },
-    { id: USER_ROLES.SUPPLIER, label: t('roles.supplier'), description: t('auth.registerAsSeller') }
-  ];
-
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-center">{t('auth.createAccount')}</h1>
       
-      {/* Tabs */}
-      <div className="w-full">
-        <div className="flex w-full border-b border-gray-200">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 px-4 text-center font-medium text-sm transition-colors ${
-                activeTab === tab.id
-                  ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="font-semibold">{tab.label}</div>
-              <div className="text-xs mt-1">{tab.description}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Form */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <div className="mb-4">
           <h2 className="text-lg font-semibold">
-            {t('auth.registerAs', { role: t(`roles.${activeTab.toLowerCase()}`) })}
+            {t('auth.registerAs', { role: t('roles.businessOwner') })}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            {activeTab === USER_ROLES.BUYER 
-              ? t('auth.findAndPurchase')
-              : t('auth.createAndManage')
-            }
+            {t('auth.createBusinessAccount')}
           </p>
         </div>
 
@@ -234,7 +207,7 @@ export default function Register() {
                 : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
             } text-white`}
           >
-            {isLoading ? t('auth.creatingAccount') : t('auth.registerAs', { role: t(`roles.${activeTab.toLowerCase()}`) })}
+            {isLoading ? t('auth.creatingAccount') : t('auth.createBusinessAccount')}
           </button>
         </form>
       </div>

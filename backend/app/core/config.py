@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     
     # Database debug
     db_echo: bool = Field(False, alias="DB_ECHO")
+    
+    # OpenAPI/Swagger settings
+    docs_url: str = Field("/docs", alias="DOCS_URL")
+    redoc_url: str = Field("/redoc", alias="REDOC_URL") 
+    openapi_url: str = Field("/openapi.json", alias="OPENAPI_URL")
+    api_prefix: str = Field("/api", alias="API_PREFIX")
 
     @field_validator('cors_origins', mode='before')
     @classmethod

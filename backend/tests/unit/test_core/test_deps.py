@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_current_user_id, get_current_user
-from app.users.models import User
+from app.core_models import User
 from app.core.security import create_access_token
 
 
@@ -69,12 +69,12 @@ class TestDependencies:
         
         assert exc_info.value.status_code == 404
 
-    def test_require_non_buyer_role_supplier_success(self, test_supplier):
-        """Test require_non_buyer_role allows suppliers."""
+    def test_require_non_buyer_role_supplier_success(self, test_business_owner):
+        """Test require_non_buyer_role allows business owners."""
         from app.deps import require_non_buyer_role
         
-        result = require_non_buyer_role(current_user=test_supplier)
-        assert result == test_supplier
+        result = require_non_buyer_role(current_user=test_business_owner)
+        assert result == test_business_owner
 
     def test_require_non_buyer_role_admin_success(self, test_admin):
         """Test require_non_buyer_role allows admins."""
@@ -92,28 +92,28 @@ class TestDependencies:
         
         assert exc_info.value.status_code == 403
 
-    def test_require_supplier_role_success(self, test_supplier):
-        """Test require_supplier_role allows suppliers."""
-        from app.deps import require_supplier_role
+    def test_require_supplier_role_success(self, test_business_owner):
+        """Test require_business_owner_role allows business owners."""
+        from app.deps import require_business_owner_role
         
-        result = require_supplier_role(current_user=test_supplier)
-        assert result == test_supplier
+        result = require_business_owner_role(current_user=test_business_owner)
+        assert result == test_business_owner
 
     def test_require_supplier_role_admin_fails(self, test_admin):
-        """Test require_supplier_role rejects admins."""
-        from app.deps import require_supplier_role
+        """Test require_business_owner_role rejects admins."""
+        from app.deps import require_business_owner_role
         
         with pytest.raises(HTTPException) as exc_info:
-            require_supplier_role(current_user=test_admin)
+            require_business_owner_role(current_user=test_admin)
         
         assert exc_info.value.status_code == 403
 
     def test_require_supplier_role_buyer_fails(self, test_user):
-        """Test require_supplier_role rejects buyers."""
-        from app.deps import require_supplier_role
+        """Test require_business_owner_role rejects employees."""
+        from app.deps import require_business_owner_role
         
         with pytest.raises(HTTPException) as exc_info:
-            require_supplier_role(current_user=test_user)
+            require_business_owner_role(current_user=test_user)
         
         assert exc_info.value.status_code == 403
 
@@ -124,12 +124,12 @@ class TestDependencies:
         result = require_admin_role(current_user=test_admin)
         assert result == test_admin
 
-    def test_require_admin_role_supplier_fails(self, test_supplier):
-        """Test require_admin_role rejects suppliers."""
+    def test_require_admin_role_supplier_fails(self, test_business_owner):
+        """Test require_admin_role rejects business owners."""
         from app.deps import require_admin_role
         
         with pytest.raises(HTTPException) as exc_info:
-            require_admin_role(current_user=test_supplier)
+            require_admin_role(current_user=test_business_owner)
         
         assert exc_info.value.status_code == 403
 
@@ -142,25 +142,25 @@ class TestDependencies:
         
         assert exc_info.value.status_code == 403
 
-    def test_require_supplier_or_admin_role_supplier_success(self, test_supplier):
-        """Test require_supplier_or_admin_role allows suppliers."""
-        from app.deps import require_supplier_or_admin_role
+    def test_require_supplier_or_admin_role_supplier_success(self, test_business_owner):
+        """Test require_admin_or_business_owner_role allows business owners."""
+        from app.deps import require_admin_or_business_owner_role
         
-        result = require_supplier_or_admin_role(current_user=test_supplier)
-        assert result == test_supplier
+        result = require_admin_or_business_owner_role(current_user=test_business_owner)
+        assert result == test_business_owner
 
     def test_require_supplier_or_admin_role_admin_success(self, test_admin):
-        """Test require_supplier_or_admin_role allows admins."""
-        from app.deps import require_supplier_or_admin_role
+        """Test require_admin_or_business_owner_role allows admins."""
+        from app.deps import require_admin_or_business_owner_role
         
-        result = require_supplier_or_admin_role(current_user=test_admin)
+        result = require_admin_or_business_owner_role(current_user=test_admin)
         assert result == test_admin
 
     def test_require_supplier_or_admin_role_buyer_fails(self, test_user):
-        """Test require_supplier_or_admin_role rejects buyers."""
-        from app.deps import require_supplier_or_admin_role
+        """Test require_admin_or_business_owner_role rejects employees."""
+        from app.deps import require_admin_or_business_owner_role
         
         with pytest.raises(HTTPException) as exc_info:
-            require_supplier_or_admin_role(current_user=test_user)
+            require_admin_or_business_owner_role(current_user=test_user)
         
         assert exc_info.value.status_code == 403

@@ -9,17 +9,23 @@
     "no": "Нет",
     "continue": "Продолжить",
     "back": "Назад",
-    "brandName": "Coffee Control"
+    "brandName": "Business Control"
   },
   "navigation": {
     "home": "Главная",
     "about": "О нас",
     "dashboard": "Панель",
     "account": "Аккаунт",
+    "products": "Продукты",
+    "orders": "Заказы",
+    "analytics": "Аналитика",
+    "settings": "Настройки",
     "signIn": "Войти",
     "register": "Регистрация",
     "logOut": "Выйти",
-    "categories": "Категории"
+    "categories": "Категории",
+    "openSidebar": "Открыть боковую панель",
+    "closeSidebar": "Закрыть боковую панель"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
@@ -39,14 +45,16 @@
     "registerAs": "Регистрация как {{role}}",
     "registerAsCustomer": "Регистрация как покупатель",
     "registerAsSeller": "Регистрация как продавец",
-    "findAndPurchase": "Находите и покупайте кофейные продукты у поставщиков",
-    "createAndManage": "Создавайте и управляйте своими кофейными продуктами",
+    "findAndPurchase": "Находите и покупайте продукты у поставщиков",
+    "createAndManage": "Создавайте и управляйте своими продуктами",
+    "createBusinessAccount": "Создать бизнес аккаунт",
     "signInDescription": "Введите ваши данные для доступа к аккаунту",
     "invalidCredentials": "Неверный email или пароль"
   },
   "roles": {
-    "buyer": "Покупатель",
-    "supplier": "Поставщик"
+    "admin": "Администратор",
+    "businessOwner": "Владелец бизнеса",
+    "employee": "Сотрудник"
   },
   "validation": {
     "emailRequired": "Email обязателен",
@@ -64,11 +72,11 @@
   "pages": {
     "about": {
       "title": "О нас",
-      "description": "Система управления кофейней. Это публичная страница."
+      "description": "Система управления бизнесом. Это публичная страница."
     },
     "dashboard": {
       "title": "Панель управления (защищенная)",
-      "description": "Доступна только с токеном. Управляйте своим кофейным бизнесом здесь."
+      "description": "Доступна только с токеном. Управляйте своим бизнесом здесь."
     },
     "account": {
       "title": "Аккаунт (защищенный)",
@@ -140,6 +148,50 @@
   "products": {
     "found": "продуктов найдено",
     "noProductsFound": "Продукты не найдены",
-    "addToCart": "В корзину"
+    "addToCart": "В корзину",
+    "title": "Продукты",
+    "description": "Управляйте продуктами и инвентарем",
+    "noProductsYet": "Пока нет продуктов",
+    "getStartedMessage": "Начните с добавления вашего первого продукта.",
+    "addProduct": "Добавить продукт"
+  },
+  "orders": {
+    "title": "Заказы",
+    "description": "Отслеживайте и управляйте заказами клиентов",
+    "noOrdersYet": "Пока нет заказов",
+    "ordersMessage": "Заказы появятся здесь, когда клиенты начнут покупать."
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "description": "Просматривайте аналитику и показатели эффективности",
+    "totalRevenue": "Общий доход",
+    "totalOrders": "Всего заказов",
+    "customers": "Клиенты",
+    "salesChart": "График продаж",
+    "noDataToDisplay": "Нет данных для отображения",
+    "chartsMessage": "Графики появятся здесь, когда у вас будут данные о продажах."
+  },
+  "settings": {
+    "title": "Настройки",
+    "description": "Управляйте настройками приложения и предпочтениями",
+    "applicationSettings": "Настройки приложения",
+    "language": "Язык",
+    "languageDescription": "Выберите предпочитаемый язык",
+    "english": "Английский",
+    "russian": "Русский",
+    "notifications": "Уведомления",
+    "notificationsDescription": "Настройте параметры уведомлений",
+    "emailNotifications": "Email уведомления",
+    "emailNotificationsDescription": "Получайте уведомления о новых заказах и важных обновлениях.",
+    "pushNotifications": "Push уведомления",
+    "pushNotificationsDescription": "Получайте push-уведомления на устройство.",
+    "businessInformation": "Информация о бизнесе",
+    "businessDescription": "Обновите данные вашего бизнеса",
+    "businessName": "Название бизнеса",
+    "businessNamePlaceholder": "Ваш бизнес",
+    "address": "Адрес",
+    "addressPlaceholder": "ул. Главная, 123, Город, Страна",
+    "saveSettings": "Сохранить настройки",
+    "version": "в0.1.0"
   }
 }

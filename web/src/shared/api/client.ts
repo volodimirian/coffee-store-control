@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 import { getToken } from "~/shared/lib/helpers";
 import type { ApiErrorResponse } from "./types";
 
-const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const baseURL = `${import.meta.env.VITE_API_URL ?? "http://localhost:8000"}/api`;
 
 export const api = axios.create({ baseURL });
 
