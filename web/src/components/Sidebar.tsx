@@ -161,7 +161,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
       {!isCollapsed && (
         <div className="p-4 border-t border-gray-200">
           <div className="text-xs text-gray-500 text-center">
-            {t('settings.version')}
+            v0.1.0
           </div>
         </div>
       )}

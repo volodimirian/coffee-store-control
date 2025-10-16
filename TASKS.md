@@ -1,421 +1,400 @@
-# Coffee Control - Tasks & Roadmap
+# Coffee Control - Updated Comprehensive Task List
 
-## 🎯 Current Sprint: Layout Redesign
+## 📋 Project Overview
 
-### 📋 Layout Restructure Tasks
+**Coffee Control** - веб-приложение системы учета расходов для кофеен с возможностью управления несколькими филиалами, детализированной ролевой системой и табличным учетом закупок по месяцам (аналог замены Excel-учета).
 
-#### ✅ Completed
+**Ключевые особенности системы:**
 
-- [x] Rebrand from LatAm Crypto to Coffee Control
-- [x] Setup English/Russian i18n
-- [x] Basic authentication system
-- [x] Clean up category components
-- [x] Install Heroicons library
-- [x] Create Sidebar component with collapsible functionality
-- [x] Update Layout.tsx with new structure
-- [x] Create new pages (Products, Orders, Analytics, Settings)
-- [x] Add routing for new pages
-- [x] Update translations for new menu items
-
-#### 🔄 In Progress
-
-- [ ] **Final Testing & Polish**
-  - [ ] Test responsive behavior on different screen sizes
-  - [ ] Test sidebar collapse/expand functionality
-  - [ ] Test mobile sidebar overlay
-  - [ ] Verify all navigation links work correctly
-
-#### 📝 Todo - Layout Components
-
-**🔧 Core Sidebar Features:**
-
-- [x] Sidebar component (`/src/components/Sidebar.tsx`)
-  - [x] Collapsible state management
-  - [x] Icon + text layout
-  - [x] Icon-only collapsed state
-  - [x] Hover effects and active states
-  - [x] Active menu item highlighting
-
-**📱 Responsive Design:**
-
-- [x] Mobile sidebar (overlay mode)
-- [x] Desktop sidebar (push content mode)
-- [x] Breakpoint handling
-- [ ] Touch gestures for mobile (optional)
-
-**🎨 UI/UX Improvements:**
-
-- [x] Update Layout.tsx structure
-  - [x] Move brand logo to sidebar
-  - [x] Keep auth buttons in top-right
-  - [x] Implement sidebar toggle button
-  - [x] Adjust main content area padding
-
-**🗂️ Menu Structure:**
-
-- [x] Dashboard (home icon)
-- [x] Account/Profile (user icon)
-- [x] Products/Inventory (package icon)
-- [x] Orders (shopping-cart icon)
-- [x] Analytics (chart icon)
-- [x] Settings (cog icon)
-
-**⚙️ Technical Implementation:**
-
-- [x] Use Heroicons for consistent icons
-- [x] Local state for sidebar collapsed/expanded
-- [x] Persist sidebar state in localStorage
-- [x] Smooth CSS transitions
-- [x] Proper z-index management
+- Помесячный табличный учет расходов (как Excel, но в веб)
+- Автоматическая конвертация единиц измерения и расчет средних цен
+- Гибкая система ролей и прав доступа по филиалам
+- Автоматизация создания новых периодов учета (15-го числа каждого месяца)
+- Экспорт данных в Excel/PDF для бухгалтерии
+- Журнал всех изменений для контроля финансовых операций
 
 ---
 
-## 🎯 Next Sprint: Advanced Role & Permission System
+## 🏗️ ГРУППА 1: АРХИТЕКТУРА И БАЗОВАЯ НАСТРОЙКА
 
-### 🏢 Business Context
+### ✅ Завершенные задачи
 
-**Coffee Control** - система управления малым бизнесом для кофеен (coffee to go)
+- [x] **Backend**: Настройка FastAPI проекта с SQLAlchemy и Alembic
+- [x] **Backend**: Подключение PostgreSQL базы данных
+- [x] **Backend**: Базовая система миграций Alembic
+- [x] **Frontend**: Создание React приложения с Vite
+- [x] **Frontend**: Настройка TypeScript и Tailwind CSS
+- [x] **Frontend**: Интеграция с i18next для мультиязычности (en/ru)
+- [x] **Frontend**: Установка и настройка Heroicons
+- [x] **Frontend**: Настройка React Router для маршрутизации
 
-- Управление филиалами по разным адресам
-- Система сотрудников с переназначением прав
-- Иерархия ролей: Админ системы → Владелец бизнеса → Сотрудники
+### 📝 Задачи в разработке
 
-### 🔐 Role & Permission System Implementation
-
-#### 📋 Phase 1: Core Permission System (Backend)
-
-- [ ] **Database Schema Updates**
-
-  - [ ] Create `permissions` table (id, name, description, resource, action)
-  - [ ] Create `role_permissions` table (role_id, permission_id)
-  - [ ] Create `user_permissions` table (user_id, permission_id) - for individual overrides
-  - [ ] Update `users` table with business ownership fields
-  - [ ] Create `businesses` table (id, name, owner_id, created_at)
-  - [ ] Create `business_locations` table (id, business_id, address, name)
-  - [ ] Create `user_business_access` table (user_id, business_id, role_id)
-
-- [ ] **Permission Management System**
-
-  - [ ] Define core permissions (CRUD for products, orders, users, etc.)
-  - [ ] Implement permission checking middleware
-  - [ ] Create permission assignment/revocation logic
-  - [ ] Add business context to permissions (per-business permissions)
-
-- [ ] **Role System Enhancement**
-  - [ ] Extend existing roles: `admin`, `business_owner`, `employee`
-  - [ ] Implement role hierarchy validation
-  - [ ] Create role-based permission templates
-  - [ ] Add role assignment/modification endpoints
-
-#### 📋 Phase 2: Role Management (Backend API)
-
-- [ ] **Admin-Level Operations** (System Admin only)
-
-  - [ ] `/api/admin/users` - List all users across system
-  - [ ] `/api/admin/businesses` - Manage all businesses
-  - [ ] `/api/admin/roles/{userId}` - Assign admin role
-  - [ ] `/api/admin/permissions` - Global permission management
-
-- [ ] **Business Owner Operations**
-
-  - [ ] `/api/business/employees` - Manage business employees
-  - [ ] `/api/business/locations` - Manage business locations
-  - [ ] `/api/business/roles` - Assign roles to employees
-  - [ ] `/api/business/permissions` - Grant/revoke permissions
-  - [ ] `/api/business/register-employee` - Register new employees
-
-- [ ] **Permission Checking**
-  - [ ] Implement `@require_permission` decorator
-  - [ ] Add business context validation
-  - [ ] Create permission inheritance logic
-  - [ ] Add audit logging for permission changes
-
-#### 📋 Phase 3: Authentication Flow Updates (Backend)
-
-- [ ] **Registration System Changes**
-
-  - [ ] Remove role tabs from registration UI
-  - [ ] Default registration as `business_owner`
-  - [ ] Add business information to registration
-  - [ ] Implement employee invitation system
-
-- [ ] **Login System Updates**
-  - [ ] Add business context to login
-  - [ ] Support multi-business access for users
-  - [ ] Implement business switching
-  - [ ] Add role display in user session
-
-#### 📋 Phase 4: Frontend Implementation
-
-- [ ] **Registration UI Updates**
-
-  - [ ] Replace role tabs with business owner registration
-  - [ ] Add business information form fields
-  - [ ] Create business setup wizard
-  - [ ] Add employee invitation interface
-
-- [ ] **Role Management Interface**
-
-  - [ ] Create employee management page
-  - [ ] Add permission assignment interface
-  - [ ] Create role selection dropdowns
-  - [ ] Add business location management
-
-- [ ] **User Experience Updates**
-  - [ ] Add role indicator in UI
-  - [ ] Implement permission-based menu visibility
-  - [ ] Create business switching interface
-  - [ ] Add permission denied messages
-
-#### 📋 Phase 5: Business & Location Management
-
-- [ ] **Business Management**
-
-  - [ ] Business profile editing
-  - [ ] Business settings and preferences
-  - [ ] Multi-location management
-  - [ ] Business analytics and reporting
-
-- [ ] **Employee Management**
-  - [ ] Employee onboarding workflow
-  - [ ] Schedule management
-  - [ ] Performance tracking
-  - [ ] Employee-specific analytics
-
-#### 🔑 Role Hierarchy & Permissions
-
-**System Admin (`admin`)**
-
-- Full system access across all businesses
-- Can assign admin role to other users
-- System-wide analytics and management
-- Can create/delete businesses
-
-**Business Owner (`business_owner`)**
-
-- Full control over their business(es)
-- Can register and manage employees
-- Can assign roles and permissions to employees
-- Manage business locations and settings
-- Business analytics and reporting
-
-**Employee (`employee`)**
-
-- Access based on assigned permissions
-- Can be assigned to specific locations
-- Role-based functionality access
-- Limited to assigned business context
-
-#### 🎯 Default Permissions by Role
-
-**Admin:** ALL_PERMISSIONS
-**Business Owner:**
-
-- MANAGE_BUSINESS, MANAGE_EMPLOYEES, MANAGE_LOCATIONS
-- ASSIGN_ROLES, ASSIGN_PERMISSIONS
-- VIEW_ANALYTICS, MANAGE_PRODUCTS, MANAGE_ORDERS
-
-**Employee (Base):**
-
-- VIEW_PRODUCTS, MANAGE_ORDERS (if assigned)
-- Limited analytics access
-- Location-specific access only
-
-#### 🛠️ Technical Implementation Details
-
-**Database Changes:**
-
-```sql
--- New tables to implement
-permissions (id, name, description, resource, action)
-role_permissions (role_id, permission_id)
-user_permissions (user_id, permission_id)
-businesses (id, name, owner_id, created_at)
-business_locations (id, business_id, address, name)
-user_business_access (user_id, business_id, role_id)
-```
-
-**API Endpoints Structure:**
-
-```
-/api/auth/register (updated) - business owner registration only
-/api/admin/* - admin-only endpoints
-/api/business/* - business owner operations
-/api/permissions/* - permission checking and management
-/api/employees/* - employee management
-```
-
-**Frontend Changes:**
-
-- Replace registration role tabs with business registration form
-- Add role selector in admin/business owner interfaces
-- Implement permission-based UI rendering
-- Add business switching functionality
+- [x] **Backend**: Настройка Docker контейнеров для разработки
+- [ ] **Backend**: Настройка автоматических тестов (pytest)
+- [x] **Backend**: Настройка OpenAPI/Swagger документации с API префиксом `/api/`
+- [ ] **Backend**: Защищенная документация API (доступ только для администраторов)
+- [ ] **Backend**: Настройка PWA манифеста для установки на телефон
+- [ ] **Frontend**: Настройка автоматических тестов (React Testing Library)
+- [ ] **Backend**: Система логирования изменений (audit trails)
+- [ ] **DevOps**: Настройка cron-задач для автоматизации периодов
 
 ---
 
-## 🚀 Future Features & Enhancements
+## 🔐 ГРУППА 2: РАСШИРЕННАЯ СИСТЕМА РОЛЕЙ И ПРАВ
 
-### 🏪 Coffee Shop Management Features
+### ✅ Завершенные задачи
 
-- [ ] **Product Management**
+- [x] **Backend**: Базовые модели User и Role
+- [x] **Backend**: JWT токенизация для аутентификации
+- [x] **Backend**: Эндпоинты регистрации и входа
+- [x] **Frontend**: Базовые формы логина и регистрации
+- [x] **Frontend**: Управление токенами в localStorage
+- [x] **Frontend**: Защищенные маршруты (ProtectedRoute)
 
-  - [ ] Coffee beans catalog
-  - [ ] Inventory tracking
-  - [ ] Price management
-  - [ ] Stock alerts
+### 📝 Задачи в разработке
 
-- [ ] **Order Management**
+#### Backend: Детализированная ролевая система
 
-  - [ ] Customer orders
-  - [ ] Order history
-  - [ ] Status tracking
-  - [ ] Payment integration
+- [ ] **Backend**: Создать таблицу `permissions` (id, name, description, resource, action)
+- [ ] **Backend**: Создать таблицу `role_permissions` (role_id, permission_id)
+- [ ] **Backend**: Создать таблицу `user_permissions` (user_id, permission_id, coffee_shop_id)
+- [ ] **Backend**: Реализовать 5 основных ролей: admin, business_owner, accountant, employee, supplier
+- [ ] **Backend**: Создать детальные права для модуля "Учёт расходов":
+  - VIEW_DATA (просмотр данных)
+  - ADD_DATA (добавление данных)
+  - EDIT_DATA (редактирование данных)
+  - MANAGE_SECTIONS (управление разделами)
+  - VIEW_TOTALS (просмотр итогов)
+  - EXPORT_DATA (выгрузка данных)
+  - MANAGE_MONTHS (управление месяцами)
+- [ ] **Backend**: Middleware `@require_permission` для проверки прав
+- [ ] **Backend**: Контекст филиала в правах доступа
+- [ ] **Backend**: Эндпоинты настройки прав `/api/access-control`
 
-- [ ] **Analytics Dashboard**
-  - [ ] Sales reports
-  - [ ] Popular products
-  - [ ] Revenue tracking
-  - [ ] Customer insights
+#### Frontend: Интерфейс управления правами
 
-### 👥 User Management
-
-- [ ] **Advanced Role & Permission System** (NEW PRIORITY)
-
-  - [ ] Granular permission system with role inheritance
-  - [ ] Business context permissions
-  - [ ] Employee invitation and management
-  - [ ] Multi-business access support
-  - [ ] Permission audit trails
-
-- [ ] **Enhanced Roles** (UPDATED)
-
-  - [x] Basic role system (admin, business_owner, employee)
-  - [ ] Role-based menu visibility
-  - [ ] Permission-based feature access
-  - [ ] Custom role creation (future)
-  - [ ] Role templates for common positions
-
-- [ ] **Profile Management**
-  - [ ] User profiles with business context
-  - [ ] Avatar upload
-  - [ ] Business-specific preferences
-  - [ ] Security settings
-  - [ ] Employee profiles and details
-
-### 🎨 UI/UX Improvements
-
-- [ ] **Theme System**
-
-  - [ ] Dark/Light mode
-  - [ ] Coffee-themed color palette
-  - [ ] Custom brand colors
-  - [ ] Accessibility improvements
-
-- [ ] **Advanced Components**
-  - [ ] Data tables with sorting/filtering
-  - [ ] Modal dialogs
-  - [ ] Notification system
-  - [ ] Loading states
-
-### 🔧 Technical Improvements
-
-- [ ] **Backend Enhancements**
-
-  - [ ] API versioning
-  - [ ] Rate limiting
-  - [ ] Caching system
-  - [ ] File upload handling
-
-- [ ] **Frontend Architecture**
-  - [ ] State management (Zustand/Redux)
-  - [ ] Component library
-  - [ ] Storybook setup
-  - [ ] E2E testing
+- [ ] **Frontend**: Убрать табы ролей из регистрации (только business_owner)
+- [ ] **Frontend**: Раздел "Настройки доступа" для управления правами
+- [ ] **Frontend**: Интерфейс назначения прав с галочками/переключателями
+- [ ] **Frontend**: Всплывающие окна при наведении на пользователя с правами
+- [ ] **Frontend**: Индикатор текущей роли пользователя
+- [ ] **Frontend**: Скрытие функций на основе прав доступа
 
 ---
 
-## 📋 Current Layout Structure
+## 🏢 ГРУППА 3: УПРАВЛЕНИЕ КОФЕЙНЯМИ И НАВИГАЦИЯ
 
-### Before (Current):
+### 📝 Задачи в разработке
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│ Coffee Control  [Dashboard] [Account]     🇷🇺 RU ▼ | [Регистрация] [Войти] │
-└─────────────────────────────────────────────────────────────────────┘
-│                                                                     │
-│                        Main Content Area                            │
-│                                                                     │
-```
+#### Backend: Система кофеен (филиалов)
 
-### After (Target):
+- [ ] **Backend**: Создать таблицу `coffee_shops` (id, name, city, address, owner_id)
+- [ ] **Backend**: Связь пользователя с несколькими кофейнями через права
+- [ ] **Backend**: Эндпоинты CRUD для кофеен `/api/coffee-shops`
+- [ ] **Backend**: Контроль доступа по филиалам для каждого модуля
+- [ ] **Backend**: Автоматическое создание первой кофейни при регистрации
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                    🇷🇺 RU ▼ | [Регистрация] [Войти] │ ← Top bar
-├──────┬──────────────────────────────────────────────────────────────┤
-│ ☰    │                                                              │
-│ 🏠   │                                                              │
-│ 👤   │                 Main Content Area                            │ ← Sidebar + Content
-│ 📦   │                                                              │
-│ 📊   │                                                              │
-│ ⚙️   │                                                              │
-└──────┴──────────────────────────────────────────────────────────────┘
+#### Frontend: Навигация по кофейням
 
-Expanded sidebar:
-┌─────────────────────────────────────────────────────────────────────┐
-│                                    🇷🇺 RU ▼ | [Регистрация] [Войти] │
-├─────────────┬───────────────────────────────────────────────────────┤
-│ ☰ Coffee    │                                                       │
-│ 🏠 Dashboard│                                                       │
-│ 👤 Account  │               Main Content Area                       │
-│ 📦 Products │                                                       │
-│ 📊 Analytics│                                                       │
-│ ⚙️ Settings │                                                       │
-└─────────────┴───────────────────────────────────────────────────────┘
-```
+- [ ] **Frontend**: Выпадающее меню "Мои кофейни" в профиле
+- [ ] **Frontend**: Форма добавления новой кофейни (название, город, адрес)
+- [ ] **Frontend**: Редактирование информации о кофейне
+- [ ] **Frontend**: Переключение между кофейнями с сохранением контекста
+- [ ] **Frontend**: Индикатор текущей активной кофейни в интерфейсе
+- [ ] **Frontend**: Интеграция с картами (в перспективе, пока текстовое поле)
 
 ---
 
-## 🎯 Priority Order
+## 👥 ГРУППА 4: УПРАВЛЕНИЕ СОТРУДНИКАМИ
 
-### Current Sprint Completion
+### 📝 Задачи в разработке
 
-1. **High Priority** - Finish Layout Polish (Testing & Bug fixes)
+#### Backend: Система пользователей и сотрудников
 
-### Next Sprint (Role & Permission System)
+- [ ] **Backend**: Расширить модель User для сотрудников (связь с кофейнями)
+- [ ] **Backend**: Эндпоинты добавления сотрудников `/api/employees`
+- [ ] **Backend**: Система email приглашений сотрудников (или упрощенная)
+- [ ] **Backend**: Подтверждение регистрации через email/SMS (или упрощенное)
+- [ ] **Backend**: Восстановление паролей
+- [ ] **Backend**: Хэширование паролей (bcrypt)
 
-1. **Phase 1** - Database schema and core permission system (Backend)
-2. **Phase 2** - Role management API endpoints (Backend)
-3. **Phase 3** - Authentication flow updates (Backend)
-4. **Phase 4** - Frontend role management interface
-5. **Phase 5** - Business & location management features
+#### Frontend: Управление пользователями
 
-### Future Development
-
-- **Medium Priority** - Advanced business features (inventory, reporting)
-- **Low Priority** - UI/UX enhancements and optimization
+- [ ] **Frontend**: Интерфейс добавления сотрудников по email
+- [ ] **Frontend**: Форма подтверждения регистрации (ввод кода)
+- [ ] **Frontend**: Управление активностью сотрудников
+- [ ] **Frontend**: Личная информация в профиле (смена пароля, фото)
+- [ ] **Frontend**: Форма восстановления пароля
 
 ---
 
-## 📝 Implementation Notes
+## 📊 ГРУППА 5: МОДУЛЬ "УЧЁТ РАСХОДОВ" (ОСНОВНОЙ)
 
-### Database Migration Strategy
+### 📝 Задачи в разработке - это ядро системы
 
-- Create new tables without breaking existing functionality
-- Migrate existing users to business_owner role by default
-- Preserve existing authentication while adding new permission layers
+#### Backend: Структура данных для табличного учета
 
-### Security Considerations
+- [ ] **Backend**: Создать таблицу `sections` (id, name, coffee_shop_id, month_period_id, order_index)
+- [ ] **Backend**: Создать таблицу `items` (id, name, section_id, unit_type, conversion_factor, order_index)
+- [ ] **Backend**: Создать таблицу `month_periods` (id, name, coffee_shop_id, year, month, status, created_at)
+- [ ] **Backend**: Создать таблицу `expense_records` (id, item_id, date, quantity, unit, total_amount, user_id, created_at)
+- [ ] **Backend**: Создать таблицу `audit_trail` (id, table_name, record_id, action, old_value, new_value, user_id, timestamp)
+- [ ] **Backend**: Автоматическое создание нового месяца 15-го числа (cron-задача)
+- [ ] **Backend**: Копирование структуры разделов/товаров при создании месяца
+- [ ] **Backend**: Связывание текущего и будущего месяца до 1-го числа
+- [ ] **Backend**: Логика синхронизации изменений структуры между связанными месяцами
 
-- All permission checks must validate business context
-- Admin operations require explicit admin role verification
-- Employee permissions limited to assigned business scope
-- Audit all role and permission changes
+#### Backend: Бизнес-логика расчетов
 
-### UI/UX Guidelines
+- [ ] **Backend**: Конвертация единиц измерения в базовые (г, мл, шт)
+- [ ] **Backend**: Расчет средневзвешенной цены за единицу товара
+- [ ] **Backend**: Автоматический пересчет итогов при изменении данных
+- [ ] **Backend**: API для управления структурой `/api/expenses/structure`
+- [ ] **Backend**: API для ввода данных `/api/expenses/records`
+- [ ] **Backend**: API для переключения месяцев `/api/expenses/periods`
 
-- Progressive disclosure - show features based on permissions
-- Clear role indicators throughout the interface
-- Intuitive business switching for multi-business users
-- Responsive permission error handling
+#### Frontend: Табличный интерфейс (как Excel)
+
+- [ ] **Frontend**: Компонент таблицы с днями месяца как колонки (1-31)
+- [ ] **Frontend**: Отображение разделов и товаров как строки
+- [ ] **Frontend**: Редактирование ячеек (количество/сумма) прямо в таблице
+- [ ] **Frontend**: Итоговые колонки (кол-во, сумма, средняя цена за единицу)
+- [ ] **Frontend**: Выделение текущего дня и выходных дней
+- [ ] **Frontend**: Вкладки месяцев под таблицей для переключения
+
+#### Frontend: Управление структурой таблицы
+
+- [ ] **Frontend**: Кнопка "Добавить раздел" с диалогом ввода названия
+- [ ] **Frontend**: Кнопка "Добавить товар" с выбором раздела
+- [ ] **Frontend**: Редактирование названий разделов/товаров (двойной клик)
+- [ ] **Frontend**: Удаление разделов/товаров с подтверждением
+- [ ] **Frontend**: Drag-and-drop сортировка разделов и товаров
+- [ ] **Frontend**: Отдельная панель сортировки списком
+
+#### Frontend: Дополнительные функции
+
+- [ ] **Frontend**: Фильтр и поиск по товарам с детализацией
+- [ ] **Frontend**: Экспорт таблицы в Excel/PDF
+- [ ] **Frontend**: Экспорт истории по конкретному товару
+- [ ] **Frontend**: Всплывающие подсказки с историей изменений ячейки
+- [ ] **Frontend**: Отображение средней стоимости единицы товара
+- [ ] **Frontend**: Скрытие итогов для пользователей без прав
+
+---
+
+## 💰 ГРУППА 6: МОДУЛЬ "ОПЛАТЫ" (ПОСТАВЩИКИ И НАКЛАДНЫЕ)
+
+### 📝 Задачи в разработке
+
+#### Backend: Учет поставщиков и оплат
+
+- [ ] **Backend**: Создать таблицу `suppliers` (id, name, contact_info, coffee_shop_id)
+- [ ] **Backend**: Создать таблицу `invoices` (id, supplier_id, coffee_shop_id, date, total_amount, paid_status, paid_date)
+- [ ] **Backend**: Создать таблицу `invoice_items` (id, invoice_id, item_name, quantity, unit_price)
+- [ ] **Backend**: Связь накладных с записями расходов
+- [ ] **Backend**: API управления поставщиками `/api/suppliers`
+- [ ] **Backend**: API управления накладными `/api/invoices`
+- [ ] **Backend**: Логика отметки оплаты накладных
+
+#### Frontend: Интерфейс поставщиков и оплат
+
+- [ ] **Frontend**: Список поставщиков с возможностью добавления/редактирования
+- [ ] **Frontend**: Форма создания накладной с привязкой к поставщику
+- [ ] **Frontend**: Интерфейс отметки накладных как оплаченных
+- [ ] **Frontend**: Список неоплаченных накладных для бухгалтера
+- [ ] **Frontend**: Связка с модулем расходов при вводе поставки
+
+---
+
+## 📈 ГРУППА 7: МОДУЛЬ "СТАТИСТИКА" И ОТЧЕТНОСТЬ
+
+### 📝 Задачи в разработке
+
+#### Backend: Аналитические данные
+
+- [ ] **Backend**: API для сводных отчетов по расходам `/api/reports/expenses`
+- [ ] **Backend**: API для финансовых итогов по месяцам `/api/reports/financial`
+- [ ] **Backend**: Расчет общих объемов по категориям единиц (кг, л, шт)
+- [ ] **Backend**: API для сравнительной аналитики по месяцам
+- [ ] **Backend**: Экспорт отчетов в различных форматах
+
+#### Frontend: Аналитические дашборды
+
+- [ ] **Frontend**: Дашборд для business_owner с КПИ и общими показателями
+- [ ] **Frontend**: Итоговая страница закупов с финансовыми метриками
+- [ ] **Frontend**: Графики динамики расходов по месяцам
+- [ ] **Frontend**: Топ-товары по затратам за период
+- [ ] **Frontend**: Сравнение показателей между филиалами
+
+---
+
+## 🛠️ ГРУППА 8: МОДУЛИ СПРАВОЧНИКОВ
+
+### 📝 Задачи в разработке
+
+#### Backend и Frontend: Модуль "ТОВАРЫ"
+
+- [ ] **Backend**: Справочник товаров с единицами измерения
+- [ ] **Backend**: Конвертационные коэффициенты для единиц
+- [ ] **Frontend**: Управление справочником товаров
+- [ ] **Frontend**: Настройка единиц измерения и коэффициентов
+
+#### Backend и Frontend: Модуль "ГРАФИК РАБОТЫ"
+
+- [ ] **Backend**: Система смен и рабочего времени сотрудников
+- [ ] **Frontend**: Табель учета рабочего времени
+- [ ] **Frontend**: График смен для менеджеров
+
+#### Backend и Frontend: Служебные разделы
+
+- [ ] **Frontend**: Раздел "История изменений" с фильтрацией
+- [ ] **Frontend**: Раздел "Чат поддержки" (заглушка)
+- [ ] **Frontend**: Раздел "Регламент" (статическая информация)
+- [ ] **Frontend**: Раздел "Тех. карты" (заглушка для рецептур)
+
+---
+
+## 🎨 ГРУППА 9: UI/UX КОМПОНЕНТЫ
+
+### ✅ Завершенные задачи
+
+- [x] **Frontend**: Ребрендинг с LatAm Crypto на Coffee Control
+- [x] **Frontend**: Создание компонента Sidebar с collapsible функциональностью
+- [x] **Frontend**: Обновление Layout.tsx с новой структурой
+- [x] **Frontend**: Создание базовых страниц (Products, Orders, Analytics, Settings)
+- [x] **Frontend**: Настройка маршрутизации для новых страниц
+- [x] **Frontend**: Полный перевод на систему i18n (удаление хардкоженных строк)
+
+### 📝 Задачи в разработке
+
+- [ ] **Frontend**: Финальное тестирование responsive поведения
+- [ ] **Frontend**: Компонент табличного редактора с Excel-подобным интерфейсом
+- [ ] **Frontend**: Система всплывающих подсказок (tooltips)
+- [ ] **Frontend**: Модальные окна для форм и подтверждений
+- [ ] **Frontend**: Система уведомлений и алертов
+- [ ] **Frontend**: Индикаторы загрузки для всех операций
+- [ ] **Frontend**: Навигация клавишами в таблице (стрелки, Enter)
+- [ ] **Frontend**: Выделение текущего дня и выходных в таблице
+
+---
+
+## 🔧 ГРУППА 10: ТЕХНИЧЕСКАЯ ИНФРАСТРУКТУРА
+
+### 📝 Задачи в разработке
+
+#### Backend: Системные функции
+
+- [ ] **Backend**: Защищенная документация API с авторизацией
+  - Создать middleware для проверки прав доступа к `/docs` и `/redoc`
+  - Доступ только для пользователей с ролью `admin` или специальным правом `api_docs_read`
+  - Редирект на страницу входа для неавторизованных пользователей
+  - Настройка условного отключения документации в production
+- [ ] **Backend**: Cron-задачи автоматического создания месяцев
+- [ ] **Backend**: Система email уведомлений (или упрощенная)
+- [ ] **Backend**: Валидация бизнес-правил (уникальность товаров и т.д.)
+- [ ] **Backend**: Обработка плавающих чисел в копейках
+- [ ] **Backend**: Система бэкапов и восстановления
+- [ ] **Backend**: Индексы БД для оптимизации табличных запросов
+
+#### DevOps и деплой
+
+- [ ] **DevOps**: Docker-контейнеры для всех компонентов
+- [ ] **DevOps**: CI/CD пайплайн для автоматического деплоя
+- [ ] **DevOps**: HTTPS и безопасность передачи данных
+- [ ] **DevOps**: Мониторинг и логирование системы
+- [ ] **DevOps**: Backup стратегия для PostgreSQL
+
+---
+
+## ❓ ВОПРОСЫ ДЛЯ УТОЧНЕНИЯ (обновленные)
+
+### 🔍 **Детали реализации системы учета:**
+
+1. **Автоматизация периодов**: Подтвердить точный алгоритм создания месяца 15-го числа и синхронизации структуры
+
+2. **Конвертация единиц**: Список конкретных единиц измерения и коэффициентов конверсии (кг→г, л→мл, ящик→шт)
+
+3. **Остатки товаров**: Как именно реализовать перенос остатков между месяцами? Отдельный модуль или в рамках учета расходов?
+
+4. **Система оплат**: Степень интеграции между модулем "Расходы" и "Оплаты" - автоматическое создание накладных?
+
+5. **Email/SMS**: Реализовать полноценную интеграцию или упрощенную систему подтверждений?
+
+6. **Экспорт**: Точные требования к формату Excel/PDF файлов, какие данные включать
+
+7. **История изменений**: Уровень детализации логирования - все поля или только ключевые операции?
+
+8. **Производительность**: Ожидаемое количество филиалов, пользователей и объем данных за год
+
+### 🎯 **Бизнес-логика:**
+
+9. **Права доступа**: Матрица прав по модулям (не только "Учет расходов")
+
+10. **Мульти-филиальность**: Могут ли сотрудники работать в нескольких филиалах одновременно?
+
+11. **Архивация**: Срок хранения данных, нужна ли архивация старых месяцев?
+
+12. **Валидация**: Бизнес-правила для проверки корректности данных (лимиты, ограничения)
+
+---
+
+## 📋 ПРИОРИТЕТЫ РЕАЛИЗАЦИИ
+
+### 🎯 **MVP Фаза (Критично для запуска):**
+
+1. **Группа 2**: Система ролей и прав доступа
+2. **Группа 3**: Управление кофейнями и навигация
+3. **Группа 5**: Модуль "Учёт расходов" (базовый табличный ввод)
+4. **Группа 4**: Базовое управление пользователями
+
+### 🚀 **Основной функционал:**
+
+5. **Группа 5**: Автоматизация периодов и расчеты (продвинутые функции)
+6. **Группа 6**: Модуль "Оплаты" (поставщики и накладные)
+7. **Группа 7**: Базовая отчетность и экспорт
+8. **Группа 9**: Доработка UI/UX компонентов
+
+### 🔧 **Техническая стабилизация:**
+
+9. **Группа 10**: Техническая инфраструктура и DevOps
+10. **Группа 8**: Справочники и служебные модули
+11. **Группа 1**: Оптимизация и тесты
+
+### 💫 **Расширенные возможности:**
+
+12. **Группа 7**: Продвинутая аналитика и дашборды
+13. **Группа 8**: Интеграции и дополнительные модули
+14. PWA функции и мобильная оптимизация
+
+---
+
+## 📝 ЗАМЕТКИ ПО РЕАЛИЗАЦИИ
+
+### 🔐 **Безопасность:**
+
+- Все API эндпоинты должны включать проверку прав по филиалам
+- Backend валидация критичнее frontend скрытия функций
+- История изменений должна быть неизменяемой
+- Финансовые данные в копейках для точности
+
+### 🎯 **UX Принципы:**
+
+- Интерфейс максимально близкий к Excel для легкого перехода
+- Минимизация кликов при вводе данных
+- Мгновенное обновление итогов при изменениях
+- Четкое разделение прав в интерфейсе
+
+### 🏗️ **Архитектурные решения:**
+
+- Помесячное создание копий структуры для сохранения истории
+- Cron-задачи для автоматизации критичных операций
+- REST API с четким разделением контекста филиалов
+- Компонентная архитектура React для переиспользования
+
+### 📊 **Структура данных:**
+
+- Гибкое хранение прав с контекстом филиала/модуля
+- Нормализованная структура с учетом мульти-филиальности
+- Эффективные индексы для табличных выборок по датам
+- Audit trail для всех критичных операций

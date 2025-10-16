@@ -7,7 +7,14 @@ from app.core.db import engine
 from app.core.config import settings
 from app.users.models import Base
 
-app = FastAPI(title=settings.app_title, version=settings.app_version)
+app = FastAPI(
+    title=settings.app_title,
+    version=settings.app_version,
+    description="Coffee Store Control API - expense tracking system for coffee shops with period-based expense management, employee management and analytics",
+    docs_url=settings.docs_url,
+    redoc_url=settings.redoc_url,
+    openapi_url=settings.openapi_url,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,4 +40,4 @@ async def health():
     return {"status": "ok"}
 
 # Authentication routes
-app.include_router(auth_router)
+app.include_router(auth_router, prefix=settings.api_prefix)
