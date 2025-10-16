@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.core_models import User, Role, Permission, RolePermission, UserPermission
 from app.deps import get_current_user_id, get_db_dep
@@ -33,7 +32,7 @@ async def check_user_permission(
     # PRIORITY 1: Check individual user permissions first (highest priority)
     user_permission_query = select(UserPermission).join(Permission).where(
         UserPermission.user_id == user_id,
-        UserPermission.is_active == True,
+        UserPermission.is_active,
         Permission.name == permission_name
     )
     
@@ -55,7 +54,7 @@ async def check_user_permission(
         .join(User, User.role_id == Role.id)
         .where(
             User.id == user_id,
-            RolePermission.is_active == True,
+            RolePermission.is_active,
             Permission.name == permission_name
         )
     )

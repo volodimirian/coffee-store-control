@@ -48,7 +48,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     
     async with TestingSessionLocal() as session:
         # Create default roles and permissions
-        from app.core_models import Role, Permission, RolePermission, UserRole
+        from app.core_models import Role, Permission, UserRole
         
         # Create roles
         roles_to_create = [

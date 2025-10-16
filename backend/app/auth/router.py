@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.schemas import RegisterIn, LoginIn, TokenOut
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.error_codes import ErrorCode, create_error_response
-from app.core.permissions import require_permission, require_admin, grant_user_permission, check_user_permission
+from app.core.permissions import check_user_permission
 from app.deps import get_db_dep
 from app.deps import get_current_user_id
 from app.core_models import User, Role
@@ -79,3 +79,34 @@ async def me(user_id: str = Depends(get_current_user_id), db: AsyncSession = Dep
             content=create_error_response(ErrorCode.USER_NOT_FOUND)
         )
     return user
+
+# Test endpoints for optimized permission system
+@router.post("/test-check-permission")
+async def test_check_permission(
+    data: dict,
+    db: AsyncSession = Depends(get_db_dep)
+):
+    """Test the optimized check_user_permission function."""
+    user_id = data.get("user_id")
+    permission_name = data.get("permission_name")
+    business_id = data.get("business_id")
+    
+    if not isinstance(user_id, int) or not isinstance(permission_name, str):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "user_id must be int, permission_name must be str"}
+        )
+    
+    has_permission = await check_user_permission(
+        user_id=user_id,
+        permission_name=permission_name,
+        db=db,
+        business_id=business_id
+    )
+    
+    return {
+        "user_id": user_id,
+        "permission_name": permission_name,
+        "business_id": business_id,
+        "has_permission": has_permission
+    }

@@ -5,7 +5,7 @@ from httpx import AsyncClient
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.users.models import User, Role
+from app.core_models import User, Role
 from app.core.security import create_access_token
 
 

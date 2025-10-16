@@ -7,7 +7,7 @@ from app.core.permissions import (
     grant_user_permission,
     revoke_user_permission
 )
-from app.core_models import User, Role, Permission, RolePermission, UserPermission
+from app.core_models import RolePermission, UserPermission
 
 
 class TestPermissionSystem:
@@ -376,13 +376,6 @@ class TestEdgeCases:
         self, db_session: AsyncSession, sample_permission
     ):
         """Test user without role."""
-        # Create user without a role (using None role_id) but we can't insert into DB
-        # Instead, we'll test the function directly with a user that doesn't have role loaded
-        from sqlalchemy import select
-        
-        # Get existing user but don't load role
-        user = await db_session.scalar(select(User).where(User.id == 999))  # Non-existent user
-        
         # Test permission check with non-existent user (simulates user without role)
         has_permission = await check_user_permission(
             user_id=999,  # Non-existent user
