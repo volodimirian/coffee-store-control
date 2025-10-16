@@ -4,6 +4,10 @@ import Home from "~/pages/Home";
 import Login from "~/pages/Login";
 import Dashboard from "~/pages/Dashboard";
 import Account from "~/pages/Account";
+import Products from "~/pages/Products";
+import Orders from "~/pages/Orders";
+import Analytics from "~/pages/Analytics";
+import Settings from "~/pages/Settings";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
 import Register from "~/pages/Register";
@@ -43,6 +47,10 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="account" element={<Account />} />
+            <Route path="products" element={<Products />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

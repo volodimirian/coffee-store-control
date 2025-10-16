@@ -9,8 +9,7 @@ interface Language {
 
 const languages: Language[] = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
 ];
 
 export default function LanguageSelector() {
@@ -22,6 +21,7 @@ export default function LanguageSelector() {
 
   const handleLanguageChange = (languageCode: string) => {
     i18n.changeLanguage(languageCode);
+    localStorage.setItem('language', languageCode);
     setIsOpen(false);
   };
 

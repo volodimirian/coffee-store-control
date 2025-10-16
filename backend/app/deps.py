@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.core.db import get_db
 from app.core.security import decode_token
 from app.core.error_codes import ErrorCode, create_error_response
-from app.users.models import User
+from app.core_models import User, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")  # Login endpoint from auth.router
 
@@ -47,10 +47,9 @@ async def get_current_user(
 
 
 def require_non_buyer_role(current_user: User = Depends(get_current_user)) -> User:
-    """Require user to have SUPPLIER or ADMIN role (any role except BUYER)."""
-    from app.users.models import UserRole
+    """Require user to have BUSINESS_OWNER or ADMIN role (any role except EMPLOYEE)."""
     
-    if current_user.role.name == UserRole.BUYER.value:
+    if current_user.role.name == UserRole.EMPLOYEE.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=create_error_response(ErrorCode.BUYERS_NOT_ALLOWED)
@@ -58,11 +57,10 @@ def require_non_buyer_role(current_user: User = Depends(get_current_user)) -> Us
     return current_user
 
 
-def require_supplier_role(current_user: User = Depends(get_current_user)) -> User:
-    """Require user to have SUPPLIER role."""
-    from app.users.models import UserRole
+def require_business_owner_role(current_user: User = Depends(get_current_user)) -> User:
+    """Require user to have BUSINESS_OWNER role."""
     
-    if current_user.role.name != UserRole.SUPPLIER.value:
+    if current_user.role.name != UserRole.BUSINESS_OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=create_error_response(ErrorCode.SUPPLIERS_ONLY)
@@ -72,7 +70,6 @@ def require_supplier_role(current_user: User = Depends(get_current_user)) -> Use
 
 def require_admin_role(current_user: User = Depends(get_current_user)) -> User:
     """Require user to have ADMIN role."""
-    from app.users.models import UserRole
     
     if current_user.role.name != UserRole.ADMIN.value:
         raise HTTPException(
@@ -82,11 +79,10 @@ def require_admin_role(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-def require_supplier_or_admin_role(current_user: User = Depends(get_current_user)) -> User:
-    """Require user to have SUPPLIER or ADMIN role."""
-    from app.users.models import UserRole
+def require_admin_or_business_owner_role(current_user: User = Depends(get_current_user)) -> User:
+    """Require user to have ADMIN or BUSINESS_OWNER role."""
     
-    if current_user.role.name not in [UserRole.SUPPLIER.value, UserRole.ADMIN.value]:
+    if current_user.role.name not in [UserRole.ADMIN.value, UserRole.BUSINESS_OWNER.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=create_error_response(ErrorCode.SUPPLIERS_ONLY)

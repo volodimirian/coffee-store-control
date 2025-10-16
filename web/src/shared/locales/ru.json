@@ -1,0 +1,197 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "yes": "Да",
+    "no": "Нет",
+    "continue": "Продолжить",
+    "back": "Назад",
+    "brandName": "Business Control"
+  },
+  "navigation": {
+    "home": "Главная",
+    "about": "О нас",
+    "dashboard": "Панель",
+    "account": "Аккаунт",
+    "products": "Продукты",
+    "orders": "Заказы",
+    "analytics": "Аналитика",
+    "settings": "Настройки",
+    "signIn": "Войти",
+    "register": "Регистрация",
+    "logOut": "Выйти",
+    "categories": "Категории",
+    "openSidebar": "Открыть боковую панель",
+    "closeSidebar": "Закрыть боковую панель"
+  },
+  "auth": {
+    "createAccount": "Создать аккаунт",
+    "signIn": "Войти",
+    "register": "Регистрация",
+    "logOut": "Выйти",
+    "email": "Email",
+    "emailAddress": "Адрес электронной почты",
+    "username": "Имя пользователя",
+    "password": "Пароль",
+    "confirmPassword": "Подтвердите пароль",
+    "creatingAccount": "Создание аккаунта...",
+    "loginFailed": "Ошибка входа",
+    "registrationFailed": "Ошибка регистрации",
+    "emailAlreadyRegistered": "Этот email уже зарегистрирован",
+    "usernameAlreadyTaken": "Это имя пользователя уже занято",
+    "registerAs": "Регистрация как {{role}}",
+    "registerAsCustomer": "Регистрация как покупатель",
+    "registerAsSeller": "Регистрация как продавец",
+    "findAndPurchase": "Находите и покупайте продукты у поставщиков",
+    "createAndManage": "Создавайте и управляйте своими продуктами",
+    "createBusinessAccount": "Создать бизнес аккаунт",
+    "signInDescription": "Введите ваши данные для доступа к аккаунту",
+    "invalidCredentials": "Неверный email или пароль"
+  },
+  "roles": {
+    "admin": "Администратор",
+    "businessOwner": "Владелец бизнеса",
+    "employee": "Сотрудник"
+  },
+  "validation": {
+    "emailRequired": "Email обязателен",
+    "usernameRequired": "Имя пользователя обязательно",
+    "passwordRequired": "Пароль обязателен",
+    "passwordConfirmRequired": "Пожалуйста, подтвердите пароль",
+    "emailInvalid": "Пожалуйста, введите корректный email",
+    "passwordsMismatch": "Пароли не совпадают",
+    "usernameMinLength": "Имя пользователя должно быть не менее {{min}} символов",
+    "usernameMaxLength": "Имя пользователя должно быть не более {{max}} символов",
+    "passwordMinLength": "Пароль должен быть не менее {{min}} символов",
+    "passwordMaxLength": "Пароль должен быть не более {{max}} символов",
+    "emailMaxLength": "Email должен быть не более {{max}} символов"
+  },
+  "pages": {
+    "about": {
+      "title": "О нас",
+      "description": "Система управления бизнесом. Это публичная страница."
+    },
+    "dashboard": {
+      "title": "Панель управления (защищенная)",
+      "description": "Доступна только с токеном. Управляйте своим бизнесом здесь."
+    },
+    "account": {
+      "title": "Аккаунт (защищенный)",
+      "description": "Профиль пользователя, заказы, инвентарь — скоро появится."
+    },
+    "notFound": {
+      "title": "404",
+      "description": "Страница не найдена.",
+      "goHome": "На главную"
+    }
+  },
+  "errors": {
+    "_auth_title": "Ошибки аутентификации и авторизации",
+    "UNAUTHORIZED": "Неверный или истёкший токен",
+    "FORBIDDEN": "Доступ запрещён",
+    "INVALID_CREDENTIALS": "Неверный email или пароль",
+    "USER_NOT_FOUND": "Пользователь не найден",
+
+    "_registration_title": "Ошибки регистрации", 
+    "EMAIL_ALREADY_EXISTS": "Email уже зарегистрирован",
+    "USERNAME_ALREADY_EXISTS": "Имя пользователя уже занято",
+    "INVALID_ROLE": "Указана неверная роль",
+
+    "_permissions_title": "Ошибки ролей и разрешений",
+    "BUYERS_NOT_ALLOWED": "Эта операция недоступна для покупателей",
+    "SUPPLIERS_ONLY": "Только поставщики могут выполнить эту операцию", 
+    "ADMIN_ONLY": "Требуются административные права",
+
+    "_categories_title": "Ошибки управления категориями",
+    "CATEGORY_NOT_FOUND": "Категория не найдена",
+    "CATEGORY_NAME_EXISTS": "Категория с таким именем уже существует",
+    "CATEGORY_HAS_SUBCATEGORIES": "Нельзя удалить категорию с подкатегориями. Сначала удалите подкатегории.",
+
+    "_subcategories_title": "Ошибки управления подкатегориями",
+    "SUBCATEGORY_NOT_FOUND": "Подкатегория не найдена",
+    "SUBCATEGORY_NAME_EXISTS": "Подкатегория с таким именем уже существует в этой категории",
+
+    "_products_title": "Ошибки управления продуктами",
+    "PRODUCT_NOT_FOUND": "Продукт не найден",
+    "PRODUCT_NOT_OWNED": "Вы можете изменять только свои продукты",
+    "INVALID_PRICE": "Неверный формат цены",
+    "INVALID_CATEGORY": "Неверная категория или подкатегория",
+
+    "_validation_title": "Ошибки валидации",
+    "VALIDATION_ERROR": "Ошибка валидации",
+    "REQUIRED_FIELD": "Это поле обязательно",
+    "INVALID_FORMAT": "Неверный формат",
+
+    "_custom_fields_title": "Ошибки валидации пользовательских полей",
+    "CUSTOM_FIELD_REQUIRED": "{{fieldName}} обязательно",
+    "CUSTOM_FIELD_INVALID_NUMBER": "{{fieldName}} должно быть числом",
+    "CUSTOM_FIELD_NUMBER_TOO_SMALL": "{{fieldName}} должно быть не менее {{min}}",
+    "CUSTOM_FIELD_NUMBER_TOO_LARGE": "{{fieldName}} должно быть не более {{max}}",
+    "CUSTOM_FIELD_INVALID_EMAIL": "{{fieldName}} должно быть корректным email",
+    "CUSTOM_FIELD_INVALID_URL": "{{fieldName}} должно быть корректным URL",
+    "CUSTOM_FIELD_INVALID_SELECT": "{{fieldName}} должно быть одним из: {{options}}",
+    "CUSTOM_FIELD_INVALID_MULTISELECT": "{{fieldName}} содержит неверные опции: {{invalidOptions}}",
+
+    "_general_title": "Общие системные ошибки",
+    "INTERNAL_ERROR": "Внутренняя ошибка сервера",
+    "NOT_FOUND": "Ресурс не найден",
+    "CONFLICT": "Конфликт ресурсов",
+    "BAD_REQUEST": "Неверный запрос",
+    "FAILED_TO_LOAD_CATEGORIES": "Не удалось загрузить категории"
+  },
+  "greetings": {
+    "hi": "Привет, {{username}}!"
+  },
+  "products": {
+    "found": "продуктов найдено",
+    "noProductsFound": "Продукты не найдены",
+    "addToCart": "В корзину",
+    "title": "Продукты",
+    "description": "Управляйте продуктами и инвентарем",
+    "noProductsYet": "Пока нет продуктов",
+    "getStartedMessage": "Начните с добавления вашего первого продукта.",
+    "addProduct": "Добавить продукт"
+  },
+  "orders": {
+    "title": "Заказы",
+    "description": "Отслеживайте и управляйте заказами клиентов",
+    "noOrdersYet": "Пока нет заказов",
+    "ordersMessage": "Заказы появятся здесь, когда клиенты начнут покупать."
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "description": "Просматривайте аналитику и показатели эффективности",
+    "totalRevenue": "Общий доход",
+    "totalOrders": "Всего заказов",
+    "customers": "Клиенты",
+    "salesChart": "График продаж",
+    "noDataToDisplay": "Нет данных для отображения",
+    "chartsMessage": "Графики появятся здесь, когда у вас будут данные о продажах."
+  },
+  "settings": {
+    "title": "Настройки",
+    "description": "Управляйте настройками приложения и предпочтениями",
+    "applicationSettings": "Настройки приложения",
+    "language": "Язык",
+    "languageDescription": "Выберите предпочитаемый язык",
+    "english": "Английский",
+    "russian": "Русский",
+    "notifications": "Уведомления",
+    "notificationsDescription": "Настройте параметры уведомлений",
+    "emailNotifications": "Email уведомления",
+    "emailNotificationsDescription": "Получайте уведомления о новых заказах и важных обновлениях.",
+    "pushNotifications": "Push уведомления",
+    "pushNotificationsDescription": "Получайте push-уведомления на устройство.",
+    "businessInformation": "Информация о бизнесе",
+    "businessDescription": "Обновите данные вашего бизнеса",
+    "businessName": "Название бизнеса",
+    "businessNamePlaceholder": "Ваш бизнес",
+    "address": "Адрес",
+    "addressPlaceholder": "ул. Главная, 123, Город, Страна",
+    "saveSettings": "Сохранить настройки",
+    "version": "в0.1.0"
+  }
+}

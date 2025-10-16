@@ -4,18 +4,14 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import translation files
 import enTranslations from '~/shared/locales/en.json';
-import esTranslations from '~/shared/locales/es.json';
-import ptTranslations from '~/shared/locales/pt.json';
+import ruTranslations from '~/shared/locales/ru.json';
 
 const resources = {
   en: {
     translation: enTranslations,
   },
-  es: {
-    translation: esTranslations,
-  },
-  pt: {
-    translation: ptTranslations,
+  ru: {
+    translation: ruTranslations,
   },
 };
 
@@ -24,12 +20,12 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'en',
-    supportedLngs: ['en', 'es', 'pt'],
+    fallbackLng: 'ru',
+    supportedLngs: ['en', 'ru'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
-      lookupLocalStorage: 'i18nextLng',
+      lookupLocalStorage: 'language',
       caches: ['localStorage'],
     },
 

@@ -9,17 +9,21 @@
     "no": "No",
     "continue": "Continue",
     "back": "Back",
-    "brandName": "LatAm Crypto"
+    "brandName": "Business Control"
   },
   "navigation": {
     "home": "Home",
-    "about": "About",
     "dashboard": "Dashboard",
+    "products": "Products",
+    "orders": "Orders", 
+    "analytics": "Analytics",
     "account": "Account",
+    "settings": "Settings",
     "signIn": "Sign In",
     "register": "Register",
     "logOut": "Log Out",
-    "categories": "Categories"
+    "openSidebar": "Open sidebar",
+    "closeSidebar": "Close sidebar"
   },
   "auth": {
     "createAccount": "Create Account",
@@ -41,12 +45,14 @@
     "registerAsSeller": "Register as a seller",
     "findAndPurchase": "Find and purchase products from suppliers",
     "createAndManage": "Create and manage your product listings",
+    "createBusinessAccount": "Create Business Account",
     "signInDescription": "Enter your credentials to access your account",
     "invalidCredentials": "Invalid email or password"
   },
   "roles": {
-    "buyer": "Buyer",
-    "supplier": "Supplier"
+    "admin": "Administrator",
+    "businessOwner": "Business Owner", 
+    "employee": "Employee"
   },
   "validation": {
     "emailRequired": "Email is required",
@@ -64,15 +70,15 @@
   "pages": {
     "about": {
       "title": "About",
-      "description": "Marketplace with crypto-fintech for LatAm. This is a public page."
+      "description": "Business management system. This is a public page."
     },
     "dashboard": {
       "title": "Dashboard (protected)",
-      "description": "Available only with token. We'll add widgets later."
+      "description": "Available only with token. Manage your business here."
     },
     "account": {
       "title": "Account (protected)",
-      "description": "User profile, orders, wallet — coming later."
+      "description": "User profile, orders, inventory — coming later."
     },
     "notFound": {
       "title": "404",
@@ -140,6 +146,50 @@
   "products": {
     "found": "products found",
     "noProductsFound": "No products found",
-    "addToCart": "Add to Cart"
+    "addToCart": "Add to Cart",
+    "title": "Products",
+    "description": "Manage your products and inventory",
+    "noProductsYet": "No products yet",
+    "getStartedMessage": "Get started by adding your first product.",
+    "addProduct": "Add Product"
+  },
+  "orders": {
+    "title": "Orders",
+    "description": "Track and manage customer orders",
+    "noOrdersYet": "No orders yet",
+    "ordersMessage": "Orders will appear here once customers start purchasing."
+  },
+  "analytics": {
+    "title": "Analytics", 
+    "description": "View insights and performance metrics",
+    "totalRevenue": "Total Revenue",
+    "totalOrders": "Total Orders",
+    "customers": "Customers",
+    "salesChart": "Sales Chart",
+    "noDataToDisplay": "No data to display",
+    "chartsMessage": "Charts will appear here once you have sales data."
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your application settings and preferences",
+    "applicationSettings": "Application Settings",
+    "language": "Language",
+    "languageDescription": "Choose your preferred language",
+    "english": "English", 
+    "russian": "Russian",
+    "notifications": "Notifications",
+    "notificationsDescription": "Configure notification preferences",
+    "emailNotifications": "Email notifications",
+    "emailNotificationsDescription": "Get notified about new orders and important updates.",
+    "pushNotifications": "Push notifications",
+    "pushNotificationsDescription": "Get push notifications on your device.",
+    "businessInformation": "Business Information",
+    "businessDescription": "Update your business details",
+    "businessName": "Business Name",
+    "businessNamePlaceholder": "Your Business",
+    "address": "Address",
+    "addressPlaceholder": "123 Main Street, City, Country",
+    "saveSettings": "Save Settings",
+    "version": "v0.1.0"
   }
 }

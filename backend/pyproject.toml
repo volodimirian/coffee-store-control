@@ -53,6 +53,7 @@ markers = [
 
 [dependency-groups]
 dev = [
+    "types-passlib>=1.7.7.20241221",
     "types-python-jose>=3.3.4.20240106",
 ]
 
