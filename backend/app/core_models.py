@@ -1,6 +1,6 @@
 """Core models for user management and access control."""
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import String, ForeignKey, DateTime, Boolean, Text, Integer
+from sqlalchemy import String, ForeignKey, DateTime, Boolean, Text
 from datetime import datetime
 from enum import Enum as PyEnum
 from app.core.db import Base
@@ -39,6 +39,8 @@ class User(Base):
     
     # Relationships
     user_permissions: Mapped[list["UserPermission"]] = relationship("UserPermission", back_populates="user")
+    owned_businesses: Mapped[list["Business"]] = relationship("Business", foreign_keys="Business.owner_id")
+    user_businesses: Mapped[list["UserBusiness"]] = relationship("UserBusiness", back_populates="user")
 
 
 # Access control system
@@ -79,8 +81,8 @@ class UserPermission(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     permission_id: Mapped[int] = mapped_column(ForeignKey("permissions.id"), nullable=False)
-    # Business relationship (for future use when business table exists)
-    business_id: Mapped[int] = mapped_column(Integer, nullable=True)  # Will be FK later when business table exists
+    # Business context for multi-business permission control
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -88,3 +90,37 @@ class UserPermission(Base):
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="user_permissions")
     permission: Mapped["Permission"] = relationship("Permission", back_populates="user_permissions")
+    business: Mapped["Business"] = relationship("Business", foreign_keys=[business_id])
+
+
+# Business management
+class Business(Base):
+    __tablename__ = "businesses"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    city: Mapped[str] = mapped_column(String(100), nullable=True)
+    address: Mapped[str] = mapped_column(Text, nullable=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    owner: Mapped["User"] = relationship("User", foreign_keys=[owner_id])
+    user_businesses: Mapped[list["UserBusiness"]] = relationship("UserBusiness", back_populates="business")
+
+
+class UserBusiness(Base):
+    __tablename__ = "user_businesses"
+    
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id"), primary_key=True)
+    role_in_business: Mapped[str] = mapped_column(String(50), nullable=False, default="EMPLOYEE")  # OWNER, MANAGER, EMPLOYEE
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user: Mapped["User"] = relationship("User")
+    business: Mapped["Business"] = relationship("Business", back_populates="user_businesses")

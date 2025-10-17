@@ -1,0 +1,1 @@
+"""Businesses module for managing coffee shops and business entities."""
