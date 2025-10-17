@@ -10,6 +10,8 @@ import {
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { LocationSelector } from '~/components/LocationSelector';
+import { useAppContext } from '~/shared/context/AppContext';
 
 interface MenuItem {
   id: string;
@@ -63,6 +65,43 @@ interface SidebarProps {
   onToggle: () => void;
   isMobileOpen: boolean;
   onMobileClose: () => void;
+}
+
+function LocationSelectorWrapper() {
+  const { user } = useAppContext();
+  
+  // Show LocationSelector only for:
+  // 1. Admins (always)
+  // 2. Business owners (always)  
+  // 3. Employees who have access to multiple locations
+  const shouldShowLocationSelector = () => {
+    if (!user) return false;
+    
+    // Admin always sees location selector
+    if (user.role?.name === 'ADMIN') return true;
+    
+    // Business owner always sees location selector
+    if (user.role?.name === 'BUSINESS_OWNER') return true;
+    
+    // For employees, check if they have access to multiple locations
+    // This will be determined by the LocationContext data
+    if (user.role?.name === 'EMPLOYEE') {
+      try {
+        // TODO:We'll check this inside LocationSelector component
+        return true; // Let LocationSelector decide based on location count
+      } catch {
+        return false;
+      }
+    }
+    
+    return false;
+  };
+
+  if (!shouldShowLocationSelector()) {
+    return null;
+  }
+
+  return <LocationSelector />;
 }
 
 export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
@@ -123,6 +162,13 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
           <XMarkIcon className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Location Selector */}
+      {!isCollapsed && (
+        <div className="border-b border-gray-200">
+          <LocationSelectorWrapper />
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

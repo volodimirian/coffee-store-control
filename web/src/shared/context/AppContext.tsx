@@ -1,10 +1,21 @@
 import { createContext, useContext } from "react";
 import type { UserResponse } from "~/shared/api/types";
+import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~/shared/types/locations";
 
 export type AppContextType = {
   user: UserResponse | null;
   setUser: (user: UserResponse | null) => void;
-  // Add other global fields as needed
+  // Location management
+  currentLocation: Location | null;
+  locations: Location[];
+  isLoadingLocations: boolean;
+  locationsError: string | null;
+  setCurrentLocation: (location: Location) => void;
+  createLocation: (data: LocationCreate) => Promise<Location>;
+  updateLocation: (id: number, data: LocationUpdate) => Promise<Location>;
+  deleteLocation: (id: number) => Promise<void>;
+  fetchLocations: () => Promise<void>;
+  fetchLocationMembers: (id: number) => Promise<LocationMember[]>;
 };
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
