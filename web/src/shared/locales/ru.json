@@ -67,7 +67,9 @@
     "usernameMaxLength": "Имя пользователя должно быть не более {{max}} символов",
     "passwordMinLength": "Пароль должен быть не менее {{min}} символов",
     "passwordMaxLength": "Пароль должен быть не более {{max}} символов",
-    "emailMaxLength": "Email должен быть не более {{max}} символов"
+    "emailMaxLength": "Email должен быть не более {{max}} символов",
+    "required": "{{field}} обязательно",
+    "minLength": "{{field}} должно быть не менее {{min}} символов"
   },
   "pages": {
     "about": {
@@ -206,7 +208,10 @@
     "getStarted": "Начните с добавления вашей первой локации.",
     "locationName": "Название локации",
     "locationNamePlaceholder": "Главный магазин",
+    "city": "Город",
+    "cityPlaceholder": "Москва",
     "locationAddress": "Адрес",
+    "address": "Адрес",
     "addressPlaceholder": "ул. Главная, 123, Город, Страна",
     "phone": "Телефон",
     "phonePlaceholder": "+7 (999) 123-45-67",

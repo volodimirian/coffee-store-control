@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDownIcon, PlusIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
+import { AddLocationModal } from './AddLocationModal';
 import type { Location } from '~/shared/types/locations';
 
 export const LocationSelector: React.FC = () => {
@@ -14,6 +15,7 @@ export const LocationSelector: React.FC = () => {
     setCurrentLocation
   } = useAppContext();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Hide LocationSelector for employees with only one location
   if (user?.role?.name === 'EMPLOYEE' && locations.length <= 1) {
@@ -34,8 +36,12 @@ export const LocationSelector: React.FC = () => {
 
   const handleAddNew = () => {
     setIsDropdownOpen(false);
-    // TODO: Open location creation modal/page
-    console.log('Add new location clicked');
+    setIsAddModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    // Modal will close automatically, locations will refresh via AppContext
+    console.log('Location created successfully');
   };
 
   if (isLoadingLocations) {
@@ -111,6 +117,13 @@ export const LocationSelector: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Add Location Modal */}
+      <AddLocationModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 };

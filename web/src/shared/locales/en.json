@@ -63,9 +63,11 @@
     "passwordsMismatch": "Passwords do not match",
     "usernameMinLength": "Username must be at least {{min}} characters long",
     "usernameMaxLength": "Username must be no more than {{max}} characters long",
-    "passwordMinLength": "Password must be at least {{min}} characters long",
-    "passwordMaxLength": "Password must be no more than {{max}} characters long",
-    "emailMaxLength": "Email must be no more than {{max}} characters long"
+        "passwordMinLength": "Password must be at least {{min}} characters",
+    "passwordMaxLength": "Password must be no more than {{max}} characters",
+    "emailMaxLength": "Email must be no more than {{max}} characters",
+    "required": "{{field}} is required",
+    "minLength": "{{field}} must be at least {{min}} characters"
   },
   "pages": {
     "about": {
@@ -204,6 +206,8 @@
     "getStarted": "Get started by adding your first location.",
     "locationName": "Location Name",
     "locationNamePlaceholder": "Main Store",
+    "city": "City",
+    "cityPlaceholder": "New York",
     "locationAddress": "Address",
     "addressPlaceholder": "123 Main Street, City, Country",
     "phone": "Phone",
