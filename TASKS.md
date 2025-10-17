@@ -17,7 +17,7 @@
 
 ### ✅ **Just Completed - Business Management System (Group 3)**
 
-**🏢 Complete Business Management Backend**
+**🏢 Complete Business Management Backend + Frontend**
 
 - ✅ **SQLAlchemy models**: Business and UserBusiness with composite primary key
 - ✅ **Database migrations**: Tables businesses and user_businesses with proper constraints
@@ -26,6 +26,11 @@
 - ✅ **REST API endpoints**: Complete business management API (/api/businesses)
 - ✅ **Permission integration**: Business context in permission system
 - ✅ **Auto business creation**: Owner automatically added when creating business
+- ✅ **Frontend LocationSelector**: Smart dropdown with role-based access control
+- ✅ **Frontend AddLocationModal**: Complete form with validation and error handling
+- ✅ **AppContext integration**: Reactive state management for locations
+- ✅ **UI/UX improvements**: Click outside to close, scroll optimizations, constants usage
+- ✅ **Internationalization**: All location UI text properly localized (en/ru)
 
 **📊 API Endpoints Tested**
 
@@ -182,17 +187,26 @@
 - [x] **Backend**: Pydantic схемы для валидации данных бизнес API ✅ ПРОТЕСТИРОВАНО
 - [x] **Backend**: Бизнес-сервис с CRUD операциями и проверкой прав ✅ ПРОТЕСТИРОВАНО
 - [x] **Backend**: Миграции базы данных для таблиц businesses и user_businesses ✅ ПРОТЕСТИРОВАНО
+- [x] **Frontend**: LocationSelector - дропдаун "Мои локации" в sidebar с role-based контролем ✅ ПРОТЕСТИРОВАНО
+- [x] **Frontend**: AddLocationModal - форма добавления новой локации с валидацией ✅ ПРОТЕСТИРОВАНО
+- [x] **Frontend**: AppContext интеграция - реактивное управление состоянием локаций ✅ ПРОТЕСТИРОВАНО
+- [x] **Frontend**: UX улучшения - click outside to close, scroll optimization ✅ ПРОТЕСТИРОВАНО
+- [x] **Frontend**: Internationalization - полная локализация UI (en/ru) ✅ ПРОТЕСТИРОВАНО
+- [x] **Frontend**: Constants usage - замена magic strings на централизованные константы ✅ ПРОТЕСТИРОВАНО
 
 ### 📝 Задачи в разработке
 
 #### Frontend: Навигация по кофейням
 
-- [ ] **Frontend**: Выпадающее меню "Мои кофейни" в профиле
-- [ ] **Frontend**: Форма добавления новой кофейни (название, город, адрес)
-- [ ] **Frontend**: Редактирование информации о кофейне
+- [x] **Frontend**: LocationSelector - выпадающее меню "Мои локации" в sidebar ✅ COMPLETED
+- [x] **Frontend**: AddLocationModal - форма добавления новой кофейни (название, город, адрес) ✅ COMPLETED
+- [x] **Frontend**: AppContext интеграция - централизованное управление состоянием локаций ✅ COMPLETED
+- [x] **Frontend**: Role-based access control - показ функций в зависимости от роли ✅ COMPLETED
+- [x] **Frontend**: UI/UX оптимизации - click outside, scroll, constants ✅ COMPLETED
+- [ ] **Frontend**: Редактирование информации о кофейне (EditLocationModal)
 - [ ] **Frontend**: Переключение между кофейнями с сохранением контекста
 - [ ] **Frontend**: Индикатор текущей активной кофейни в интерфейсе
-- [ ] **Frontend**: Интеграция с картами (в перспективе, пока текстовое поле)
+- [ ] **Frontend**: Страница управления локациями со списком и действиями
 
 ---
 
@@ -443,7 +457,12 @@
 
 ### 🎯 **MVP Фаза (Критично для запуска):**
 
-2. ~~**Группа 3**: Управление кофейнями и навигация~~ **✅ BACKEND COMPLETED (Frontend в разработке)**
+2. ~~**Группа 3**: Управление кофейнями и навигация~~ **✅ COMPLETED**
+   - Complete backend API for business management
+   - Frontend LocationSelector with role-based access control
+   - AddLocationModal with form validation and error handling
+   - AppContext integration for reactive state management
+   - UI/UX optimizations and internationalization
 3. **Группа 5**: Модуль "Учёт расходов" (базовый табличный ввод)
 4. **Группа 4**: Базовое управление пользователями
 
@@ -497,3 +516,15 @@
 - Нормализованная структура с учетом мульти-филиальности
 - Эффективные индексы для табличных выборок по датам
 - Audit trail для всех критичных операций
+
+---
+
+## 🌐 ПЕРСПЕКТИВНЫЕ ЗАДАЧИ
+
+### 🗺️ **Интеграция с картами (на перспективу)**
+
+- [ ] **Frontend**: Интеграция с картами для отображения локаций
+- [ ] **Frontend**: Выбор адреса через карту при создании/редактировании кофейни
+- [ ] **Frontend**: Отображение всех филиалов на карте
+- [ ] **Backend**: Геокодирование адресов для получения координат
+- [ ] **Backend**: API для работы с координатами локаций
