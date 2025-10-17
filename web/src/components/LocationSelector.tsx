@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDownIcon, PlusIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -16,6 +16,24 @@ export const LocationSelector: React.FC = () => {
   } = useAppContext();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   // Hide LocationSelector for employees with only one location
   if (user?.role?.name === 'EMPLOYEE' && locations.length <= 1) {
@@ -53,7 +71,7 @@ export const LocationSelector: React.FC = () => {
   }
 
   return (
-    <div className="relative px-3 py-2">
+    <div className="relative px-3 py-2" ref={dropdownRef}>
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         className="w-full flex items-center justify-between p-2 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
@@ -78,6 +96,20 @@ export const LocationSelector: React.FC = () => {
 
       {isDropdownOpen && (
         <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          {/* Add new location button - only for admins and business owners - FIXED at top */}
+          {(user?.role?.name === 'ADMIN' || user?.role?.name === 'BUSINESS_OWNER') && (
+            <div className="border-b border-gray-100">
+              <button
+                onClick={handleAddNew}
+                className="w-full flex items-center space-x-2 p-3 text-blue-600 hover:bg-blue-50 transition-colors duration-150"
+              >
+                <PlusIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">{t('locations.addNewLocation')}</span>
+              </button>
+            </div>
+          )}
+          
+          {/* Scrollable locations list */}
           <div className="max-h-60 overflow-y-auto">
             {locations.length === 0 ? (
               <div className="p-3 text-sm text-gray-500 text-center">
@@ -100,19 +132,6 @@ export const LocationSelector: React.FC = () => {
                   )}
                 </button>
               ))
-            )}
-            
-            {/* Add new location button - only for admins and business owners */}
-            {(user?.role?.name === 'ADMIN' || user?.role?.name === 'BUSINESS_OWNER') && (
-              <div className="border-t border-gray-100">
-                <button
-                  onClick={handleAddNew}
-                  className="w-full flex items-center space-x-2 p-3 text-blue-600 hover:bg-blue-50 transition-colors duration-150"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  <span className="text-sm font-medium">{t('locations.addNewLocation')}</span>
-                </button>
-              </div>
             )}
           </div>
         </div>
