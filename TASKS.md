@@ -13,9 +13,43 @@
 - Экспорт данных в Excel/PDF для бухгалтерии
 - Журнал всех изменений для контроля финансовых операций
 
-## 🎉 Latest Achievements (Advanced Permission System)
+**🎉 Latest Achievements (Business Management System)**
 
-### ✅ **Just Completed - Major Permission System Overhaul**
+### ✅ **Just Completed - Business Management System (Group 3)**
+
+**🏢 Complete Business Management Backend**
+
+- ✅ **SQLAlchemy models**: Business and UserBusiness with composite primary key
+- ✅ **Database migrations**: Tables businesses and user_businesses with proper constraints
+- ✅ **Pydantic schemas**: BusinessCreate, BusinessUpdate, BusinessOut for API validation
+- ✅ **Business service**: Full CRUD operations with permission checking
+- ✅ **REST API endpoints**: Complete business management API (/api/businesses)
+- ✅ **Permission integration**: Business context in permission system
+- ✅ **Auto business creation**: Owner automatically added when creating business
+
+**📊 API Endpoints Tested**
+
+- POST /api/businesses/ - Create business ✅ WORKING
+- GET /api/businesses/my - Get user businesses ✅ WORKING
+- GET /api/businesses/owned - Get owned businesses ✅ WORKING
+- GET /api/businesses/{id} - Get specific business ✅ WORKING
+- PUT /api/businesses/{id} - Update business ✅ WORKING
+- GET /api/businesses/{id}/members - Get business members ✅ WORKING
+- All endpoints with proper authentication and authorization ✅ WORKING
+
+**🧪 Testing Results**
+
+- All core business operations tested via curl
+- Permission system integration verified
+- Database relationships working correctly
+- Auto-assignment of business owner confirmed
+- Business context in permissions functional
+
+---
+
+## 📋 Previous Achievements
+
+### ✅ **Completed - Advanced Permission System (Group 2)**
 
 **🔐 Comprehensive Role-Based Permission System**
 
@@ -137,15 +171,19 @@
 
 ## 🏢 ГРУППА 3: УПРАВЛЕНИЕ КОФЕЙНЯМИ И НАВИГАЦИЯ
 
+### ✅ Завершенные задачи
+
+- [x] **Backend**: Создать таблицу `businesses` (id, name, city, address, owner_id) ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: Связь пользователя с несколькими кофейнями через отдельную таблицу связей юзеров и бизнеса ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: Эндпоинты CRUD для кофеен `/api/businesses` ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: Контроль доступа по филиалам для каждого модуля ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: Автоматическое создание первой кофейни при регистрации ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: SQLAlchemy модели Business и UserBusiness с составным primary key ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: Pydantic схемы для валидации данных бизнес API ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: Бизнес-сервис с CRUD операциями и проверкой прав ✅ ПРОТЕСТИРОВАНО
+- [x] **Backend**: Миграции базы данных для таблиц businesses и user_businesses ✅ ПРОТЕСТИРОВАНО
+
 ### 📝 Задачи в разработке
-
-#### Backend: Система кофеен (филиалов)
-
-- [ ] **Backend**: Создать таблицу `coffee_shops` (id, name, city, address, owner_id)
-- [ ] **Backend**: Связь пользователя с несколькими кофейнями через права
-- [ ] **Backend**: Эндпоинты CRUD для кофеен `/api/coffee-shops`
-- [ ] **Backend**: Контроль доступа по филиалам для каждого модуля
-- [ ] **Backend**: Автоматическое создание первой кофейни при регистрации
 
 #### Frontend: Навигация по кофейням
 
@@ -405,7 +443,7 @@
 
 ### 🎯 **MVP Фаза (Критично для запуска):**
 
-2. **Группа 3**: Управление кофейнями и навигация
+2. ~~**Группа 3**: Управление кофейнями и навигация~~ **✅ BACKEND COMPLETED (Frontend в разработке)**
 3. **Группа 5**: Модуль "Учёт расходов" (базовый табличный ввод)
 4. **Группа 4**: Базовое управление пользователями
 

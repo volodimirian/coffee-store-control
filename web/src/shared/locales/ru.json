@@ -67,7 +67,9 @@
     "usernameMaxLength": "Имя пользователя должно быть не более {{max}} символов",
     "passwordMinLength": "Пароль должен быть не менее {{min}} символов",
     "passwordMaxLength": "Пароль должен быть не более {{max}} символов",
-    "emailMaxLength": "Email должен быть не более {{max}} символов"
+    "emailMaxLength": "Email должен быть не более {{max}} символов",
+    "required": "{{field}} обязательно",
+    "minLength": "{{field}} должно быть не менее {{min}} символов"
   },
   "pages": {
     "about": {
@@ -193,5 +195,44 @@
     "addressPlaceholder": "ул. Главная, 123, Город, Страна",
     "saveSettings": "Сохранить настройки",
     "version": "в0.1.0"
+  },
+  "locations": {
+    "title": "Локации",
+    "description": "Управление локациями вашего бизнеса",
+    "currentLocation": "Текущая локация",
+    "selectLocation": "Выбрать локацию",
+    "addNewLocation": "Добавить новую локацию",
+    "editLocation": "Редактировать локацию",
+    "deleteLocation": "Удалить локацию",
+    "noLocations": "Пока нет локаций",
+    "getStarted": "Начните с добавления вашей первой локации.",
+    "locationName": "Название локации",
+    "locationNamePlaceholder": "Главный магазин",
+    "city": "Город",
+    "cityPlaceholder": "Москва",
+    "locationAddress": "Адрес",
+    "address": "Адрес",
+    "addressPlaceholder": "ул. Главная, 123, Город, Страна",
+    "phone": "Телефон",
+    "phonePlaceholder": "+7 (999) 123-45-67",
+    "email": "Email",
+    "emailPlaceholder": "store@example.com",
+    "locationDescription": "Описание",
+    "descriptionPlaceholder": "Краткое описание данной локации",
+    "createLocation": "Создать локацию",
+    "updateLocation": "Обновить локацию",
+    "confirmDelete": "Вы уверены, что хотите удалить эту локацию?",
+    "deleteConfirmText": "Это действие нельзя отменить.",
+    "locationCreated": "Локация успешно создана",
+    "locationUpdated": "Локация успешно обновлена",
+    "locationDeleted": "Локация успешно удалена",
+    "failedToLoad": "Не удалось загрузить локации",
+    "failedToCreate": "Не удалось создать локацию",
+    "failedToUpdate": "Не удалось обновить локацию",
+    "failedToDelete": "Не удалось удалить локацию",
+    "switchingTo": "Переключение на {{name}}...",
+    "switchedTo": "Переключено на {{name}}",
+    "failedToSwitch": "Не удалось переключить локацию",
+    "loadingError": "Не удалось загрузить локации"
   }
 }
