@@ -3,6 +3,7 @@ import { ChevronDownIcon, PlusIcon, MapPinIcon } from '@heroicons/react/24/outli
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
 import { AddLocationModal } from './AddLocationModal';
+import { USER_ROLES } from '~/shared/api/authentication';
 import type { Location } from '~/shared/types/locations';
 
 export const LocationSelector: React.FC = () => {
@@ -36,7 +37,7 @@ export const LocationSelector: React.FC = () => {
   }, [isDropdownOpen]);
 
   // Hide LocationSelector for employees with only one location
-  if (user?.role?.name === 'EMPLOYEE' && locations.length <= 1) {
+  if (user?.role?.name === USER_ROLES.EMPLOYEE && locations.length <= 1) {
     return null;
   }
 
@@ -97,7 +98,7 @@ export const LocationSelector: React.FC = () => {
       {isDropdownOpen && (
         <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
           {/* Add new location button - only for admins and business owners - FIXED at top */}
-          {(user?.role?.name === 'ADMIN' || user?.role?.name === 'BUSINESS_OWNER') && (
+          {(user?.role?.name === USER_ROLES.ADMIN || user?.role?.name === USER_ROLES.BUSINESS_OWNER) && (
             <div className="border-b border-gray-100">
               <button
                 onClick={handleAddNew}

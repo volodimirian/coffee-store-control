@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { USER_ROLES } from '~/shared/api/authentication';
 import {
   HomeIcon,
   UserIcon,
@@ -78,14 +79,14 @@ function LocationSelectorWrapper() {
     if (!user) return false;
     
     // Admin always sees location selector
-    if (user.role?.name === 'ADMIN') return true;
+    if (user.role?.name === USER_ROLES.ADMIN) return true;
     
     // Business owner always sees location selector
-    if (user.role?.name === 'BUSINESS_OWNER') return true;
+    if (user.role?.name === USER_ROLES.BUSINESS_OWNER) return true;
     
     // For employees, check if they have access to multiple locations
     // This will be determined by the LocationContext data
-    if (user.role?.name === 'EMPLOYEE') {
+    if (user.role?.name === USER_ROLES.EMPLOYEE) {
       try {
         // TODO:We'll check this inside LocationSelector component
         return true; // Let LocationSelector decide based on location count
