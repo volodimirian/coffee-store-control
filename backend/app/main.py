@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.router import router as auth_router
+from app.businesses.router import router as businesses_router
 from app.core.db import engine
 from app.core.config import settings
 from app.core_models import Base
@@ -41,3 +42,6 @@ async def health():
 
 # Authentication routes
 app.include_router(auth_router, prefix=settings.api_prefix)
+
+# Business management routes
+app.include_router(businesses_router, prefix=f"{settings.api_prefix}/businesses", tags=["businesses"])
