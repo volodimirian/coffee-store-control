@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 import { USER_ROLES } from '~/shared/api/authentication';
 import {
   HomeIcon,
@@ -10,6 +11,9 @@ import {
   CogIcon,
   Bars3Icon,
   XMarkIcon,
+  ChevronRightIcon,
+  CurrencyDollarIcon,
+  BuildingOfficeIcon,
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -22,42 +26,72 @@ interface MenuItem {
   badge?: number;
 }
 
-const menuItems: MenuItem[] = [
+interface MenuSection {
+  id: string;
+  labelKey: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: MenuItem[];
+  defaultExpanded?: boolean;
+}
+
+const menuSections: MenuSection[] = [
   {
-    id: 'dashboard',
-    path: '/dashboard',
-    icon: HomeIcon,
-    labelKey: 'navigation.dashboard',
+    id: 'business',
+    labelKey: 'navigation.business',
+    icon: BuildingOfficeIcon,
+    defaultExpanded: true,
+    items: [
+      {
+        id: 'dashboard',
+        path: '/dashboard',
+        icon: HomeIcon,
+        labelKey: 'navigation.dashboard',
+      },
+      {
+        id: 'expenses',
+        path: '/expenses',
+        icon: CurrencyDollarIcon,
+        labelKey: 'navigation.expenseTracking',
+      },
+      {
+        id: 'products',
+        path: '/products',
+        icon: CubeIcon,
+        labelKey: 'navigation.products',
+      },
+      {
+        id: 'orders',
+        path: '/orders',
+        icon: ShoppingCartIcon,
+        labelKey: 'navigation.orders',
+      },
+      {
+        id: 'analytics',
+        path: '/analytics',
+        icon: ChartBarIcon,
+        labelKey: 'navigation.analytics',
+      },
+    ],
   },
   {
     id: 'account',
-    path: '/account',
+    labelKey: 'navigation.personalAccount',
     icon: UserIcon,
-    labelKey: 'navigation.account',
-  },
-  {
-    id: 'products',
-    path: '/products',
-    icon: CubeIcon,
-    labelKey: 'navigation.products',
-  },
-  {
-    id: 'orders',
-    path: '/orders',
-    icon: ShoppingCartIcon,
-    labelKey: 'navigation.orders',
-  },
-  {
-    id: 'analytics',
-    path: '/analytics',
-    icon: ChartBarIcon,
-    labelKey: 'navigation.analytics',
-  },
-  {
-    id: 'settings',
-    path: '/settings',
-    icon: CogIcon,
-    labelKey: 'navigation.settings',
+    defaultExpanded: true,
+    items: [
+      {
+        id: 'account',
+        path: '/account',
+        icon: UserIcon,
+        labelKey: 'navigation.account',
+      },
+      {
+        id: 'settings',
+        path: '/settings',
+        icon: CogIcon,
+        labelKey: 'navigation.settings',
+      },
+    ],
   },
 ];
 
@@ -107,6 +141,19 @@ function LocationSelectorWrapper() {
 
 export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
   const { t } = useTranslation();
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
+    menuSections.reduce((acc, section) => ({
+      ...acc,
+      [section.id]: section.defaultExpanded ?? false
+    }), {})
+  );
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
@@ -119,6 +166,11 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
     `flex-shrink-0 w-5 h-5 transition-colors duration-200 ${
       isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
     }`;
+
+  const sectionHeaderClass = 'flex items-center justify-between w-full px-3 py-2 text-left text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors duration-200';
+  
+  const chevronClass = (isExpanded: boolean) =>
+    `w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -173,35 +225,81 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.id}
-            to={item.path}
-            className={linkClass}
-            onClick={() => {
-              // Close mobile sidebar when navigating
-              if (window.innerWidth < 1024) {
-                onMobileClose();
-              }
-            }}
-          >
-            {({ isActive }) => (
-              <>
-                <item.icon className={iconClass(isActive)} />
-                {!isCollapsed && (
-                  <span className="ml-3 truncate">
-                    {t(item.labelKey)}
-                  </span>
-                )}
-                {!isCollapsed && item.badge && (
-                  <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-              </>
+        {isCollapsed ? (
+          // Collapsed view - show only icons
+          <>
+            {menuSections.map((section) =>
+              section.items.map((item) => (
+                <NavLink
+                  key={item.id}
+                  to={item.path}
+                  className={linkClass}
+                  title={t(item.labelKey)}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onMobileClose();
+                    }
+                  }}
+                >
+                  {({ isActive }) => (
+                    <item.icon className={iconClass(isActive)} />
+                  )}
+                </NavLink>
+              ))
             )}
-          </NavLink>
-        ))}
+          </>
+        ) : (
+          // Expanded view - show sections
+          <>
+            {menuSections.map((section) => (
+              <div key={section.id} className="space-y-1">
+                {/* Section Header */}
+                <button
+                  onClick={() => toggleSection(section.id)}
+                  className={sectionHeaderClass}
+                >
+                  <div className="flex items-center">
+                    <section.icon className="w-4 h-4 mr-2" />
+                    <span>{t(section.labelKey)}</span>
+                  </div>
+                  <ChevronRightIcon className={chevronClass(expandedSections[section.id])} />
+                </button>
+
+                {/* Section Items */}
+                {expandedSections[section.id] && (
+                  <div className="ml-6 space-y-1">
+                    {section.items.map((item) => (
+                      <NavLink
+                        key={item.id}
+                        to={item.path}
+                        className={linkClass}
+                        onClick={() => {
+                          if (window.innerWidth < 1024) {
+                            onMobileClose();
+                          }
+                        }}
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <item.icon className={iconClass(isActive)} />
+                            <span className="ml-3 truncate">
+                              {t(item.labelKey)}
+                            </span>
+                            {item.badge && (
+                              <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                                {item.badge}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </>
+        )}
       </nav>
 
       {/* Footer */}

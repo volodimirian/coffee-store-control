@@ -25,7 +25,11 @@
     "register": "Register",
     "logOut": "Log Out",
     "openSidebar": "Open sidebar",
-    "closeSidebar": "Close sidebar"
+    "closeSidebar": "Close sidebar",
+    "business": "Business",
+    "personalAccount": "Personal Account",
+    "expenses": "Expenses",
+    "expenseTracking": "Expense Tracking"
   },
   "auth": {
     "createAccount": "Create Account",

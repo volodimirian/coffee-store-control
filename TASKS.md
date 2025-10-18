@@ -263,7 +263,6 @@
 - [ ] **Backend**: Создать таблицу `month_periods` (id, name, coffee_shop_id, year, month, status, created_at)
 - [ ] **Backend**: Создать таблицу `expense_records` (id, item_id, date, quantity, unit, total_amount, user_id, created_at)
 - [ ] **Backend**: Создать таблицу `audit_trail` (id, table_name, record_id, action, old_value, new_value, user_id, timestamp)
-- [ ] **Backend**: Автоматическое создание нового месяца 15-го числа (cron-задача)
 - [ ] **Backend**: Копирование структуры разделов/товаров при создании месяца
 - [ ] **Backend**: Связывание текущего и будущего месяца до 1-го числа
 - [ ] **Backend**: Логика синхронизации изменений структуры между связанными месяцами

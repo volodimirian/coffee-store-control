@@ -27,7 +27,11 @@
     "logOut": "Выйти",
     "categories": "Категории",
     "openSidebar": "Открыть боковую панель",
-    "closeSidebar": "Закрыть боковую панель"
+    "closeSidebar": "Закрыть боковую панель",
+    "business": "Бизнес",
+    "personalAccount": "Личный кабинет",
+    "expenses": "Расходы",
+    "expenseTracking": "Учет расходов"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
