@@ -129,6 +129,39 @@ async def update_business(
     return business
 
 
+@router.post("/{business_id}/restore", response_model=BusinessOut)
+async def restore_business(
+    business_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Restore soft-deleted business. Only owner can restore business."""
+    business = await BusinessService.get_business_by_id(session, business_id)
+    if not business:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Business not found",
+        )
+
+    # Only owner can restore business
+    if business.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only business owner can restore business",
+        )
+
+    success = await BusinessService.restore_business(session, business_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to restore business",
+        )
+
+    # Return updated business
+    restored_business = await BusinessService.get_business_by_id(session, business_id)
+    return restored_business
+
+
 @router.delete("/{business_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_business(
     business_id: int,

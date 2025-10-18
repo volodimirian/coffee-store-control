@@ -15,6 +15,11 @@ export const getBearerToken = () => {
 };
 
 export const logout = () => {
+    // Clear all auth-related data from localStorage
     localStorage.removeItem("access_token");
-    window.location.reload();
+    localStorage.removeItem("currentLocation");
+
+    // Redirect to login page
+    window.location.href = "/login";
 }
+

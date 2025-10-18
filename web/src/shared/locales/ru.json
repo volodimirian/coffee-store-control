@@ -5,11 +5,13 @@
     "success": "Успешно",
     "save": "Сохранить",
     "cancel": "Отмена",
+    "delete": "Удалить",
     "yes": "Да",
     "no": "Нет",
     "continue": "Продолжить",
     "back": "Назад",
-    "brandName": "Business Control"
+    "brandName": "Business Control",
+    "actionCannotBeUndone": "Это действие нельзя отменить."
   },
   "navigation": {
     "home": "Главная",
@@ -49,7 +51,9 @@
     "createAndManage": "Создавайте и управляйте своими продуктами",
     "createBusinessAccount": "Создать бизнес аккаунт",
     "signInDescription": "Введите ваши данные для доступа к аккаунту",
-    "invalidCredentials": "Неверный email или пароль"
+    "invalidCredentials": "Неверный email или пароль",
+    "sessionExpired": "Ваша сессия истекла. Необходимо войти в систему заново.",
+    "sessionExpiredTitle": "Сессия истекла"
   },
   "roles": {
     "admin": "Администратор",
@@ -201,7 +205,7 @@
     "description": "Управление локациями вашего бизнеса",
     "currentLocation": "Текущая локация",
     "selectLocation": "Выбрать локацию",
-    "addNewLocation": "Добавить новую локацию",
+    "addNewLocation": "Добавить локацию",
     "editLocation": "Редактировать локацию",
     "deleteLocation": "Удалить локацию",
     "noLocations": "Пока нет локаций",
@@ -222,6 +226,7 @@
     "createLocation": "Создать локацию",
     "updateLocation": "Обновить локацию",
     "confirmDelete": "Вы уверены, что хотите удалить эту локацию?",
+    "confirmDeleteMessage": "Вы уверены, что хотите удалить эту локацию? Это действие нельзя отменить.",
     "deleteConfirmText": "Это действие нельзя отменить.",
     "locationCreated": "Локация успешно создана",
     "locationUpdated": "Локация успешно обновлена",
@@ -233,6 +238,10 @@
     "switchingTo": "Переключение на {{name}}...",
     "switchedTo": "Переключено на {{name}}",
     "failedToSwitch": "Не удалось переключить локацию",
-    "loadingError": "Не удалось загрузить локации"
+    "loadingError": "Не удалось загрузить локации",
+    "deletedLocations": "Удаленные локации",
+    "deletedLocationsDescription": "Эти локации были удалены, но могут быть восстановлены",
+    "restoreLocation": "Восстановить локацию",
+    "restore": "Восстановить"
   }
 }
