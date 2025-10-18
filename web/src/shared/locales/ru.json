@@ -10,7 +10,7 @@
     "no": "Нет",
     "continue": "Продолжить",
     "back": "Назад",
-    "brandName": "Управление бизнесом",
+    "brandName": "Business Control",
     "actionCannotBeUndone": "Это действие нельзя отменить."
   },
   "navigation": {
@@ -205,7 +205,7 @@
     "description": "Управление локациями вашего бизнеса",
     "currentLocation": "Текущая локация",
     "selectLocation": "Выбрать локацию",
-    "addNewLocation": "Добавить новую локацию",
+    "addNewLocation": "Добавить локацию",
     "editLocation": "Редактировать локацию",
     "deleteLocation": "Удалить локацию",
     "noLocations": "Пока нет локаций",

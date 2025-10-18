@@ -12,13 +12,17 @@ import type {
 export const locationsApi = {
   // Получить все локации пользователя
   getMyLocations: async (): Promise<LocationsListResponse> => {
-    const response = await api.get('/businesses/my');
+    const response = await api.get('/businesses/my', {
+      params: { is_active: true }
+    });
     return response.data;
   },
 
   // Получить принадлежащие пользователю локации
   getOwnedLocations: async (): Promise<LocationsListResponse> => {
-    const response = await api.get('/businesses/owned');
+    const response = await api.get('/businesses/owned', {
+      params: { is_active: true }
+    });
     return response.data;
   },
 

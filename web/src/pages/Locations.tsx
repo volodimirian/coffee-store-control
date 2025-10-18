@@ -130,12 +130,12 @@ export default function LocationsPage() {
               )}
 
               <div className="flex items-start">
-                <div className="flex-shrink-0">
+                <div className="mt-4 flex-shrink-0">
                   <MapPinIcon className={`h-6 w-6 ${
                     currentLocation?.id === location.id ? 'text-blue-600' : 'text-gray-400'
                   }`} />
                 </div>
-                <div className="ml-3 flex-1 min-w-0">
+                <div className={`ml-3 flex-1 min-w-0 mt-4`}>
                   <h3 className="text-lg font-medium text-gray-900 truncate">
                     {location.name}
                   </h3>

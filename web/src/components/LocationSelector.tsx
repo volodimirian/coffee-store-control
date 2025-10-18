@@ -82,21 +82,21 @@ export const LocationSelector: React.FC = () => {
       <div className="flex items-center space-x-2">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex-1 flex items-center justify-between p-2 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+          className="flex-1 flex items-center justify-between p-2 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 min-w-0"
           aria-expanded={isDropdownOpen}
           aria-haspopup="true"
         >
-          <div className="flex items-center space-x-2 min-w-0">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <MapPinIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-            <div className="min-w-0">
-              <div className="text-xs text-gray-500">{t('locations.currentLocation')}</div>
+            <div className="min-w-0 pl-1 flex-1">
+              <div className="text-xs text-gray-500 truncate">{t('locations.currentLocation')}</div>
               <div className="text-sm font-medium text-gray-900 truncate">
                 {currentLocation?.name || t('locations.selectLocation')}
               </div>
             </div>
           </div>
           <ChevronDownIcon 
-            className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+            className={`h-4 w-4 text-gray-500 transition-transform duration-200 flex-shrink-0 ml-2 ${
               isDropdownOpen ? 'rotate-180' : ''
             }`} 
           />
@@ -147,9 +147,9 @@ export const LocationSelector: React.FC = () => {
                       : 'text-gray-900'
                   }`}
                 >
-                  <div className="font-medium">{location.name}</div>
+                  <div className="font-medium truncate">{location.name}</div>
                   {location.address && (
-                    <div className="text-sm text-gray-500 mt-1">{location.address}</div>
+                    <div className="text-sm text-gray-500 mt-1 truncate">{location.address}</div>
                   )}
                 </button>
               ))
