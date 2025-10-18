@@ -153,7 +153,7 @@
 
 - [x] **Backend**: Создать таблицу `permissions` (id, name, description, resource, action, is_active, created_at)
 - [x] **Backend**: Создать таблицу `role_permissions` (role_id, permission_id, is_active, created_at, updated_at)
-- [x] **Backend**: Создать таблицу `user_permissions` (user_id, permission_id, coffee_shop_id, is_active, created_at, updated_at)
+- [x] **Backend**: Создать таблицу `user_permissions` (user_id, permission_id, business_id, is_active, created_at, updated_at)
 - [x] **Backend**: Реализовать 3 основные роли: admin, business_owner, employee,
 - [x] **Backend**: Создать детальные права для модуля "Учёт расходов":
   - MANAGE_USERS (управление пользователями)
@@ -258,9 +258,9 @@
 
 #### Backend: Структура данных для табличного учета
 
-- [ ] **Backend**: Создать таблицу `sections` (id, name, coffee_shop_id, month_period_id, order_index)
+- [ ] **Backend**: Создать таблицу `sections` (id, name, business_id, month_period_id, order_index)
 - [ ] **Backend**: Создать таблицу `items` (id, name, section_id, unit_type, conversion_factor, order_index)
-- [ ] **Backend**: Создать таблицу `month_periods` (id, name, coffee_shop_id, year, month, status, created_at)
+- [ ] **Backend**: Создать таблицу `month_periods` (id, name, business_id, year, month, status, created_at)
 - [ ] **Backend**: Создать таблицу `expense_records` (id, item_id, date, quantity, unit, total_amount, user_id, created_at)
 - [ ] **Backend**: Создать таблицу `audit_trail` (id, table_name, record_id, action, old_value, new_value, user_id, timestamp)
 - [ ] **Backend**: Копирование структуры разделов/товаров при создании месяца
@@ -311,8 +311,8 @@
 
 #### Backend: Учет поставщиков и оплат
 
-- [ ] **Backend**: Создать таблицу `suppliers` (id, name, contact_info, coffee_shop_id)
-- [ ] **Backend**: Создать таблицу `invoices` (id, supplier_id, coffee_shop_id, date, total_amount, paid_status, paid_date)
+- [ ] **Backend**: Создать таблицу `suppliers` (id, name, contact_info, created_at, updated_at, tax_id)
+- [ ] **Backend**: Создать таблицу `invoices` (id, supplier_id, business_id, date, total_amount, paid_status, paid_date)
 - [ ] **Backend**: Создать таблицу `invoice_items` (id, invoice_id, item_name, quantity, unit_price)
 - [ ] **Backend**: Связь накладных с записями расходов
 - [ ] **Backend**: API управления поставщиками `/api/suppliers`
