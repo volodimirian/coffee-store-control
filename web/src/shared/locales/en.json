@@ -5,11 +5,13 @@
     "success": "Success",
     "save": "Save",
     "cancel": "Cancel",
+    "delete": "Delete",
     "yes": "Yes",
     "no": "No",
     "continue": "Continue",
     "back": "Back",
-    "brandName": "Business Control"
+    "brandName": "Business Control",
+    "actionCannotBeUndone": "This action cannot be undone."
   },
   "navigation": {
     "home": "Home",
@@ -221,6 +223,7 @@
     "createLocation": "Create Location",
     "updateLocation": "Update Location",
     "confirmDelete": "Are you sure you want to delete this location?",
+    "confirmDeleteMessage": "Are you sure you want to delete this location? This action cannot be undone.",
     "deleteConfirmText": "This action cannot be undone.",
     "locationCreated": "Location created successfully",
     "locationUpdated": "Location updated successfully",

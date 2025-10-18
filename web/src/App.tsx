@@ -8,6 +8,7 @@ import Products from "~/pages/Products";
 import Orders from "~/pages/Orders";
 import Analytics from "~/pages/Analytics";
 import Settings from "~/pages/Settings";
+import Locations from "~/pages/Locations";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
 import Register from "~/pages/Register";
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="locations" element={<Locations />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

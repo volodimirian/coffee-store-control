@@ -5,11 +5,13 @@
     "success": "Успешно",
     "save": "Сохранить",
     "cancel": "Отмена",
+    "delete": "Удалить",
     "yes": "Да",
     "no": "Нет",
     "continue": "Продолжить",
     "back": "Назад",
-    "brandName": "Business Control"
+    "brandName": "Управление бизнесом",
+    "actionCannotBeUndone": "Это действие нельзя отменить."
   },
   "navigation": {
     "home": "Главная",
@@ -224,6 +226,7 @@
     "createLocation": "Создать локацию",
     "updateLocation": "Обновить локацию",
     "confirmDelete": "Вы уверены, что хотите удалить эту локацию?",
+    "confirmDeleteMessage": "Вы уверены, что хотите удалить эту локацию? Это действие нельзя отменить.",
     "deleteConfirmText": "Это действие нельзя отменить.",
     "locationCreated": "Локация успешно создана",
     "locationUpdated": "Локация успешно обновлена",

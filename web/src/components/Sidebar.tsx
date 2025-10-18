@@ -220,7 +220,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
       {/* Mobile overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
           onClick={onMobileClose}
         />
       )}

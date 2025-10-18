@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDownIcon, PlusIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, PlusIcon, MapPinIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '~/shared/context/AppContext';
-import { AddLocationModal } from './AddLocationModal';
+import { LocationModal } from '~/components/LocationModal';
 import { USER_ROLES } from '~/shared/api/authentication';
 import type { Location } from '~/shared/types/locations';
 
 export const LocationSelector: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { 
     user,
     currentLocation,
@@ -63,6 +65,10 @@ export const LocationSelector: React.FC = () => {
     console.log('Location created successfully');
   };
 
+  const handleManageLocations = () => {
+    navigate('/locations');
+  };
+
   if (isLoadingLocations) {
     return (
       <div className="px-3 py-2">
@@ -73,30 +79,44 @@ export const LocationSelector: React.FC = () => {
 
   return (
     <div className="relative px-3 py-2" ref={dropdownRef}>
-      <button
-        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="w-full flex items-center justify-between p-2 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-        aria-expanded={isDropdownOpen}
-        aria-haspopup="true"
-      >
-        <div className="flex items-center space-x-2 min-w-0">
-          <MapPinIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-          <div className="min-w-0">
-            <div className="text-xs text-gray-500">{t('locations.currentLocation')}</div>
-            <div className="text-sm font-medium text-gray-900 truncate">
-              {currentLocation?.name || t('locations.selectLocation')}
+      <div className="flex items-center space-x-2">
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="flex-1 flex items-center justify-between p-2 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+          aria-expanded={isDropdownOpen}
+          aria-haspopup="true"
+        >
+          <div className="flex items-center space-x-2 min-w-0">
+            <MapPinIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <div className="text-xs text-gray-500">{t('locations.currentLocation')}</div>
+              <div className="text-sm font-medium text-gray-900 truncate">
+                {currentLocation?.name || t('locations.selectLocation')}
+              </div>
             </div>
           </div>
-        </div>
-        <ChevronDownIcon 
-          className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-            isDropdownOpen ? 'rotate-180' : ''
-          }`} 
-        />
-      </button>
+          <ChevronDownIcon 
+            className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+              isDropdownOpen ? 'rotate-180' : ''
+            }`} 
+          />
+        </button>
+        
+        {/* Edit locations button - only for admins and business owners */}
+        {(user?.role?.name === USER_ROLES.ADMIN || user?.role?.name === USER_ROLES.BUSINESS_OWNER) && (
+          <button
+            onClick={handleManageLocations}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            title={t('locations.title')}
+          >
+            <PencilIcon className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       {isDropdownOpen && (
-        <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+             style={{ marginRight: user?.role?.name === USER_ROLES.ADMIN || user?.role?.name === USER_ROLES.BUSINESS_OWNER ? '3rem' : '0.75rem' }}>
           {/* Add new location button - only for admins and business owners - FIXED at top */}
           {(user?.role?.name === USER_ROLES.ADMIN || user?.role?.name === USER_ROLES.BUSINESS_OWNER) && (
             <div className="border-b border-gray-100">
@@ -139,7 +159,7 @@ export const LocationSelector: React.FC = () => {
       )}
       
       {/* Add Location Modal */}
-      <AddLocationModal
+      <LocationModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleModalSuccess}
