@@ -5,6 +5,7 @@ import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~
 export type AppContextType = {
   user: UserResponse | null;
   setUser: (user: UserResponse | null) => void;
+  logout: () => void;
   // Location management
   currentLocation: Location | null;
   locations: Location[];

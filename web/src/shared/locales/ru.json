@@ -49,7 +49,9 @@
     "createAndManage": "Создавайте и управляйте своими продуктами",
     "createBusinessAccount": "Создать бизнес аккаунт",
     "signInDescription": "Введите ваши данные для доступа к аккаунту",
-    "invalidCredentials": "Неверный email или пароль"
+    "invalidCredentials": "Неверный email или пароль",
+    "sessionExpired": "Ваша сессия истекла. Необходимо войти в систему заново.",
+    "sessionExpiredTitle": "Сессия истекла"
   },
   "roles": {
     "admin": "Администратор",

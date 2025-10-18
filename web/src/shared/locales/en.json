@@ -47,7 +47,9 @@
     "createAndManage": "Create and manage your product listings",
     "createBusinessAccount": "Create Business Account",
     "signInDescription": "Enter your credentials to access your account",
-    "invalidCredentials": "Invalid email or password"
+    "invalidCredentials": "Invalid email or password",
+    "sessionExpired": "Your session has expired. Please log in again.",
+    "sessionExpiredTitle": "Session Expired"
   },
   "roles": {
     "admin": "Administrator",

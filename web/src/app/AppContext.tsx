@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { AppContext, type AppContextType } from "~/shared/context/AppContext";
 import { locationsApi } from "~/shared/api/locations";
 import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~/shared/types/locations";
-import { hasToken } from "~/shared/lib/helpers";
+import { hasToken, logout as helperLogout } from "~/shared/lib/helpers";
+import { setLogoutHandler } from "~/shared/api/client";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -106,9 +107,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return response.members;
   };
 
+  const logout = useCallback(() => {
+    // Clear user state
+    setUser(null);
+    
+    // Clear location state  
+    setCurrentLocationState(null);
+    setLocations([]);
+    
+    // Use helper logout function which handles localStorage cleanup and redirect
+    helperLogout();
+  }, []);
+
+  // Set up automatic logout handler for API client
+  useEffect(() => {
+    setLogoutHandler(logout, t);
+  }, [logout, t]);
+
   const contextValue: AppContextType = {
     user,
     setUser,
+    logout,
     currentLocation,
     locations,
     isLoadingLocations,
