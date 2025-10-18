@@ -1,6 +1,6 @@
 """API router for supplier management endpoints."""
 
-from typing import Optional, List
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,7 +94,7 @@ async def get_business_suppliers(
         is_active=is_active,
     )
 
-    return SupplierListOut(suppliers=suppliers, total=total)
+    return SupplierListOut(suppliers=[SupplierOut.model_validate(supplier) for supplier in suppliers], total=total)
 
 
 @router.get("/{supplier_id}", response_model=SupplierOut)
@@ -115,7 +115,7 @@ async def get_supplier(
     has_access = await BusinessService.can_user_access_business(
         session=session,
         user_id=current_user.id,
-        business_id=supplier.business_id,
+        business_id=supplier.business_id,  # type: ignore
     )
     if not has_access:
         raise HTTPException(
@@ -145,7 +145,7 @@ async def update_supplier(
     can_manage = await BusinessService.can_user_manage_business(
         session=session,
         user_id=current_user.id,
-        business_id=supplier.business_id,
+        business_id=supplier.business_id,  # type: ignore
     )
     if not can_manage:
         raise HTTPException(
@@ -186,7 +186,7 @@ async def delete_supplier(
     can_manage = await BusinessService.can_user_manage_business(
         session=session,
         user_id=current_user.id,
-        business_id=supplier.business_id,
+        business_id=supplier.business_id,  # type: ignore
     )
     if not can_manage:
         raise HTTPException(
@@ -222,7 +222,7 @@ async def restore_supplier(
     can_manage = await BusinessService.can_user_manage_business(
         session=session,
         user_id=current_user.id,
-        business_id=supplier.business_id,
+        business_id=supplier.business_id,  # type: ignore
     )
     if not can_manage:
         raise HTTPException(
