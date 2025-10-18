@@ -109,6 +109,10 @@ class Business(Base):
     # Relationships
     owner: Mapped["User"] = relationship("User", foreign_keys=[owner_id])
     user_businesses: Mapped[list["UserBusiness"]] = relationship("UserBusiness", back_populates="business")
+    
+    # Expense tracking relationships
+    suppliers = relationship("Supplier", back_populates="business")
+    month_periods = relationship("MonthPeriod", back_populates="business")
 
 
 class UserBusiness(Base):

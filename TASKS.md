@@ -13,7 +13,40 @@
 - Экспорт данных в Excel/PDF для бухгалтерии
 - Журнал всех изменений для контроля финансовых операций
 
-**🎉 Latest Achievements (Business Management System)**
+**🚀 Current Development Session: Expense Tracking Foundation**
+
+### � **IN PROGRESS - Expense Tracking Backend Foundation (Group 5)**
+
+**📋 Current Session Goals:**
+
+- ✅ **Navigation Enhancement**: Grouped menu sections with collapsible business/account areas
+- ✅ **Expense Page Foundation**: Basic expense tracking page with dashboard layout
+- 🔄 **Backend Database Design**: Comprehensive schema for expense tracking, suppliers, and inventory
+- 🔄 **Supplier Management**: Basic supplier CRUD operations for invoice management
+- 🔄 **Inventory System**: Units, categories, and balance tracking foundation
+
+**💡 Business Requirements Analysis:**
+
+- **Suppliers Integration**: Suppliers needed for invoice creation in expense tracking
+- **Inventory Tracking**: Track purchases → usage → remaining balances across months
+- **Units Management**: Support for grams, kg, ml, liters, pieces, bottles, packages
+- **Invoice System**: Link purchases to invoices, automatic payment status propagation
+- **Balance Calculations**: Opening balance + purchases - usage = closing balance
+- **Month Transitions**: Automatic transfer of closing balances to next month opening
+
+**🗃️ Database Schema Priority:**
+
+1. `units` - measurement units with conversion factors
+2. `suppliers` - supplier management per business
+3. `month_periods` - monthly accounting periods
+4. `expense_sections` and `expense_categories` - product organization
+5. `invoices` and `invoice_items` - purchase documentation
+6. `expense_records` - daily usage tracking
+7. `inventory_balances` - calculated balances and remainders
+
+---
+
+**🎉 Previous Achievements (Business Management System)**
 
 ### ✅ **FULLY COMPLETED - Business Management System (Group 3) - 100%**
 
@@ -256,25 +289,151 @@
 
 ### 📝 Задачи в разработке - это ядро системы
 
+#### Backend: Основные справочники и единицы измерения
+
+- [ ] **Backend**: Создать таблицу `units` (id, name, symbol, unit_type, base_unit_id, conversion_factor, is_active, created_at, updated_at)
+
+  - Единицы измерения: граммы (г), килограммы (кг), миллилитры (мл), литры (л), штуки (шт), бутылки, упаковки и т.д.
+  - `unit_type` - тип единицы: weight, volume, count
+  - `base_unit_id` - ссылка на базовую единицу (г для веса, мл для объема, шт для количества)
+  - `conversion_factor` - коэффициент конвертации в базовую единицу (1кг = 1000г, 1л = 1000мл)
+
+- [ ] **Backend**: Создать таблицу `suppliers` (id, name, contact_info, business_id, is_active, created_at, updated_at)
+  - Поставщики для каждого бизнеса
+  - `contact_info` - JSON поле с телефоном, email, адресом, ИНН и т.д.
+
 #### Backend: Структура данных для табличного учета
 
-- [ ] **Backend**: Создать таблицу `sections` (id, name, business_id, month_period_id, order_index)
-- [ ] **Backend**: Создать таблицу `items` (id, name, section_id, unit_type, conversion_factor, order_index)
-- [ ] **Backend**: Создать таблицу `month_periods` (id, name, business_id, year, month, status, created_at)
-- [ ] **Backend**: Создать таблицу `expense_records` (id, item_id, date, quantity, unit, total_amount, user_id, created_at)
-- [ ] **Backend**: Создать таблицу `audit_trail` (id, table_name, record_id, action, old_value, new_value, user_id, timestamp)
-- [ ] **Backend**: Копирование структуры разделов/товаров при создании месяца
+- [ ] **Backend**: Создать таблицу `month_periods` (id, name, business_id, year, month, status, is_active, created_at, updated_at)
+
+  - `status` - enum: active, closed, archived
+  - Активный период для ввода данных по месяцам
+
+- [ ] **Backend**: Создать таблицу `expense_sections` (id, name, business_id, month_period_id, order_index, is_active, created_at, updated_at)
+
+  - Разделы расходов: "Кофе и зерно", "Молочные продукты", "Расходники", etc.
+  - Привязка к бизнесу и периоду месяца
+
+- [ ] **Backend**: Создать таблицу `expense_categories` (id, name, section_id, default_unit_id, is_active, order_index, created_at, updated_at)
+  - Категории товаров внутри разделов: "Кофе арабика", "Молоко 3.2%", "Стаканы 250мл"
+  - `default_unit_id` - единица измерения по умолчанию
+
+#### Backend: Накладные и документооборот
+
+- [ ] **Backend**: Создать таблицу `invoices` (id, business_id, supplier_id, invoice_number, invoice_date, total_amount, paid_status, paid_date, document_path, created_by, created_at, updated_at)
+
+  - Накладные от поставщиков
+  - `paid_status` - enum: pending, paid, cancelled
+  - `document_path` - путь к файлу накладной (PDF/изображение)
+
+- [ ] **Backend**: Создать таблицу `invoice_items` (id, invoice_id, category_id, quantity, unit_id, unit_price, total_price, created_at, updated_at)
+  - Позиции в накладной
+  - Привязка к категории товара и единице измерения
+
+#### Backend: Записи расходов и остатки
+
+- [ ] **Backend**: Создать таблицу `expense_records` (id, category_id, month_period_id, date, quantity_used, unit_id, invoice_item_id, created_by, created_at, updated_at)
+
+  - Записи использования товаров по дням
+  - `invoice_item_id` - связь с позицией накладной (откуда взяли товар)
+
+- [ ] **Backend**: Создать таблицу `inventory_balances` (id, category_id, month_period_id, opening_balance, purchases_total, usage_total, closing_balance, unit_id, last_calculated, created_at, updated_at)
+  - Остатки товаров на начало/конец месяца
+  - `opening_balance` - остаток на начало месяца (перенос с предыдущего)
+  - `purchases_total` - закуплено за месяц
+  - `usage_total` - использовано за месяц
+  - `closing_balance` - остаток на конец месяца
+
+#### Backend: Аудит и история изменений
+
+- [ ] **Backend**: Создать таблицу `audit_trail` (id, table_name, record_id, action, old_value, new_value, user_id, business_id, timestamp)
+  - `action` - enum: CREATE, UPDATE, DELETE
+  - Полная история изменений всех финансовых операций
+
+#### Backend: Бизнес-логика расчетов и остатков
+
+**Псевдокод для расчета остатков:**
+
+```python
+def calculate_inventory_balance(category_id, month_period_id):
+    """
+    Расчет остатков товара на конец месяца
+    """
+    # 1. Получить остаток на начало месяца
+    opening_balance = get_previous_month_closing_balance(category_id)
+
+    # 2. Посчитать все закупки за месяц (из оплаченных накладных)
+    purchases = sum(
+        invoice_items.quantity
+        for invoice_item in get_paid_invoice_items(category_id, month_period_id)
+    )
+
+    # 3. Посчитать все использование за месяц
+    usage = sum(
+        expense_record.quantity_used
+        for expense_record in get_expense_records(category_id, month_period_id)
+    )
+
+    # 4. Рассчитать остаток на конец месяца
+    closing_balance = opening_balance + purchases - usage
+
+    # 5. Обновить inventory_balances
+    update_inventory_balance(category_id, month_period_id, {
+        'opening_balance': opening_balance,
+        'purchases_total': purchases,
+        'usage_total': usage,
+        'closing_balance': closing_balance,
+        'last_calculated': datetime.now()
+    })
+
+    return closing_balance
+
+def calculate_average_unit_price(category_id, month_period_id):
+    """
+    Средневзвешенная цена единицы товара
+    """
+    # Получить все покупки товара за период с ценами
+    purchases = get_paid_invoice_items_with_prices(category_id, month_period_id)
+
+    total_quantity = sum(p.quantity for p in purchases)
+    total_cost = sum(p.quantity * p.unit_price for p in purchases)
+
+    if total_quantity > 0:
+        return total_cost / total_quantity
+    return 0
+
+def transfer_closing_balances_to_next_month(business_id, current_month, next_month):
+    """
+    Перенос остатков в следующий месяц (автоматически 15 числа)
+    """
+    balances = get_closing_balances(business_id, current_month)
+
+    for balance in balances:
+        create_opening_balance_for_next_month(
+            category_id=balance.category_id,
+            month_period_id=next_month.id,
+            opening_balance=balance.closing_balance,
+            unit_id=balance.unit_id
+        )
+```
+
+#### Backend: API эндпоинты
+
+- [ ] **Backend**: API управления справочниками `/api/expenses/units` (CRUD единиц измерения)
+- [ ] **Backend**: API управления поставщиками `/api/expenses/suppliers` (CRUD поставщиков)
+- [ ] **Backend**: API управления структурой `/api/expenses/sections` и `/api/expenses/categories`
+- [ ] **Backend**: API для накладных `/api/expenses/invoices` (создание, оплата, просмотр)
+- [ ] **Backend**: API для записей расходов `/api/expenses/records` (ввод данных по дням)
+- [ ] **Backend**: API для остатков `/api/expenses/balances` (просмотр остатков, пересчет)
+- [ ] **Backend**: API для периодов `/api/expenses/periods` (переключение месяцев, создание нового)
+
+#### Backend: Автоматизация и cron-задачи
+
+- [ ] **Backend**: Автоматическое создание нового месяца 15-го числа (cron-задача)
+- [ ] **Backend**: Копирование структуры разделов/категорий при создании месяца
+- [ ] **Backend**: Перенос остатков товаров в новый месяц
 - [ ] **Backend**: Связывание текущего и будущего месяца до 1-го числа
-- [ ] **Backend**: Логика синхронизации изменений структуры между связанными месяцами
-
-#### Backend: Бизнес-логика расчетов
-
-- [ ] **Backend**: Конвертация единиц измерения в базовые (г, мл, шт)
-- [ ] **Backend**: Расчет средневзвешенной цены за единицу товара
-- [ ] **Backend**: Автоматический пересчет итогов при изменении данных
-- [ ] **Backend**: API для управления структурой `/api/expenses/structure`
-- [ ] **Backend**: API для ввода данных `/api/expenses/records`
-- [ ] **Backend**: API для переключения месяцев `/api/expenses/periods`
+- [ ] **Backend**: Автоматический пересчет остатков при изменении записей
 
 #### Frontend: Табличный интерфейс (как Excel)
 
@@ -305,27 +464,28 @@
 
 ---
 
-## 💰 ГРУППА 6: МОДУЛЬ "ОПЛАТЫ" (ПОСТАВЩИКИ И НАКЛАДНЫЕ)
+## 💰 ГРУППА 6: МОДУЛЬ "РАСШИРЕННЫЕ ОПЛАТЫ И ФИНАНСЫ"
 
-### 📝 Задачи в разработке
+### 📝 Задачи в разработке (после основного модуля учета)
 
-#### Backend: Учет поставщиков и оплат
+#### Backend: Расширенная финансовая отчетность
 
-- [ ] **Backend**: Создать таблицу `suppliers` (id, name, contact_info, created_at, updated_at, tax_id)
-- [ ] **Backend**: Создать таблицу `invoices` (id, supplier_id, business_id, date, total_amount, paid_status, paid_date)
-- [ ] **Backend**: Создать таблицу `invoice_items` (id, invoice_id, item_name, quantity, unit_price)
-- [ ] **Backend**: Связь накладных с записями расходов
-- [ ] **Backend**: API управления поставщиками `/api/suppliers`
-- [ ] **Backend**: API управления накладными `/api/invoices`
-- [ ] **Backend**: Логика отметки оплаты накладных
+- [x] **Backend**: ~~Создать таблицу `suppliers`~~ ✅ ПЕРЕНЕСЕНО В ГРУППУ 5
+- [x] **Backend**: ~~Создать таблицу `invoices`~~ ✅ ПЕРЕНЕСЕНО В ГРУППУ 5
+- [x] **Backend**: ~~Создать таблицу `invoice_items`~~ ✅ ПЕРЕНЕСЕНО В ГРУППУ 5
+- [ ] **Backend**: Создать таблицу `payment_methods` (id, name, is_active) - Способы оплаты (наличные, карта, перевод)
+- [ ] **Backend**: Создать таблицу `invoice_payments` (id, invoice_id, payment_method_id, amount, payment_date, created_by)
+- [ ] **Backend**: Логика частичных оплат накладных
+- [ ] **Backend**: API расширенной финансовой отчетности `/api/finances/reports`
+- [ ] **Backend**: API управления способами оплаты `/api/finances/payment-methods`
 
-#### Frontend: Интерфейс поставщиков и оплат
+#### Frontend: Интерфейс расширенных финансов
 
 - [ ] **Frontend**: Список поставщиков с возможностью добавления/редактирования
 - [ ] **Frontend**: Форма создания накладной с привязкой к поставщику
-- [ ] **Frontend**: Интерфейс отметки накладных как оплаченных
-- [ ] **Frontend**: Список неоплаченных накладных для бухгалтера
-- [ ] **Frontend**: Связка с модулем расходов при вводе поставки
+- [ ] **Frontend**: Интерфейс частичных оплат накладных
+- [ ] **Frontend**: Финансовые отчеты по поставщикам и оплатам
+- [ ] **Frontend**: Календарь платежей и задолженностей
 
 ---
 

@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.router import router as auth_router
 from app.businesses.router import router as businesses_router
+from app.expenses.supplier_router import router as suppliers_router
+from app.expenses.unit_router import router as units_router
+from app.expenses.month_period_router import router as periods_router
 from app.core.db import engine
 from app.core.config import settings
 from app.core_models import Base
@@ -45,3 +48,8 @@ app.include_router(auth_router, prefix=settings.api_prefix)
 
 # Business management routes
 app.include_router(businesses_router, prefix=f"{settings.api_prefix}/businesses", tags=["businesses"])
+
+# Expense tracking routes
+app.include_router(suppliers_router, prefix=f"{settings.api_prefix}/expenses/suppliers", tags=["expenses", "suppliers"])
+app.include_router(units_router, prefix=f"{settings.api_prefix}/expenses/units", tags=["expenses", "units"])
+app.include_router(periods_router, prefix=f"{settings.api_prefix}/expenses/periods", tags=["expenses", "periods"])
