@@ -238,6 +238,10 @@
     "switchingTo": "Переключение на {{name}}...",
     "switchedTo": "Переключено на {{name}}",
     "failedToSwitch": "Не удалось переключить локацию",
-    "loadingError": "Не удалось загрузить локации"
+    "loadingError": "Не удалось загрузить локации",
+    "deletedLocations": "Удаленные локации",
+    "deletedLocationsDescription": "Эти локации были удалены, но могут быть восстановлены",
+    "restoreLocation": "Восстановить локацию",
+    "restore": "Восстановить"
   }
 }

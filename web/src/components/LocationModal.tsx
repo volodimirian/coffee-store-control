@@ -8,7 +8,7 @@ interface LocationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  location?: Location; // Если передана локация, то режим редактирования
+  location?: Location; // If location is passed, then edit mode
 }
 
 export const LocationModal: React.FC<LocationModalProps> = ({
@@ -31,7 +31,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Предзаполнение формы при редактировании
+  // Pre-fill form when editing
   useEffect(() => {
     if (location) {
       setFormData({

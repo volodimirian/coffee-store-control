@@ -235,6 +235,10 @@
     "switchingTo": "Switching to {{name}}...",
     "switchedTo": "Switched to {{name}}",
     "failedToSwitch": "Failed to switch location",
-    "loadingError": "Failed to load locations"
+    "loadingError": "Failed to load locations",
+    "deletedLocations": "Deleted Locations",
+    "deletedLocationsDescription": "These locations have been deleted but can be restored",
+    "restoreLocation": "Restore Location", 
+    "restore": "Restore"
   }
 }

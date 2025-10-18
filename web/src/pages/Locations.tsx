@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PencilIcon, TrashIcon, MapPinIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, MapPinIcon, PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
 import { LocationModal } from '../components/LocationModal';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
+import { locationsApi } from '~/shared/api/locations';
 import type { Location } from '~/shared/types/locations';
 
 export default function LocationsPage() {
@@ -22,6 +23,44 @@ export default function LocationsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // State for all locations (including inactive/deleted ones)
+  const [allLocations, setAllLocations] = useState<Location[]>([]);
+
+  // Split locations into active and deleted
+  const activeLocations = allLocations.filter(loc => loc.is_active);
+  const deletedLocations = allLocations.filter(loc => !loc.is_active);
+
+  // Load all locations on component mount
+  useEffect(() => {
+    const fetchAllLocations = async () => {
+      try {
+        const response = await locationsApi.getAllMyLocations();
+        setAllLocations(response.businesses);
+      } catch (error) {
+        console.error('Failed to fetch all locations:', error);
+      }
+    };
+
+    fetchAllLocations();
+  }, []);
+
+  // Update all locations when main list changes
+  useEffect(() => {
+    const fetchAllLocations = async () => {
+      try {
+        const response = await locationsApi.getAllMyLocations();
+        setAllLocations(response.businesses);
+      } catch (error) {
+        console.error('Failed to refresh all locations:', error);
+      }
+    };
+
+    // Update after changes in main list
+    if (locations.length > 0) {
+      fetchAllLocations();
+    }
+  }, [locations]);
 
   const handleEdit = (location: Location) => {
     setEditingLocation(location);
@@ -52,6 +91,19 @@ export default function LocationsPage() {
   const handleDeleteCancel = () => {
     setIsDeleteModalOpen(false);
     setDeletingLocation(null);
+  };
+
+  const handleRestore = async (location: Location) => {
+    try {
+      await locationsApi.restoreLocation(location.id);
+      console.log('Restored location:', location.name);
+      
+      // Update all locations list
+      const response = await locationsApi.getAllMyLocations();
+      setAllLocations(response.businesses);
+    } catch (error) {
+      console.error('Failed to restore location:', error);
+    }
   };
 
   const handleSetCurrent = (location: Location) => {
@@ -93,8 +145,8 @@ export default function LocationsPage() {
         </div>
       </div>
 
-      {/* Locations Grid */}
-      {locations.length === 0 ? (
+      {/* Active Locations Grid */}
+      {activeLocations.length === 0 ? (
         <div className="text-center py-12">
           <MapPinIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">{t('locations.noLocations')}</h3>
@@ -111,7 +163,7 @@ export default function LocationsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {locations.map((location) => (
+          {activeLocations.map((location) => (
             <div
               key={location.id}
               className={`relative rounded-lg border ${
@@ -180,6 +232,54 @@ export default function LocationsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Deleted Locations Section */}
+      {deletedLocations.length > 0 && (
+        <div className="mt-12">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">{t('locations.deletedLocations')}</h2>
+            <p className="mt-1 text-sm text-gray-500">{t('locations.deletedLocationsDescription')}</p>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {deletedLocations.map((location) => (
+              <div
+                key={location.id}
+                className="relative rounded-lg border border-gray-200 bg-gray-50 p-6 shadow-sm opacity-75"
+              >
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <MapPinIcon className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <div className="ml-3 flex-1 min-w-0">
+                    <h3 className="text-lg font-medium text-gray-700 truncate">
+                      {location.name}
+                    </h3>
+                    {location.city && (
+                      <p className="text-sm text-gray-500 mt-1">{location.city}</p>
+                    )}
+                    {location.address && (
+                      <p className="text-sm text-gray-500 mt-1">{location.address}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Restore Action */}
+                <div className="mt-6 flex items-center justify-end">
+                  <button
+                    onClick={() => handleRestore(location)}
+                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    title={t('locations.restoreLocation')}
+                  >
+                    <ArrowUturnLeftIcon className="h-4 w-4 mr-1" />
+                    {t('locations.restore')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
