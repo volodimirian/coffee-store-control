@@ -155,6 +155,7 @@ class ExpenseSectionOut(ExpenseSectionBase):
     id: int
     business_id: int
     month_period_id: int
+    created_by: int
     created_at: datetime
     updated_at: datetime
 
@@ -184,11 +185,30 @@ class ExpenseCategoryUpdate(BaseModel):
 class ExpenseCategoryOut(ExpenseCategoryBase):
     id: int
     section_id: int
+    created_by: int
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class ExpenseSectionListOut(BaseModel):
+    sections: List[ExpenseSectionOut]
+    total: int
+
+
+class ExpenseCategoryListOut(BaseModel):
+    categories: List[ExpenseCategoryOut]
+    total: int
+
+
+class ExpenseSectionReorderRequest(BaseModel):
+    section_orders: List[tuple[int, int]] = Field(..., description="List of (section_id, new_order) tuples")
+
+
+class ExpenseCategoryReorderRequest(BaseModel):
+    category_orders: List[tuple[int, int]] = Field(..., description="List of (category_id, new_order) tuples")
 
 
 # Invoice schemas
