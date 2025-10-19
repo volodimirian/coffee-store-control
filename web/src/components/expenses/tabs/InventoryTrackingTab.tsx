@@ -7,6 +7,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
+import AddCategoryModal from '~/components/expenses/modals/AddCategoryModal';
 
 // Mock data - later we'll replace with API calls
 const mockCategories = [
@@ -43,7 +46,10 @@ const mockCategories = [
 ];
 
 export default function InventoryTrackingTab() {
+  const { t } = useTranslation();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
   
   // Calculate days of current month
   const monthStart = startOfMonth(currentDate);
@@ -92,24 +98,33 @@ export default function InventoryTrackingTab() {
             onClick={handleToday}
             className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
           >
-            Сегодня
+            {t('expenses.inventoryTracking.todayButton')}
           </button>
         </div>
 
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1">
-            <button className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500">
+            <button 
+              onClick={() => setIsAddItemModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500"
+            >
               <PlusIcon className="h-4 w-4 mr-1" />
-              Товар
+              {t('expenses.inventoryTracking.addItemButton')}
             </button>
-            <button className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500">
-              Раздел
+            <button 
+              onClick={() => setIsAddSectionModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500"
+            >
+              {t('expenses.inventoryTracking.addSectionButton')}
             </button>
           </div>
           
-          <button className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500">
+          <button 
+            onClick={() => alert(t('expenses.inventoryTracking.exportAlert'))}
+            className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500"
+          >
             <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-            Скачать в excel, ПДФ
+            {t('expenses.inventoryTracking.exportButton')}
           </button>
         </div>
       </div>
@@ -121,7 +136,7 @@ export default function InventoryTrackingTab() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r z-10">
-                  Раздел/Товар
+                  {t('expenses.inventoryTracking.tableHeader')}
                 </th>
                 {monthDays.map((day) => (
                   <th
@@ -135,7 +150,7 @@ export default function InventoryTrackingTab() {
                   </th>
                 ))}
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Итого
+                  {t('expenses.inventoryTracking.totalColumn')}
                 </th>
               </tr>
             </thead>
@@ -185,17 +200,38 @@ export default function InventoryTrackingTab() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-medium text-yellow-800">
-              Выделение текущего дня недели
+              {t('expenses.inventoryTracking.currentDayTitle')}
             </h3>
             <p className="text-sm text-yellow-700 mt-1">
-              При добавлении «Раздела» в таблице добавляется новый раздел без ничего
+              {t('expenses.inventoryTracking.currentDayDescription')}
             </p>
           </div>
           <div className="text-sm text-yellow-700">
-            Сегодня: {format(new Date(), 'd MMMM yyyy', { locale: ru })}
+            {t('expenses.inventoryTracking.todayLabel')}: {format(new Date(), 'd MMMM yyyy', { locale: ru })}
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <AddSectionModal
+        isOpen={isAddSectionModalOpen}
+        onClose={() => setIsAddSectionModalOpen(false)}
+        monthPeriodId={1} // TODO: Get from context/API
+        onSectionAdded={(section) => {
+          console.log('Section added:', section);
+          // TODO: Refresh data or update state
+        }}
+      />
+
+      <AddCategoryModal
+        isOpen={isAddItemModalOpen}
+        onClose={() => setIsAddItemModalOpen(false)}
+        sectionId={1} // TODO: Allow user to select section
+        onCategoryAdded={(category) => {
+          console.log('Category added:', category);
+          // TODO: Refresh data or update state
+        }}
+      />
     </div>
   );
 }

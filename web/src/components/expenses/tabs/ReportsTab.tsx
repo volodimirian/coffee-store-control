@@ -1,16 +1,17 @@
 import { ChartBarIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 export default function ReportsTab() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <div className="text-center py-12">
         <ChartBarIcon className="mx-auto h-16 w-16 text-gray-400" />
         <h3 className="mt-4 text-lg font-medium text-gray-900">
-          Отчеты в разработке
+          {t('expenses.reports.title')}
         </h3>
         <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-          Здесь будут доступны различные отчеты и аналитика по расходам.
-          Функционал будет добавлен в следующих обновлениях.
+          {t('expenses.reports.description')}
         </p>
         
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-3xl mx-auto">
@@ -19,10 +20,10 @@ export default function ReportsTab() {
               <DocumentArrowDownIcon className="h-6 w-6 text-gray-400" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  Экспорт в Excel
+                  {t('expenses.reports.excelExport')}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Скоро будет доступен
+                  {t('expenses.reports.comingSoon')}
                 </p>
               </div>
             </div>
@@ -33,10 +34,10 @@ export default function ReportsTab() {
               <DocumentArrowDownIcon className="h-6 w-6 text-gray-400" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  Экспорт в PDF
+                  {t('expenses.reports.pdfExport')}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Скоро будет доступен
+                  {t('expenses.reports.comingSoon')}
                 </p>
               </div>
             </div>
@@ -47,10 +48,10 @@ export default function ReportsTab() {
               <ChartBarIcon className="h-6 w-6 text-gray-400" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  Аналитика
+                  {t('expenses.reports.analytics')}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Скоро будет доступен
+                  {t('expenses.reports.comingSoon')}
                 </p>
               </div>
             </div>

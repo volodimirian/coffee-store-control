@@ -6,6 +6,7 @@ import {
   TagIcon,
   DocumentChartBarIcon
 } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 import { classNames } from '~/shared/utils/classNames';
 
 // Tab components
@@ -14,31 +15,32 @@ import InventoryTrackingTab from '~/components/expenses/tabs/InventoryTrackingTa
 import CategoriesTab from '~/components/expenses/tabs/CategoriesTab';
 import ReportsTab from '~/components/expenses/tabs/ReportsTab';
 
-const tabs = [
-  {
-    name: 'Обзор',
-    icon: ChartBarIcon,
-    component: OverviewTab,
-  },
-  {
-    name: 'Учет расходов',
-    icon: TableCellsIcon,
-    component: InventoryTrackingTab,
-  },
-  {
-    name: 'Категории',
-    icon: TagIcon,
-    component: CategoriesTab,
-  },
-  {
-    name: 'Отчеты',
-    icon: DocumentChartBarIcon,
-    component: ReportsTab,
-  },
-];
-
 export default function ExpensesTabs() {
+  const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState(1); // Start with "Учет расходов"
+  
+  const tabs = [
+    {
+      name: t('expenses.navigation.overview'),
+      icon: ChartBarIcon,
+      component: OverviewTab,
+    },
+    {
+      name: t('expenses.navigation.inventoryTracking'),
+      icon: TableCellsIcon,
+      component: InventoryTrackingTab,
+    },
+    {
+      name: t('expenses.navigation.categories'),
+      icon: TagIcon,
+      component: CategoriesTab,
+    },
+    {
+      name: t('expenses.navigation.reports'),
+      icon: DocumentChartBarIcon,
+      component: ReportsTab,
+    },
+  ];
 
   return (
     <div className="w-full">

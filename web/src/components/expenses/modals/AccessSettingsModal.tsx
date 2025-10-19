@@ -1,19 +1,22 @@
 import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 interface AccessSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const mockUsers = [
-  { id: 1, name: 'Анна Иванова', email: 'anna@example.com', role: 'Менеджер', access: 'Полный доступ' },
-  { id: 2, name: 'Петр Сидоров', email: 'peter@example.com', role: 'Сотрудник', access: 'Только чтение' },
-  { id: 3, name: 'Мария Петрова', email: 'maria@example.com', role: 'Сотрудник', access: 'Редактирование' },
-];
-
 export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsModalProps) {
+  const { t } = useTranslation();
+  
+  const mockUsers = [
+    { id: 1, name: 'Анна Иванова', email: 'anna@example.com', role: t('expenses.accessSettings.mockRoles.manager'), access: t('expenses.accessSettings.accessLevels.fullAccess') },
+    { id: 2, name: 'Петр Сидоров', email: 'peter@example.com', role: t('expenses.accessSettings.mockRoles.employee'), access: t('expenses.accessSettings.accessLevels.readOnly') },
+    { id: 3, name: 'Мария Петрова', email: 'maria@example.com', role: t('expenses.accessSettings.mockRoles.employee'), access: t('expenses.accessSettings.accessLevels.edit') },
+  ];
+
   const [users] = useState(mockUsers);
 
   return (
@@ -28,7 +31,7 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-gray-500/75 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -49,7 +52,7 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
                     className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     onClick={onClose}
                   >
-                    <span className="sr-only">Закрыть</span>
+                    <span className="sr-only">{t('expenses.accessSettings.close')}</span>
                     <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
@@ -60,11 +63,11 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
                   </div>
                   <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
                     <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                      Настройки доступа к расходам
+                      {t('expenses.accessSettings.title')}
                     </Dialog.Title>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        Управляйте правами доступа пользователей к данным о расходах и инвентаризации.
+                        {t('expenses.accessSettings.description')}
                       </p>
                     </div>
                   </div>
@@ -76,10 +79,10 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-medium text-gray-900 flex items-center">
                         <UserGroupIcon className="h-4 w-4 mr-2" />
-                        Пользователи ({users.length})
+                        {t('expenses.accessSettings.users')} ({users.length})
                       </h4>
                       <button className="text-sm text-blue-600 hover:text-blue-500">
-                        Добавить пользователя
+                        {t('expenses.accessSettings.addUser')}
                       </button>
                     </div>
 
@@ -88,16 +91,16 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Пользователь
+                              {t('expenses.accessSettings.user')}
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Роль
+                              {t('expenses.accessSettings.role')}
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Доступ
+                              {t('expenses.accessSettings.access')}
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Действия
+                              {t('expenses.accessSettings.actions')}
                             </th>
                           </tr>
                         </thead>
@@ -113,18 +116,18 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
                               <td className="px-4 py-3 text-sm text-gray-900">{user.role}</td>
                               <td className="px-4 py-3">
                                 <select className="text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                  <option value="read">Только чтение</option>
-                                  <option value="edit">Редактирование</option>
-                                  <option value="full">Полный доступ</option>
-                                  <option value="none">Нет доступа</option>
+                                  <option value="read">{t('expenses.accessSettings.accessLevels.readOnly')}</option>
+                                  <option value="edit">{t('expenses.accessSettings.accessLevels.edit')}</option>
+                                  <option value="full">{t('expenses.accessSettings.accessLevels.fullAccess')}</option>
+                                  <option value="none">{t('expenses.accessSettings.accessLevels.noAccess')}</option>
                                 </select>
                               </td>
                               <td className="px-4 py-3 text-sm">
                                 <button className="text-blue-600 hover:text-blue-500 mr-3">
-                                  Изменить
+                                  {t('expenses.accessSettings.edit')}
                                 </button>
                                 <button className="text-red-600 hover:text-red-500">
-                                  Удалить
+                                  {t('expenses.accessSettings.delete')}
                                 </button>
                               </td>
                             </tr>
@@ -137,46 +140,46 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
                   {/* Access Rules */}
                   <div className="mt-6 space-y-4">
                     <h4 className="text-sm font-medium text-gray-900">
-                      Правила доступа
+                      {t('expenses.accessSettings.accessRules')}
                     </h4>
                     
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="border border-gray-200 rounded-lg p-4">
                         <h5 className="text-sm font-medium text-gray-900 mb-2">
-                          Просмотр данных
+                          {t('expenses.accessSettings.viewData')}
                         </h5>
                         <div className="space-y-2 text-sm text-gray-600">
                           <label className="flex items-center">
                             <input type="checkbox" className="rounded mr-2" defaultChecked />
-                            Все категории
+                            {t('expenses.accessSettings.permissions.allCategories')}
                           </label>
                           <label className="flex items-center">
                             <input type="checkbox" className="rounded mr-2" defaultChecked />
-                            Исторические данные
+                            {t('expenses.accessSettings.permissions.historicalData')}
                           </label>
                           <label className="flex items-center">
                             <input type="checkbox" className="rounded mr-2" />
-                            Суммы и итоги
+                            {t('expenses.accessSettings.permissions.totalsAndSums')}
                           </label>
                         </div>
                       </div>
 
                       <div className="border border-gray-200 rounded-lg p-4">
                         <h5 className="text-sm font-medium text-gray-900 mb-2">
-                          Редактирование
+                          {t('expenses.accessSettings.editing')}
                         </h5>
                         <div className="space-y-2 text-sm text-gray-600">
                           <label className="flex items-center">
                             <input type="checkbox" className="rounded mr-2" />
-                            Добавление записей
+                            {t('expenses.accessSettings.permissions.addRecords')}
                           </label>
                           <label className="flex items-center">
                             <input type="checkbox" className="rounded mr-2" />
-                            Изменение существующих
+                            {t('expenses.accessSettings.permissions.editExisting')}
                           </label>
                           <label className="flex items-center">
                             <input type="checkbox" className="rounded mr-2" />
-                            Удаление записей
+                            {t('expenses.accessSettings.permissions.deleteRecords')}
                           </label>
                         </div>
                       </div>
@@ -190,14 +193,14 @@ export default function AccessSettingsModal({ isOpen, onClose }: AccessSettingsM
                     className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     onClick={onClose}
                   >
-                    Отмена
+                    {t('expenses.accessSettings.cancel')}
                   </button>
                   <button
                     type="button"
                     className="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     onClick={onClose}
                   >
-                    Сохранить изменения
+                    {t('expenses.accessSettings.saveChanges')}
                   </button>
                 </div>
               </Dialog.Panel>

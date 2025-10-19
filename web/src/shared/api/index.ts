@@ -10,6 +10,7 @@ export type * from './types';
 // API Services
 export * from './authentication';
 export * from './health';
+export * from './expenses';
 
 // Error Handling
 export { useApiError, useErrorHandler } from '../lib/useApiError';

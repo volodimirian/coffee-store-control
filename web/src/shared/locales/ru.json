@@ -11,7 +11,8 @@
     "continue": "Продолжить",
     "back": "Назад",
     "brandName": "Business Control",
-    "actionCannotBeUndone": "Это действие нельзя отменить."
+    "actionCannotBeUndone": "Это действие нельзя отменить.",
+    "order": "Порядок"
   },
   "navigation": {
     "home": "Главная",
@@ -247,5 +248,167 @@
     "deletedLocationsDescription": "Эти локации были удалены, но могут быть восстановлены",
     "restoreLocation": "Восстановить локацию",
     "restore": "Восстановить"
+  },
+  "expenses": {
+    "categories": {
+      "title": "Управление категориями",
+      "description": "Создавайте и редактируйте разделы и категории для учета расходов",
+      "addSection": "Добавить раздел",
+      "addCategory": "Добавить категорию",
+      "createFirstSection": "Создать первый раздел",
+      "noSections": "Нет созданных разделов",
+      "noCategories": "В этом разделе пока нет категорий",
+      "addFirstCategory": "Добавить первую категорию",
+      "categoriesCount": "{{count}} категорий",
+      "currentPeriod": "Текущий период",
+      "confirmDeleteSection": "Вы уверены, что хотите удалить этот раздел?",
+      "confirmDeleteCategory": "Вы уверены, что хотите удалить эту категорию?",
+      "errorDeleteSection": "Ошибка при удалении раздела",
+      "errorDeleteCategory": "Ошибка при удалении категории",
+      "loadingData": "Загрузка данных...",
+      "noActivePeriod": "Не найден активный период для данного бизнеса",
+      "loadingError": "Ошибка загрузки данных"
+    },
+    "modals": {
+      "addSection": {
+        "title": "Добавить раздел расходов",
+        "nameLabel": "Название раздела",
+        "namePlaceholder": "Например: Кофе, Молоко, Сиропы",
+        "nameRequired": "Название раздела обязательно",
+        "nameMinLength": "Название должно содержать минимум 1 символ",
+        "nameMaxLength": "Название должно содержать максимум 200 символов",
+        "orderLabel": "Порядковый номер",
+        "orderHelp": "Определяет порядок отображения раздела. 0 = первый.",
+        "orderMin": "Порядковый номер должен быть больше или равен 0",
+        "creating": "Создание...",
+        "createButton": "Создать раздел",
+        "businessNotSelected": "Бизнес не выбран",
+        "createError": "Произошла ошибка при создании раздела"
+      },
+      "addCategory": {
+        "title": "Добавить категорию товаров",
+        "nameLabel": "Название категории",
+        "namePlaceholder": "Например: Арабика, Робуста, Молоко 3.2%",
+        "nameRequired": "Название категории обязательно",
+        "nameMinLength": "Название должно содержать минимум 1 символ",
+        "nameMaxLength": "Название должно содержать максимум 200 символов",
+        "unitLabel": "Единица измерения",
+        "unitPlaceholder": "Выберите единицу измерения",
+        "unitLoading": "Загрузка...",
+        "unitRequired": "Необходимо выбрать единицу измерения",
+        "noUnits": "Нет доступных единиц измерения. Создайте их сначала в настройках.",
+        "orderLabel": "Порядковый номер",
+        "orderHelp": "Определяет порядок отображения категории. 0 = первая.",
+        "orderMin": "Порядковый номер должен быть больше или равен 0",
+        "creating": "Создание...",
+        "createButton": "Создать категорию",
+        "createError": "Произошла ошибка при создании категории",
+        "unitsLoadError": "Ошибка загрузки единиц измерения"
+      }
+    },
+    "inventoryTracking": {
+      "todayButton": "Сегодня",
+      "addItemButton": "Товар",
+      "addSectionButton": "Раздел",
+      "exportButton": "Скачать в excel, ПДФ",
+      "exportAlert": "Функция экспорта будет реализована позже",
+      "tableHeader": "Раздел/Товар",
+      "totalColumn": "Итого",
+      "currentDayTitle": "Выделение текущего дня недели",
+      "currentDayDescription": "При добавлении «Раздела» в таблице добавляется новый раздел без ничего",
+      "todayLabel": "Сегодня"
+    },
+    "reports": {
+      "title": "Отчеты в разработке",
+      "description": "Здесь будут доступны различные отчеты и аналитика по расходам. Функционал будет добавлен в следующих обновлениях.",
+      "excelExport": "Экспорт в Excel",
+      "pdfExport": "Экспорт в PDF",
+      "analytics": "Аналитика",
+      "comingSoon": "Скоро будет доступен"
+    },
+    "mockData": {
+      "coffee": "КОФЕ",
+      "coffeeItem": "Кофе",
+      "milk": "МОЛОКО",
+      "milkItem": "Молоко",
+      "cream": "Сливки",
+      "lactoseFree": "Безлактозное",
+      "banana": "Банановое",
+      "coconut": "Кокосовое",
+      "syrups": "СИРОПЫ",
+      "caramel": "Карамель",
+      "saltedCaramel": "Соленая карамель",
+      "hazelnut": "Фундук",
+      "almond": "Миндаль",
+      "hazelnutPecan": "Фундук/Пекан"
+    },
+    "accessSettings": {
+      "title": "Настройки доступа к расходам",
+      "description": "Управляйте правами доступа пользователей к данным о расходах и инвентаризации.",
+      "close": "Закрыть",
+      "cancel": "Отмена",
+      "saveChanges": "Сохранить изменения",
+      "users": "Пользователи",
+      "addUser": "Добавить пользователя",
+      "user": "Пользователь",
+      "role": "Роль",
+      "access": "Доступ",
+      "actions": "Действия",
+      "edit": "Изменить",
+      "delete": "Удалить",
+      "accessLevels": {
+        "readOnly": "Только чтение",
+        "edit": "Редактирование", 
+        "fullAccess": "Полный доступ",
+        "noAccess": "Нет доступа"
+      },
+      "accessRules": "Правила доступа",
+      "viewData": "Просмотр данных",
+      "editing": "Редактирование",
+      "permissions": {
+        "allCategories": "Все категории",
+        "historicalData": "Исторические данные",
+        "totalsAndSums": "Суммы и итоги",
+        "addRecords": "Добавление записей",
+        "editExisting": "Изменение существующих",
+        "deleteRecords": "Удаление записей"
+      },
+      "mockRoles": {
+        "manager": "Менеджер",
+        "employee": "Сотрудник"
+      }
+    },
+    "navigation": {
+      "overview": "Обзор",
+      "inventoryTracking": "Учет расходов", 
+      "categories": "Категории",
+      "reports": "Отчеты"
+    },
+    "page": {
+      "description": "Управление и отслеживание всех расходов бизнеса для",
+      "defaultLocation": "вашей локации",
+      "accessSettings": "Настройки доступа"
+    },
+    "overview": {
+      "totalExpenses": "Общие расходы",
+      "thisMonth": "Этот месяц", 
+      "categoriesCount": "Категории",
+      "daysLeft": "Дней осталось",
+      "lastExpenses": "Последние расходы",
+      "noExpensesTitle": "Пока нет расходов",
+      "noExpensesDescription": "Начните с добавления первой записи о расходах.",
+      "addFirstExpense": "Добавить первый расход",
+      "quickActions": "Быстрые действия",
+      "addCategory": "Добавить категорию",
+      "viewReports": "Посмотреть отчеты",
+      "monthSummary": "Сводка за месяц",
+      "total": "Всего",
+      "categoryItems": {
+        "coffee": "Кофе и зерна",
+        "milk": "Молоко и молочные",
+        "syrups": "Сиропы",
+        "equipment": "Оборудование"
+      }
+    }
   }
 }

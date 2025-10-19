@@ -5,31 +5,33 @@ import {
   TagIcon,
   DocumentChartBarIcon
 } from '@heroicons/react/24/outline';
-
-const tabs = [
-  {
-    name: 'Обзор',
-    icon: ChartBarIcon,
-    path: '/expenses',
-  },
-  {
-    name: 'Учет расходов',
-    icon: TableCellsIcon,
-    path: '/expenses/inventory-tracking',
-  },
-  {
-    name: 'Категории',
-    icon: TagIcon,
-    path: '/expenses/categories',
-  },
-  {
-    name: 'Отчеты',
-    icon: DocumentChartBarIcon,
-    path: '/expenses/reports',
-  },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function ExpensesNavigation() {
+  const { t } = useTranslation();
+  
+  const tabs = [
+    {
+      name: t('expenses.navigation.overview'),
+      icon: ChartBarIcon,
+      path: '/expenses',
+    },
+    {
+      name: t('expenses.navigation.inventoryTracking'),
+      icon: TableCellsIcon,
+      path: '/expenses/inventory-tracking',
+    },
+    {
+      name: t('expenses.navigation.categories'),
+      icon: TagIcon,
+      path: '/expenses/categories',
+    },
+    {
+      name: t('expenses.navigation.reports'),
+      icon: DocumentChartBarIcon,
+      path: '/expenses/reports',
+    },
+  ];
   return (
     <div className="border-b border-gray-200 pb-5 mb-6">
       <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">{tabs.map((tab) => (

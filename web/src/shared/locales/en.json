@@ -202,6 +202,168 @@
     "saveSettings": "Save Settings",
     "version": "v0.1.0"
   },
+  "expenses": {
+    "categories": {
+      "title": "Category Management",
+      "description": "Create and edit sections and categories for expense tracking",
+      "addSection": "Add Section",
+      "addCategory": "Add Category",
+      "createFirstSection": "Create First Section",
+      "noSections": "No sections created",
+      "noCategories": "No categories in this section yet",
+      "addFirstCategory": "Add First Category",
+      "categoriesCount": "{{count}} categories",
+      "currentPeriod": "Current Period",
+      "confirmDeleteSection": "Are you sure you want to delete this section?",
+      "confirmDeleteCategory": "Are you sure you want to delete this category?",
+      "errorDeleteSection": "Error deleting section",
+      "errorDeleteCategory": "Error deleting category",
+      "loadingData": "Loading data...",
+      "noActivePeriod": "No active period found for this business",
+      "loadingError": "Error loading data"
+    },
+    "modals": {
+      "addSection": {
+        "title": "Add Expense Section",
+        "nameLabel": "Section Name",
+        "namePlaceholder": "e.g., Coffee, Milk, Syrups",
+        "nameRequired": "Section name is required",
+        "nameMinLength": "Name must be at least 1 character",
+        "nameMaxLength": "Name must be at most 200 characters",
+        "orderLabel": "Order Number",
+        "orderHelp": "Determines the display order of the section. 0 = first.",
+        "orderMin": "Order number must be greater than or equal to 0",
+        "creating": "Creating...",
+        "createButton": "Create Section",
+        "businessNotSelected": "Business not selected",
+        "createError": "An error occurred while creating the section"
+      },
+      "addCategory": {
+        "title": "Add Product Category",
+        "nameLabel": "Category Name",
+        "namePlaceholder": "e.g., Arabica, Robusta, Milk 3.2%",
+        "nameRequired": "Category name is required",
+        "nameMinLength": "Name must be at least 1 character",
+        "nameMaxLength": "Name must be at most 200 characters",
+        "unitLabel": "Unit of Measurement",
+        "unitPlaceholder": "Select unit of measurement",
+        "unitLoading": "Loading...",
+        "unitRequired": "Unit of measurement must be selected",
+        "noUnits": "No available units of measurement. Create them first in settings.",
+        "orderLabel": "Order Number",
+        "orderHelp": "Determines the display order of the category. 0 = first.",
+        "orderMin": "Order number must be greater than or equal to 0",
+        "creating": "Creating...",
+        "createButton": "Create Category",
+        "createError": "An error occurred while creating the category",
+        "unitsLoadError": "Error loading units of measurement"
+      }
+    },
+    "inventoryTracking": {
+      "todayButton": "Today",
+      "addItemButton": "Item",
+      "addSectionButton": "Section",
+      "exportButton": "Download to Excel, PDF",
+      "exportAlert": "Export function will be implemented later",
+      "tableHeader": "Section/Item",
+      "totalColumn": "Total",
+      "currentDayTitle": "Current Day Highlighting",
+      "currentDayDescription": "When adding a \"Section\", a new empty section is added to the table",
+      "todayLabel": "Today"
+    },
+    "reports": {
+      "title": "Reports in Development",
+      "description": "Various reports and expense analytics will be available here. The functionality will be added in future updates.",
+      "excelExport": "Excel Export",
+      "pdfExport": "PDF Export",
+      "analytics": "Analytics",
+      "comingSoon": "Coming Soon"
+    },
+    "mockData": {
+      "coffee": "COFFEE",
+      "coffeeItem": "Coffee",
+      "milk": "MILK",
+      "milkItem": "Milk",
+      "cream": "Cream",
+      "lactoseFree": "Lactose-Free",
+      "banana": "Banana",
+      "coconut": "Coconut",
+      "syrups": "SYRUPS",
+      "caramel": "Caramel",
+      "saltedCaramel": "Salted Caramel",
+      "hazelnut": "Hazelnut",
+      "almond": "Almond",
+      "hazelnutPecan": "Hazelnut/Pecan"
+    },
+    "accessSettings": {
+      "title": "Expense Access Settings",
+      "description": "Manage user access rights to expense and inventory data.",
+      "close": "Close",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "users": "Users",
+      "addUser": "Add User",
+      "user": "User",
+      "role": "Role",
+      "access": "Access",
+      "actions": "Actions",
+      "edit": "Edit",
+      "delete": "Delete",
+      "accessLevels": {
+        "readOnly": "Read Only",
+        "edit": "Edit",
+        "fullAccess": "Full Access",
+        "noAccess": "No Access"
+      },
+      "accessRules": "Access Rules",
+      "viewData": "View Data",
+      "editing": "Editing",
+      "permissions": {
+        "allCategories": "All Categories",
+        "historicalData": "Historical Data",
+        "totalsAndSums": "Totals and Sums",
+        "addRecords": "Add Records",
+        "editExisting": "Edit Existing",
+        "deleteRecords": "Delete Records"
+      },
+      "mockRoles": {
+        "manager": "Manager",
+        "employee": "Employee"
+      }
+    },
+    "navigation": {
+      "overview": "Overview",
+      "inventoryTracking": "Inventory Tracking",
+      "categories": "Categories", 
+      "reports": "Reports"
+    },
+    "page": {
+      "description": "Manage and track all business expenses for",
+      "defaultLocation": "your location",
+      "accessSettings": "Access Settings"
+    },
+    "overview": {
+      "totalExpenses": "Total Expenses",
+      "thisMonth": "This Month",
+      "categoriesCount": "Categories", 
+      "daysLeft": "Days Left",
+      "lastExpenses": "Recent Expenses",
+      "noExpensesTitle": "No expenses yet",
+      "noExpensesDescription": "Start by adding your first expense record.",
+      "addFirstExpense": "Add First Expense",
+      "quickActions": "Quick Actions",
+      "addCategory": "Add Category",
+      "viewReports": "View Reports",
+      "monthSummary": "Month Summary",
+      "total": "Total",
+      "categoryItems": {
+        "coffee": "Coffee and Beans",
+        "milk": "Milk and Dairy",
+        "syrups": "Syrups",
+        "equipment": "Equipment"
+      }
+    }
+  },
   "locations": {
     "title": "Locations",
     "description": "Manage your business locations",

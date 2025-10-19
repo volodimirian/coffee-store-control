@@ -5,8 +5,10 @@ import {
   PlusIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 export default function OverviewTab() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -20,7 +22,7 @@ export default function OverviewTab() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Общие расходы
+                    {t('expenses.overview.totalExpenses')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     ₽12,345
@@ -40,7 +42,7 @@ export default function OverviewTab() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Этот месяц
+                    {t('expenses.overview.thisMonth')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     ₽2,456
@@ -60,7 +62,7 @@ export default function OverviewTab() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Категории
+                    {t('expenses.overview.categoriesCount')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     8
@@ -80,7 +82,7 @@ export default function OverviewTab() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Дней осталось
+                    {t('expenses.overview.daysLeft')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     12
@@ -99,20 +101,20 @@ export default function OverviewTab() {
           <div className="bg-white shadow rounded-lg border">
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Последние расходы
+                {t('expenses.overview.lastExpenses')}
               </h3>
               
               {/* Placeholder for expense table */}
               <div className="border border-gray-200 rounded-lg p-8 text-center">
                 <ClipboardDocumentListIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Пока нет расходов</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">{t('expenses.overview.noExpensesTitle')}</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Начните с добавления первой записи о расходах.
+                  {t('expenses.overview.noExpensesDescription')}
                 </p>
                 <div className="mt-6">
                   <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     <PlusIcon className="h-4 w-4 mr-2" />
-                    Добавить первый расход
+                    {t('expenses.overview.addFirstExpense')}
                   </button>
                 </div>
               </div>
@@ -126,16 +128,16 @@ export default function OverviewTab() {
           <div className="bg-white shadow rounded-lg border">
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Быстрые действия
+                {t('expenses.overview.quickActions')}
               </h3>
               <div className="space-y-3">
                 <button className="w-full flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                   <PlusIcon className="h-4 w-4 mr-2" />
-                  Добавить категорию
+                  {t('expenses.overview.addCategory')}
                 </button>
                 <button className="w-full flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                   <ChartBarIcon className="h-4 w-4 mr-2" />
-                  Посмотреть отчеты
+                  {t('expenses.overview.viewReports')}
                 </button>
               </div>
             </div>
@@ -145,28 +147,28 @@ export default function OverviewTab() {
           <div className="bg-white shadow rounded-lg border">
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Сводка за месяц
+                {t('expenses.overview.monthSummary')}
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Кофе и зерна</span>
+                  <span className="text-gray-500">{t('expenses.overview.categoryItems.coffee')}</span>
                   <span className="font-medium">₽850</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Молоко и молочные</span>
+                  <span className="text-gray-500">{t('expenses.overview.categoryItems.milk')}</span>
                   <span className="font-medium">₽320</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Сиропы</span>
+                  <span className="text-gray-500">{t('expenses.overview.categoryItems.syrups')}</span>
                   <span className="font-medium">₽245</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Оборудование</span>
+                  <span className="text-gray-500">{t('expenses.overview.categoryItems.equipment')}</span>
                   <span className="font-medium">₽180</span>
                 </div>
                 <hr className="my-3" />
                 <div className="flex justify-between font-medium">
-                  <span>Всего</span>
+                  <span>{t('expenses.overview.total')}</span>
                   <span>₽1,595</span>
                 </div>
               </div>
