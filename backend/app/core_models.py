@@ -113,6 +113,7 @@ class Business(Base):
     # Expense tracking relationships
     suppliers = relationship("Supplier", back_populates="business")
     month_periods = relationship("MonthPeriod", back_populates="business")
+    units = relationship("Unit", back_populates="business")
 
 
 class UserBusiness(Base):
