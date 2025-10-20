@@ -267,6 +267,7 @@
       "exportAlert": "Export function will be implemented later",
       "tableHeader": "Section/Item",
       "totalColumn": "Total",
+      "itemsCount": "{{count}} items",
       "currentDayTitle": "Current Day Highlighting",
       "currentDayDescription": "When adding a \"Section\", a new empty section is added to the table",
       "todayLabel": "Today"

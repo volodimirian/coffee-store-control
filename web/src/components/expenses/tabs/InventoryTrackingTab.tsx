@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon,
   PlusIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@heroicons/react/24/outline';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -50,6 +52,7 @@ export default function InventoryTrackingTab() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
   
   // Calculate days of current month
   const monthStart = startOfMonth(currentDate);
@@ -66,6 +69,38 @@ export default function InventoryTrackingTab() {
 
   const handleToday = () => {
     setCurrentDate(new Date());
+  };
+
+  const toggleSectionCollapse = (sectionId: number) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  };
+
+  const collapseAllSections = () => {
+    setCollapsedSections(new Set(mockCategories.map(cat => cat.id)));
+  };
+
+  const expandAllSections = () => {
+    setCollapsedSections(new Set());
+  };
+
+  // Check if all sections are collapsed or expanded
+  const allSectionsCollapsed = mockCategories.length > 0 && mockCategories.every(category => collapsedSections.has(category.id));
+  const allSectionsExpanded = collapsedSections.size === 0;
+
+  const toggleAllSections = () => {
+    if (allSectionsCollapsed || (!allSectionsCollapsed && !allSectionsExpanded)) {
+      expandAllSections();
+    } else {
+      collapseAllSections();
+    }
   };
 
   return (
@@ -136,7 +171,20 @@ export default function InventoryTrackingTab() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r z-10">
-                  {t('expenses.inventoryTracking.tableHeader')}
+                  <div className="flex items-center justify-between">
+                    <span>{t('expenses.inventoryTracking.tableHeader')}</span>
+                    <button
+                      onClick={toggleAllSections}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      title={allSectionsCollapsed ? t('expenses.inventoryTracking.expandAll') : t('expenses.inventoryTracking.collapseAll')}
+                    >
+                      {allSectionsCollapsed ? (
+                        <ChevronDownIcon className="w-4 h-4 text-gray-600" />
+                      ) : (
+                        <ChevronUpIcon className="w-4 h-4 text-gray-600" />
+                      )}
+                    </button>
+                  </div>
                 </th>
                 {monthDays.map((day) => (
                   <th
@@ -154,42 +202,62 @@ export default function InventoryTrackingTab() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {mockCategories.map((category) => (
-                <>
-                  {/* Category Header */}
-                  <tr key={`category-${category.id}`} className="bg-blue-50">
-                    <td className="sticky left-0 bg-blue-50 px-4 py-2 font-medium text-blue-900 border-r z-10">
-                      {category.name}
-                    </td>
-                    {monthDays.map((day) => (
-                      <td key={day.toISOString()} className="px-3 py-2 border-r bg-blue-50"></td>
-                    ))}
-                    <td className="px-4 py-2 text-center font-medium bg-blue-50"></td>
-                  </tr>
-                  
-                  {/* Category Items */}
-                  {category.items.map((item) => (
-                    <tr key={`item-${item.id}`} className="hover:bg-gray-50">
-                      <td className="sticky left-0 bg-white hover:bg-gray-50 px-4 py-2 text-sm text-gray-900 border-r z-10">
-                        {item.name}
+            <tbody className="bg-white">
+              {mockCategories.map((category, categoryIndex) => {
+                const isCollapsed = collapsedSections.has(category.id);
+                return (
+                  <React.Fragment key={`category-${category.id}`}>
+                    {/* Add spacing between categories */}
+                    {categoryIndex > 0 && (
+                      <tr className="bg-gray-100">
+                        <td colSpan={monthDays.length + 2} className="h-2"></td>
+                      </tr>
+                    )}
+                    
+                    {/* Category Header - Clickable */}
+                    <tr className="bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors" onClick={() => toggleSectionCollapse(category.id)}>
+                      <td className="sticky left-0 bg-blue-50 hover:bg-blue-100 px-4 py-3 font-medium text-blue-900 border-r z-10 min-w-[250px]">
+                        <div className="flex items-center justify-between w-full">
+                          <span className="font-semibold">{category.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-blue-600">({t('expenses.inventoryTracking.itemsCount', { count: category.items.length })})</span>
+                            {isCollapsed ? (
+                              <ChevronDownIcon className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <ChevronUpIcon className="h-4 w-4 text-blue-600" />
+                            )}
+                          </div>
+                        </div>
                       </td>
                       {monthDays.map((day) => (
-                        <td key={day.toISOString()} className="px-3 py-2 border-r">
-                          <input
-                            type="number"
-                            className="w-full p-1 text-center text-sm border-0 focus:ring-1 focus:ring-blue-500 rounded"
-                            placeholder="0"
-                          />
-                        </td>
+                        <td key={day.toISOString()} className="px-3 py-3 border-r bg-blue-50 hover:bg-blue-100"></td>
                       ))}
-                      <td className="px-4 py-2 text-center text-sm font-medium">
-                        0
-                      </td>
+                      <td className="px-4 py-3 text-center font-medium bg-blue-50 hover:bg-blue-100"></td>
                     </tr>
-                  ))}
-                </>
-              ))}
+                    
+                    {/* Category Items - Show/Hide based on collapse state */}
+                    {!isCollapsed && category.items.map((item) => (
+                      <tr key={`item-${item.id}`} className="hover:bg-gray-50 border-b border-gray-100">
+                        <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
+                          {item.name}
+                        </td>
+                        {monthDays.map((day) => (
+                          <td key={day.toISOString()} className="px-3 py-2 border-r">
+                            <input
+                              type="number"
+                              className="w-full p-1 text-center text-sm border-0 focus:ring-1 focus:ring-blue-500 rounded"
+                              placeholder="0"
+                            />
+                          </td>
+                        ))}
+                        <td className="px-4 py-2 text-center text-sm font-medium">
+                          0
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
