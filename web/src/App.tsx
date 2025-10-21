@@ -23,7 +23,7 @@ import { fetchMe } from "~/shared/api/authentication";
 import { hasToken } from "~/shared/lib/helpers";
 
 export default function App() {
-  const { setUser } = useAppContext();
+  const { setUser, setIsInitialized } = useAppContext();
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -34,12 +34,19 @@ export default function App() {
     // Only fetch user data if we have a token
     if (hasToken()) {
       fetchMe()
-        .then(user => setUser(user))
-        .catch(() => setUser(null));
+        .then(user => {
+          setUser(user);
+          setIsInitialized(true);
+        })
+        .catch(() => {
+          setUser(null);
+          setIsInitialized(true);
+        });
     } else {
       setUser(null);
+      setIsInitialized(true);
     }
-  }, [setUser]);
+  }, [setUser, setIsInitialized]);
 
   return (
     <BrowserRouter>

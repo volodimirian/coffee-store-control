@@ -9,6 +9,7 @@ import { setLogoutHandler } from "~/shared/api/client";
 export function AppProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const [user, setUser] = useState<AppContextType["user"]>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Location state
   const [currentLocation, setCurrentLocationState] = useState<Location | null>(null);
@@ -93,13 +94,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user && hasToken()) {
       fetchLocations();
-    } else if (!user) {
-      // Only clear everything when user is not present
+    } else if (!user && isInitialized) {
+      // Only clear when user is definitely not present AND initialization is complete
       setLocations([]);
       setCurrentLocationState(null);
       localStorage.removeItem('currentLocation');
     }
-  }, [user, fetchLocations]);
+  }, [user, fetchLocations, isInitialized]);
 
   const createLocation = async (data: LocationCreate): Promise<Location> => {
     const newLocation = await locationsApi.createLocation(data);
@@ -166,6 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteLocation,
     fetchLocations,
     fetchLocationMembers,
+    setIsInitialized,
   };
 
   return (
