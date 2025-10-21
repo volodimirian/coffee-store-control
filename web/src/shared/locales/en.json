@@ -268,6 +268,7 @@
       "tableHeader": "Section/Item",
       "totalColumn": "Total",
       "itemsCount": "{{count}} items",
+      "selectBusiness": "Please select a business to view inventory tracking",
       "currentDayTitle": "Current Day Highlighting",
       "currentDayDescription": "When adding a \"Section\", a new empty section is added to the table",
       "todayLabel": "Today"

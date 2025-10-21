@@ -315,6 +315,7 @@
       "tableHeader": "Раздел/Товар",
       "totalColumn": "Итого",
       "itemsCount": "{{count}} товаров",
+      "selectBusiness": "Выберите бизнес для просмотра инвентаризации",
       "currentDayTitle": "Выделение текущего дня недели",
       "currentDayDescription": "При добавлении «Раздела» в таблице добавляется новый раздел без ничего",
       "todayLabel": "Сегодня"

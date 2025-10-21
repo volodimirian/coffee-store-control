@@ -164,7 +164,6 @@ export interface ExpenseSection {
   id: number;
   name: string;
   business_id: number;
-  month_period_id: number;
   created_by: number;
   order_index: number;
   is_active: boolean;
@@ -175,7 +174,6 @@ export interface ExpenseSection {
 export interface ExpenseSectionCreate {
   name: string;
   business_id: number;
-  month_period_id: number;
   order_index?: number;
   is_active?: boolean;
 }
@@ -195,6 +193,7 @@ export interface ExpenseCategory {
   id: number;
   name: string;
   section_id: number;
+  business_id: number;
   default_unit_id: number;
   created_by: number;
   order_index: number;
@@ -206,6 +205,7 @@ export interface ExpenseCategory {
 export interface ExpenseCategoryCreate {
   name: string;
   section_id: number;
+  business_id: number;
   default_unit_id: number;
   order_index?: number;
   is_active?: boolean;

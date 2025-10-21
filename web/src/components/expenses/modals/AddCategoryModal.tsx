@@ -67,6 +67,10 @@ export default function AddCategoryModal({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    if (!currentLocation?.id) {
+      newErrors.business = t('expenses.modals.addCategory.selectBusinessFirst');
+    }
+
     if (!formData.name.trim()) {
       newErrors.name = t('expenses.modals.addCategory.nameRequired');
     } else if (formData.name.trim().length < 1) {
@@ -101,6 +105,7 @@ export default function AddCategoryModal({
       const categoryData: ExpenseCategoryCreate = {
         name: formData.name.trim(),
         section_id: sectionId,
+        business_id: currentLocation?.id || 1, // Fallback to 1 if no location
         default_unit_id: formData.default_unit_id,
         order_index: formData.order_index,
         is_active: true,

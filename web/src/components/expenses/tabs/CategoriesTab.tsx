@@ -59,8 +59,7 @@ export default function CategoriesTab() {
         // Get sections for this period
         const sectionsResponse = await expenseSectionsApi.list({
           business_id: currentLocation.id,
-          month_period_id: period.id,
-          include_categories: false,
+          include_categories: true
         });
 
         // Load categories for each section
@@ -283,7 +282,6 @@ export default function CategoriesTab() {
       <AddSectionModal
         isOpen={isAddSectionModalOpen}
         onClose={() => setIsAddSectionModalOpen(false)}
-        monthPeriodId={currentPeriod?.id || 0}
         onSectionAdded={handleSectionAdded}
       />
 

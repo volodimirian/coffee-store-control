@@ -8,14 +8,12 @@ import { useAppContext } from '~/shared/context/AppContext';
 interface AddSectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  monthPeriodId: number;
   onSectionAdded?: (section: ExpenseSection) => void;
 }
 
 export default function AddSectionModal({
   isOpen,
   onClose,
-  monthPeriodId,
   onSectionAdded,
 }: AddSectionModalProps) {
   const { t } = useTranslation();
@@ -73,7 +71,6 @@ export default function AddSectionModal({
       const sectionData: ExpenseSectionCreate = {
         name: formData.name.trim(),
         business_id: currentLocation.id,
-        month_period_id: monthPeriodId,
         order_index: formData.order_index,
         is_active: true,
       };

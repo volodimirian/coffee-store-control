@@ -164,7 +164,6 @@ export const monthPeriodsApi = {
 
 interface ExpenseSectionListParams {
   business_id: number;
-  month_period_id: number;
   is_active?: boolean;
   include_categories?: boolean;
   skip?: number;
@@ -174,20 +173,20 @@ interface ExpenseSectionListParams {
 
 export const expenseSectionsApi = {
   /**
-   * Get all sections for a business period
+   * Get all sections for a business
    */
   list: async (params: ExpenseSectionListParams): Promise<ExpenseSectionListResponse> => {
     const queryParams = new URLSearchParams();
     
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '' && 
-          !['business_id', 'month_period_id'].includes(key)) {
+          key !== 'business_id') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<ExpenseSectionListResponse>(
-      `/expenses/sections/business/${params.business_id}/period/${params.month_period_id}?${queryParams.toString()}`
+      `/expenses/sections/business/${params.business_id}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -232,6 +231,20 @@ export const expenseSectionsApi = {
     const response = await api.post<ExpenseSection>(`/expenses/sections/${sectionId}/restore`);
     return response.data;
   },
+
+  /**
+   * Deactivate section and all its categories
+   */
+  deactivate: async (sectionId: number): Promise<void> => {
+    await api.patch(`/expenses/sections/${sectionId}/deactivate`);
+  },
+
+  /**
+   * Activate section (categories remain inactive until manually activated)
+   */
+  activate: async (sectionId: number): Promise<void> => {
+    await api.patch(`/expenses/sections/${sectionId}/activate`);
+  },
 };
 
 // ============ Expense Categories API ============
@@ -239,7 +252,6 @@ export const expenseSectionsApi = {
 interface ExpenseCategoryListParams {
   section_id?: number;
   business_id?: number;
-  month_period_id?: number;
   is_active?: boolean;
   include_relations?: boolean;
   skip?: number;
@@ -270,12 +282,11 @@ export const expenseCategoriesApi = {
   },
 
   /**
-   * Get categories by business period
+   * Get categories by business
    */
-  listByBusinessPeriod: async (
+  listByBusiness: async (
     businessId: number,
-    monthPeriodId: number,
-    params: Omit<ExpenseCategoryListParams, 'business_id' | 'month_period_id'> = {}
+    params: Omit<ExpenseCategoryListParams, 'business_id'> = {}
   ): Promise<ExpenseCategoryListResponse> => {
     const queryParams = new URLSearchParams();
     
@@ -286,7 +297,7 @@ export const expenseCategoriesApi = {
     });
 
     const response = await api.get<ExpenseCategoryListResponse>(
-      `/expenses/categories/business/${businessId}/period/${monthPeriodId}?${queryParams.toString()}`
+      `/expenses/categories/business/${businessId}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -330,6 +341,34 @@ export const expenseCategoriesApi = {
   restore: async (categoryId: number): Promise<ExpenseCategory> => {
     const response = await api.post<ExpenseCategory>(`/expenses/categories/${categoryId}/restore`);
     return response.data;
+  },
+
+  /**
+   * Deactivate category
+   */
+  deactivate: async (categoryId: number): Promise<void> => {
+    await api.patch(`/expenses/categories/${categoryId}/deactivate`);
+  },
+
+  /**
+   * Activate category
+   */
+  activate: async (categoryId: number): Promise<void> => {
+    await api.patch(`/expenses/categories/${categoryId}/activate`);
+  },
+
+  /**
+   * Activate all categories in a section
+   */
+  activateAllInSection: async (sectionId: number): Promise<void> => {
+    await api.patch(`/expenses/categories/section/${sectionId}/activate-all-categories`);
+  },
+
+  /**
+   * Deactivate all categories in a section
+   */
+  deactivateAllInSection: async (sectionId: number): Promise<void> => {
+    await api.patch(`/expenses/categories/section/${sectionId}/deactivate-all-categories`);
   },
 };
 

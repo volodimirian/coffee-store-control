@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon,
@@ -10,49 +10,46 @@ import {
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { useAppContext } from '~/shared/context/AppContext';
 import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
 import AddCategoryModal from '~/components/expenses/modals/AddCategoryModal';
+import { expenseSectionsApi, expenseCategoriesApi, monthPeriodsApi } from '~/shared/api/expenses';
+import type { MonthPeriod } from '~/shared/api/types';
 
-// Mock data - later we'll replace with API calls
-const mockCategories = [
-  {
-    id: 1,
-    name: 'КОФЕ',
-    items: [
-      { id: 1, name: 'Кофе' },
-      { id: 2, name: 'Кофе' },
-    ]
-  },
-  {
-    id: 2,
-    name: 'МОЛОКО',
-    items: [
-      { id: 3, name: 'Молоко' },
-      { id: 4, name: 'Сливки' },
-      { id: 5, name: 'Безлактозное' },
-      { id: 6, name: 'Банановое' },
-      { id: 7, name: 'Кокосовое' },
-    ]
-  },
-  {
-    id: 3,
-    name: 'СИРОПЫ',
-    items: [
-      { id: 8, name: 'Карамель' },
-      { id: 9, name: 'Соленая карамель' },
-      { id: 10, name: 'Фундук' },
-      { id: 11, name: 'Миндаль' },
-      { id: 12, name: 'Фундук/Пекан' },
-    ]
-  }
-];
+// Interface for table data structure
+interface TableCategory {
+  id: number;
+  name: string;
+  items: {
+    id: number;
+    name: string;
+  }[];
+}
 
 export default function InventoryTrackingTab() {
   const { t } = useTranslation();
+  const { currentLocation } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+
+  // Handlers for modal success callbacks
+  const handleSectionAdded = () => {
+    setIsAddSectionModalOpen(false);
+    loadData(); // Reload data after adding section
+  };
+
+  const handleItemAdded = () => {
+    setIsAddItemModalOpen(false);
+    loadData(); // Reload data after adding item
+  };
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
+  
+  // API data states
+  const [categories, setCategories] = useState<TableCategory[]>([]);
+  const [currentPeriod, setCurrentPeriod] = useState<MonthPeriod | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Calculate days of current month
   const monthStart = startOfMonth(currentDate);
@@ -84,7 +81,7 @@ export default function InventoryTrackingTab() {
   };
 
   const collapseAllSections = () => {
-    setCollapsedSections(new Set(mockCategories.map(cat => cat.id)));
+    setCollapsedSections(new Set(categories.map(cat => cat.id)));
   };
 
   const expandAllSections = () => {
@@ -92,7 +89,7 @@ export default function InventoryTrackingTab() {
   };
 
   // Check if all sections are collapsed or expanded
-  const allSectionsCollapsed = mockCategories.length > 0 && mockCategories.every(category => collapsedSections.has(category.id));
+  const allSectionsCollapsed = categories.length > 0 && categories.every(category => collapsedSections.has(category.id));
   const allSectionsExpanded = collapsedSections.size === 0;
 
   const toggleAllSections = () => {
@@ -102,6 +99,116 @@ export default function InventoryTrackingTab() {
       collapseAllSections();
     }
   };
+
+  // Load data functions
+  const loadData = async () => {
+    if (!currentLocation) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+
+      // 1. Find current month period
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1; // JS months are 0-indexed
+      
+      const periodsResponse = await monthPeriodsApi.list({
+        business_id: currentLocation.id,
+        status: 'active'
+      });
+      
+      let period = periodsResponse.periods.find(p => p.year === year && p.month === month);
+      
+      // Create period if it doesn't exist
+      if (!period) {
+        period = await monthPeriodsApi.create({
+          name: format(currentDate, 'LLLL yyyy', { locale: ru }),
+          year,
+          month,
+          business_id: currentLocation.id,
+          status: 'active'
+        });
+      }
+      
+      setCurrentPeriod(period);
+
+      // 2. Load sections for this business
+      const sectionsResponse = await expenseSectionsApi.list({
+        business_id: currentLocation.id,
+        include_categories: true
+      });
+
+      // 3. Load categories for each section and build table structure
+      const tableData: TableCategory[] = [];
+      
+      for (const section of sectionsResponse.sections) {
+        const categoriesResponse = await expenseCategoriesApi.listBySection(section.id, {
+          include_relations: true
+        });
+        
+        const sectionData: TableCategory = {
+          id: section.id,
+          name: section.name,
+          items: categoriesResponse.categories.map(category => ({
+            id: category.id,
+            name: category.name
+          }))
+        };
+        
+        tableData.push(sectionData);
+      }
+      
+      setCategories(tableData);
+      
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Ошибка загрузки данных');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data when component mounts or date changes
+  useEffect(() => {
+    if (currentLocation) {
+      console.log('Loading data for business:', currentLocation.id, currentLocation.name);
+      loadData();
+    }
+  }, [currentDate, currentLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="text-lg text-gray-600">{t('common.loading')}</div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="text-red-800 font-medium mb-2">Ошибка</div>
+        <div className="text-red-600">{error}</div>
+        <button
+          onClick={loadData}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+        >
+          Повторить попытку
+        </button>
+      </div>
+    );
+  }
+
+  // Show loading or message if no business selected
+  if (!currentLocation) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">{t('expenses.inventoryTracking.selectBusiness')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -203,7 +310,7 @@ export default function InventoryTrackingTab() {
               </tr>
             </thead>
             <tbody className="bg-white">
-              {mockCategories.map((category, categoryIndex) => {
+              {categories.map((category, categoryIndex) => {
                 const isCollapsed = collapsedSections.has(category.id);
                 return (
                   <React.Fragment key={`category-${category.id}`}>
@@ -284,21 +391,14 @@ export default function InventoryTrackingTab() {
       <AddSectionModal
         isOpen={isAddSectionModalOpen}
         onClose={() => setIsAddSectionModalOpen(false)}
-        monthPeriodId={1} // TODO: Get from context/API
-        onSectionAdded={(section) => {
-          console.log('Section added:', section);
-          // TODO: Refresh data or update state
-        }}
+        onSectionAdded={handleSectionAdded}
       />
 
       <AddCategoryModal
         isOpen={isAddItemModalOpen}
         onClose={() => setIsAddItemModalOpen(false)}
-        sectionId={1} // TODO: Allow user to select section
-        onCategoryAdded={(category) => {
-          console.log('Category added:', category);
-          // TODO: Refresh data or update state
-        }}
+        sectionId={categories.length > 0 ? categories[0].id : 1}
+        onCategoryAdded={handleItemAdded}
       />
     </div>
   );
