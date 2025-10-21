@@ -142,7 +142,6 @@ class ExpenseSectionBase(BaseModel):
 
 class ExpenseSectionCreate(ExpenseSectionBase):
     business_id: int
-    month_period_id: int
 
 
 class ExpenseSectionUpdate(BaseModel):
@@ -154,7 +153,6 @@ class ExpenseSectionUpdate(BaseModel):
 class ExpenseSectionOut(ExpenseSectionBase):
     id: int
     business_id: int
-    month_period_id: int
     created_by: int
     created_at: datetime
     updated_at: datetime
@@ -173,6 +171,7 @@ class ExpenseCategoryBase(BaseModel):
 
 class ExpenseCategoryCreate(ExpenseCategoryBase):
     section_id: int
+    business_id: int
 
 
 class ExpenseCategoryUpdate(BaseModel):
@@ -185,6 +184,7 @@ class ExpenseCategoryUpdate(BaseModel):
 class ExpenseCategoryOut(ExpenseCategoryBase):
     id: int
     section_id: int
+    business_id: int
     created_by: int
     created_at: datetime
     updated_at: datetime

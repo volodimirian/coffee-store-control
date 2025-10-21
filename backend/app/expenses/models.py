@@ -80,19 +80,20 @@ class MonthPeriod(Base):
 
     # Relationships
     business = relationship("Business", back_populates="month_periods")
-    expense_sections = relationship("ExpenseSection", back_populates="month_period")
     expense_records = relationship("ExpenseRecord", back_populates="month_period")
     inventory_balances = relationship("InventoryBalance", back_populates="month_period")
 
 
 class ExpenseSection(Base):
-    """Sections for organizing expense categories (e.g., Coffee & Beans, Dairy Products)."""
+    """Sections for organizing expense categories (e.g., Coffee & Beans, Dairy Products).
+    
+    These are created at business level and reused across all periods.
+    """
     __tablename__ = "expense_sections"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
     business_id = Column(Integer, ForeignKey("businesses.id"), nullable=False)
-    month_period_id = Column(Integer, ForeignKey("month_periods.id"), nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     order_index = Column(Integer, nullable=False, default=0)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -101,18 +102,22 @@ class ExpenseSection(Base):
 
     # Relationships
     business = relationship("Business")
-    month_period = relationship("MonthPeriod", back_populates="expense_sections")
     created_by_user = relationship("User")
     expense_categories = relationship("ExpenseCategory", back_populates="section")
 
 
 class ExpenseCategory(Base):
-    """Categories of items within sections (e.g., Arabica Coffee, 3.2% Milk)."""
+    """Categories of items within sections (e.g., Arabica Coffee, 3.2% Milk).
+    
+    These are created at business level and reused across all periods.
+    Each category belongs to a section and has a default measurement unit.
+    """
     __tablename__ = "expense_categories"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
     section_id = Column(Integer, ForeignKey("expense_sections.id"), nullable=False)
+    business_id = Column(Integer, ForeignKey("businesses.id"), nullable=False)  # For easier queries
     default_unit_id = Column(Integer, ForeignKey("units.id"), nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -122,6 +127,7 @@ class ExpenseCategory(Base):
 
     # Relationships
     section = relationship("ExpenseSection", back_populates="expense_categories")
+    business = relationship("Business")
     default_unit = relationship("Unit")
     created_by_user = relationship("User")
     invoice_items = relationship("InvoiceItem", back_populates="category")

@@ -30,6 +30,7 @@ class ExpenseCategoryService:
         category = ExpenseCategory(
             name=category_data.name,
             section_id=category_data.section_id,
+            business_id=category_data.business_id,
             default_unit_id=category_data.default_unit_id,
             created_by=created_by_user_id,
             order_index=category_data.order_index if category_data.order_index is not None else next_order,
@@ -90,22 +91,20 @@ class ExpenseCategoryService:
         return list(result.scalars().all())
 
     @staticmethod
-    async def get_categories_by_business_period(
+    async def get_categories_by_business(
         session: AsyncSession,
         business_id: int,
-        month_period_id: int,
         is_active: Optional[bool] = None,
         include_relations: bool = False,
         skip: int = 0,
         limit: int = 200,
     ) -> List[ExpenseCategory]:
-        """Get all categories for a business period through sections."""
+        """Get all categories for a business through sections."""
         from app.expenses.models import ExpenseSection
         
         query = select(ExpenseCategory).join(ExpenseSection).where(
             and_(
                 ExpenseSection.business_id == business_id,
-                ExpenseSection.month_period_id == month_period_id,
                 ExpenseSection.is_active,
             )
         )
@@ -267,7 +266,6 @@ class ExpenseCategoryService:
         query = select(ExpenseCategory).join(ExpenseSection).where(
             and_(
                 ExpenseSection.business_id == business_id,
-                ExpenseSection.month_period_id == month_period_id,
                 ExpenseSection.is_active,
                 ExpenseCategory.name.ilike(f"%{search_query}%")
             )
@@ -284,4 +282,52 @@ class ExpenseCategoryService:
         
         result = await session.execute(query)
         return list(result.scalars().all())
-    
+
+    @staticmethod
+    async def activate_all_categories_in_section(
+        session: AsyncSession,
+        section_id: int,
+    ) -> bool:
+        """Activate all categories in a section."""
+        try:
+            # Get all categories in the section (including inactive ones)
+            query = select(ExpenseCategory).where(
+                ExpenseCategory.section_id == section_id
+            )
+            result = await session.execute(query)
+            categories = list(result.scalars().all())
+            
+            # Activate all categories
+            for category in categories:
+                setattr(category, 'is_active', True)
+            
+            await session.flush()
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    async def deactivate_all_categories_in_section(
+        session: AsyncSession,
+        section_id: int,
+    ) -> bool:
+        """Deactivate all categories in a section."""
+        try:
+            # Get all active categories in the section
+            query = select(ExpenseCategory).where(
+                and_(
+                    ExpenseCategory.section_id == section_id,
+                    ExpenseCategory.is_active
+                )
+            )
+            result = await session.execute(query)
+            categories = list(result.scalars().all())
+            
+            # Deactivate all categories
+            for category in categories:
+                setattr(category, 'is_active', False)
+            
+            await session.flush()
+            return True
+        except Exception:
+            return False

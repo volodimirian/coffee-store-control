@@ -120,10 +120,9 @@ async def get_categories_by_section(
     )
 
 
-@router.get("/business/{business_id}/period/{month_period_id}", response_model=ExpenseCategoryListOut)
-async def get_categories_by_business_period(
+@router.get("/business/{business_id}", response_model=ExpenseCategoryListOut)
+async def get_categories_by_business(
     business_id: int,
-    month_period_id: int,
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     include_relations: bool = Query(False, description="Include section and unit relations"),
     skip: int = Query(0, ge=0, description="Number of categories to skip"),
@@ -132,7 +131,7 @@ async def get_categories_by_business_period(
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all categories for a business period across all sections."""
+    """Get all categories for a business across all sections."""
     # Check if user has access to business
     has_access = await BusinessService.can_user_access_business(
         session=session,
@@ -145,26 +144,15 @@ async def get_categories_by_business_period(
             detail="Access denied to this business",
         )
 
-    if search:
-        categories = await ExpenseCategoryService.search_categories_by_business_period(
-            session=session,
-            business_id=business_id,
-            month_period_id=month_period_id,
-            search_query=search,
-            is_active=is_active,
-            skip=skip,
-            limit=limit,
-        )
-    else:
-        categories = await ExpenseCategoryService.get_categories_by_business_period(
-            session=session,
-            business_id=business_id,
-            month_period_id=month_period_id,
-            is_active=is_active,
-            include_relations=include_relations,
-            skip=skip,
-            limit=limit,
-        )
+    # Get categories for this business
+    categories = await ExpenseCategoryService.get_categories_by_business(
+        session=session,
+        business_id=business_id,
+        is_active=is_active,
+        include_relations=include_relations,
+        skip=skip,
+        limit=limit,
+    )
 
     # For business-wide categories, total count is handled differently
     total = len(categories)  # Simplified for now
@@ -399,4 +387,201 @@ async def reorder_categories(
         )
 
     await session.commit()
-    
+
+
+@router.patch("/{category_id}/deactivate", status_code=status.HTTP_204_NO_CONTENT)
+async def deactivate_category(
+    category_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Deactivate (soft delete) an expense category. User must be able to manage the business."""
+    # Get category and verify business access
+    category = await ExpenseCategoryService.get_category_by_id(
+        session=session,
+        category_id=category_id,
+        include_inactive=True,
+    )
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found",
+        )
+
+    # Get section to verify business access
+    section = await ExpenseSectionService.get_section_by_id(
+        session=session, 
+        section_id=getattr(category, 'section_id')
+    )
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category's section not found",
+        )
+
+    # Check if user has access to manage the business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this business",
+        )
+
+    success = await ExpenseCategoryService.delete_category(
+        session=session,
+        category_id=category_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to deactivate category",
+        )
+
+    await session.commit()
+
+
+@router.patch("/{category_id}/activate", status_code=status.HTTP_204_NO_CONTENT)
+async def activate_category(
+    category_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Activate (restore) an expense category. User must be able to manage the business."""
+    # Get category and verify business access
+    category = await ExpenseCategoryService.get_category_by_id(
+        session=session,
+        category_id=category_id,
+        include_inactive=True,
+    )
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found",
+        )
+
+    # Get section to verify business access
+    section = await ExpenseSectionService.get_section_by_id(
+        session=session, 
+        section_id=getattr(category, 'section_id')
+    )
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category's section not found",
+        )
+
+    # Check if user has access to manage the business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this business",
+        )
+
+    success = await ExpenseCategoryService.restore_category(
+        session=session,
+        category_id=category_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to activate category",
+        )
+
+    await session.commit()
+
+
+@router.patch("/section/{section_id}/activate-all-categories", status_code=status.HTTP_204_NO_CONTENT)
+async def activate_all_categories_in_section(
+    section_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Activate all categories in a section. User must be able to manage the business."""
+    # Get section and verify business access
+    section = await ExpenseSectionService.get_section_by_id(
+        session=session,
+        section_id=section_id,
+        include_inactive=True,
+    )
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Section not found",
+        )
+
+    # Check if user has access to manage the business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this business",
+        )
+
+    success = await ExpenseCategoryService.activate_all_categories_in_section(
+        session=session,
+        section_id=section_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to activate categories",
+        )
+
+    await session.commit()
+
+
+@router.patch("/section/{section_id}/deactivate-all-categories", status_code=status.HTTP_204_NO_CONTENT)
+async def deactivate_all_categories_in_section(
+    section_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Deactivate all categories in a section. User must be able to manage the business."""
+    # Get section and verify business access
+    section = await ExpenseSectionService.get_section_by_id(
+        session=session,
+        section_id=section_id,
+        include_inactive=True,
+    )
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Section not found",
+        )
+
+    # Check if user has access to manage the business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this business",
+        )
+
+    success = await ExpenseCategoryService.deactivate_all_categories_in_section(
+        session=session,
+        section_id=section_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to deactivate categories",
+        )
+
+    await session.commit()

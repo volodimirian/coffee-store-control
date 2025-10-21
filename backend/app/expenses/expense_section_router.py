@@ -48,10 +48,9 @@ async def create_expense_section(
     return ExpenseSectionOut.from_orm(section)
 
 
-@router.get("/business/{business_id}/period/{month_period_id}", response_model=ExpenseSectionListOut)
-async def get_sections_by_business_period(
+@router.get("/business/{business_id}", response_model=ExpenseSectionListOut)
+async def get_sections_by_business(
     business_id: int,
-    month_period_id: int,
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     include_categories: bool = Query(False, description="Include categories in sections"),
     skip: int = Query(0, ge=0, description="Number of sections to skip"),
@@ -60,7 +59,7 @@ async def get_sections_by_business_period(
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all sections for a business period."""
+    """Get all sections for a business."""
     # Check if user has access to business
     has_access = await BusinessService.can_user_access_business(
         session=session,
@@ -77,27 +76,24 @@ async def get_sections_by_business_period(
         sections = await ExpenseSectionService.search_sections(
             session=session,
             business_id=business_id,
-            month_period_id=month_period_id,
             search_query=search,
             is_active=is_active,
             skip=skip,
             limit=limit,
         )
     else:
-        sections = await ExpenseSectionService.get_sections_by_business_period(
+        sections = await ExpenseSectionService.get_sections_by_business(
             session=session,
             business_id=business_id,
-            month_period_id=month_period_id,
             is_active=is_active,
             include_categories=include_categories,
             skip=skip,
             limit=limit,
         )
 
-    total = await ExpenseSectionService.count_sections_by_business_period(
+    total = await ExpenseSectionService.count_sections_by_business(
         session=session,
         business_id=business_id,
-        month_period_id=month_period_id,
         is_active=is_active,
     )
 
@@ -259,15 +255,14 @@ async def restore_section(
     return ExpenseSectionOut.from_orm(restored_section)
 
 
-@router.post("/business/{business_id}/period/{month_period_id}/reorder", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/business/{business_id}/reorder", status_code=status.HTTP_204_NO_CONTENT)
 async def reorder_sections(
     business_id: int,
-    month_period_id: int,
     reorder_request: ExpenseSectionReorderRequest,
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Reorder sections within a business period. User must be able to manage the business."""
+    """Reorder sections within a business. User must be able to manage the business."""
     # Check if user can manage business
     can_manage = await BusinessService.can_user_manage_business(
         session=session,
@@ -283,7 +278,6 @@ async def reorder_sections(
     success = await ExpenseSectionService.reorder_sections(
         session=session,
         business_id=business_id,
-        month_period_id=month_period_id,
         section_orders=reorder_request.section_orders,
     )
     if not success:
@@ -293,4 +287,91 @@ async def reorder_sections(
         )
 
     await session.commit()
-    
+
+
+@router.patch("/{section_id}/deactivate", status_code=status.HTTP_204_NO_CONTENT)
+async def deactivate_section(
+    section_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Deactivate (soft delete) an expense section and all its categories. User must be able to manage the business."""
+    # Get section and verify business access
+    section = await ExpenseSectionService.get_section_by_id(
+        session=session,
+        section_id=section_id,
+        include_inactive=True,
+    )
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Section not found",
+        )
+
+    # Check if user has access to manage the business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this business",
+        )
+
+    success = await ExpenseSectionService.delete_section(
+        session=session,
+        section_id=section_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to deactivate section",
+        )
+
+    await session.commit()
+
+
+@router.patch("/{section_id}/activate", status_code=status.HTTP_204_NO_CONTENT)
+async def activate_section(
+    section_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Activate (restore) an expense section. User must be able to manage the business."""
+    # Get section and verify business access
+    section = await ExpenseSectionService.get_section_by_id(
+        session=session,
+        section_id=section_id,
+        include_inactive=True,
+    )
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Section not found",
+        )
+
+    # Check if user has access to manage the business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this business",
+        )
+
+    success = await ExpenseSectionService.restore_section(
+        session=session,
+        section_id=section_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to activate section",
+        )
+
+    await session.commit()

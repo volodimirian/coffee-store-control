@@ -114,6 +114,8 @@ class Business(Base):
     suppliers = relationship("Supplier", back_populates="business")
     month_periods = relationship("MonthPeriod", back_populates="business")
     units = relationship("Unit", back_populates="business")
+    expense_sections = relationship("ExpenseSection", back_populates="business")
+    expense_categories = relationship("ExpenseCategory", back_populates="business")
 
 
 class UserBusiness(Base):

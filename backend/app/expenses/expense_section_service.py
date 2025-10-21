@@ -21,17 +21,15 @@ class ExpenseSectionService:
         created_by_user_id: int,
     ) -> ExpenseSection:
         """Create a new expense section."""
-        # Get next order index for this business/period
+        # Get next order index for this business
         next_order = await ExpenseSectionService._get_next_order_index(
             session=session,
             business_id=section_data.business_id,
-            month_period_id=section_data.month_period_id,
         )
 
         section = ExpenseSection(
             name=section_data.name,
             business_id=section_data.business_id,
-            month_period_id=section_data.month_period_id,
             created_by=created_by_user_id,
             order_index=section_data.order_index if section_data.order_index is not None else next_order,
             is_active=section_data.is_active,
@@ -62,21 +60,17 @@ class ExpenseSectionService:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_sections_by_business_period(
+    async def get_sections_by_business(
         session: AsyncSession,
         business_id: int,
-        month_period_id: int,
         is_active: Optional[bool] = None,
         include_categories: bool = False,
         skip: int = 0,
         limit: int = 100,
     ) -> List[ExpenseSection]:
-        """Get all sections for a business period."""
+        """Get all sections for a business."""
         query = select(ExpenseSection).where(
-            and_(
-                ExpenseSection.business_id == business_id,
-                ExpenseSection.month_period_id == month_period_id,
-            )
+            ExpenseSection.business_id == business_id
         )
         
         if is_active is not None:
@@ -91,18 +85,14 @@ class ExpenseSectionService:
         return list(result.scalars().all())
 
     @staticmethod
-    async def count_sections_by_business_period(
+    async def count_sections_by_business(
         session: AsyncSession,
         business_id: int,
-        month_period_id: int,
         is_active: Optional[bool] = None,
     ) -> int:
-        """Count sections for a business period."""
+        """Count sections for a business."""
         query = select(func.count(ExpenseSection.id)).where(
-            and_(
-                ExpenseSection.business_id == business_id,
-                ExpenseSection.month_period_id == month_period_id,
-            )
+            ExpenseSection.business_id == business_id
         )
         
         if is_active is not None:
@@ -136,12 +126,24 @@ class ExpenseSectionService:
         session: AsyncSession,
         section_id: int,
     ) -> bool:
-        """Soft delete section."""
+        """Soft delete section and all its categories."""
         section = await ExpenseSectionService.get_section_by_id(session, section_id)
         if not section:
             return False
 
+        # Deactivate the section
         setattr(section, 'is_active', False)
+        
+        # Deactivate all categories in this section
+        from app.expenses.models import ExpenseCategory
+        from sqlalchemy import update
+        
+        await session.execute(
+            update(ExpenseCategory)
+            .where(ExpenseCategory.section_id == section_id)
+            .values(is_active=False)
+        )
+        
         await session.flush()
         return True
 
@@ -163,14 +165,13 @@ class ExpenseSectionService:
     async def reorder_sections(
         session: AsyncSession,
         business_id: int,
-        month_period_id: int,
         section_orders: List[tuple[int, int]],  # [(section_id, new_order), ...]
     ) -> bool:
-        """Reorder sections within a business period."""
+        """Reorder sections within a business."""
         try:
             for section_id, new_order in section_orders:
                 section = await ExpenseSectionService.get_section_by_id(session, section_id)
-                if section and getattr(section, 'business_id') == business_id and getattr(section, 'month_period_id') == month_period_id:
+                if section and getattr(section, 'business_id') == business_id:
                     setattr(section, 'order_index', new_order)
             
             await session.flush()
@@ -182,13 +183,11 @@ class ExpenseSectionService:
     async def _get_next_order_index(
         session: AsyncSession,
         business_id: int,
-        month_period_id: int,
     ) -> int:
         """Get next order index for a new section."""
         query = select(func.max(ExpenseSection.order_index)).where(
             and_(
                 ExpenseSection.business_id == business_id,
-                ExpenseSection.month_period_id == month_period_id,
                 ExpenseSection.is_active,
             )
         )
@@ -201,17 +200,15 @@ class ExpenseSectionService:
     async def search_sections(
         session: AsyncSession,
         business_id: int,
-        month_period_id: int,
         search_query: str,
         is_active: Optional[bool] = None,
         skip: int = 0,
         limit: int = 50,
     ) -> List[ExpenseSection]:
-        """Search sections by name within a business period."""
+        """Search sections by name within a business."""
         query = select(ExpenseSection).where(
             and_(
                 ExpenseSection.business_id == business_id,
-                ExpenseSection.month_period_id == month_period_id,
                 ExpenseSection.name.ilike(f"%{search_query}%")
             )
         )
