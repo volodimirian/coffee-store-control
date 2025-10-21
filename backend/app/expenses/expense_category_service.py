@@ -345,3 +345,24 @@ class ExpenseCategoryService:
             return True
         except Exception:
             return False
+
+    @staticmethod
+    async def hard_delete_all_categories_in_section(
+        session: AsyncSession,
+        section_id: int,
+    ) -> bool:
+        """Permanently delete all categories in a section from database."""
+        try:
+            # Get all categories in the section (both active and inactive)
+            query = select(ExpenseCategory).where(ExpenseCategory.section_id == section_id)
+            result = await session.execute(query)
+            categories = list(result.scalars().all())
+            
+            # Hard delete all categories
+            for category in categories:
+                await session.delete(category)
+            
+            await session.flush()
+            return True
+        except Exception:
+            return False

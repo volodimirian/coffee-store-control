@@ -267,7 +267,23 @@
       "errorDeleteCategory": "Ошибка при удалении категории",
       "loadingData": "Загрузка данных...",
       "noActivePeriod": "Не найден активный период для данного бизнеса",
-      "loadingError": "Ошибка загрузки данных"
+      "loadingError": "Ошибка загрузки данных",
+      "showInactive": "Показать неактивные",
+      "hideInactive": "Скрыть неактивные",
+      "showAllInactive": "Показать все неактивные",
+      "hideAllInactive": "Скрыть все неактивные",
+      "activeCategories": "Активные категории",
+      "inactiveCategories": "Неактивные категории",
+      "activate": "Активировать",
+      "deactivate": "Деактивировать",
+      "activateCategory": "Активировать категорию",
+      "deactivateCategory": "Деактивировать категорию",
+      "activeSections": "Активные разделы",
+      "inactiveSections": "Неактивные разделы",
+      "showInactiveSections": "Показать неактивные разделы",
+      "hideInactiveSections": "Скрыть неактивные разделы",
+      "activateSection": "Активировать раздел",
+      "deactivateSection": "Деактивировать раздел"
     },
     "modals": {
       "addSection": {

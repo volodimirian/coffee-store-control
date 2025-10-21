@@ -225,6 +225,13 @@ export const expenseSectionsApi = {
   },
 
   /**
+   * Hard delete section (permanently remove from database)
+   */
+  hardDelete: async (sectionId: number): Promise<void> => {
+    await api.delete(`/expenses/sections/${sectionId}/hard`);
+  },
+
+  /**
    * Restore deleted section
    */
   restore: async (sectionId: number): Promise<ExpenseSection> => {

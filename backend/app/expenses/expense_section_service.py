@@ -156,6 +156,25 @@ class ExpenseSectionService:
         return True
 
     @staticmethod
+    async def hard_delete_section(
+        session: AsyncSession,
+        section_id: int,
+    ) -> bool:
+        """Permanently delete section and all its categories from database."""
+        section = await ExpenseSectionService.get_section_by_id(session, section_id, include_inactive=True)
+        if not section:
+            return False
+
+        # Hard delete all categories in this section first
+        from app.expenses.expense_category_service import ExpenseCategoryService
+        await ExpenseCategoryService.hard_delete_all_categories_in_section(session, section_id)
+        
+        # Hard delete the section
+        await session.delete(section)
+        await session.flush()
+        return True
+
+    @staticmethod
     async def reorder_sections(
         session: AsyncSession,
         business_id: int,

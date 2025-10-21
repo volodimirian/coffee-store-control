@@ -375,3 +375,39 @@ async def activate_section(
         )
 
     await session.commit()
+
+
+@router.delete("/{section_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
+async def hard_delete_section(
+    section_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Permanently delete section. User must be able to manage the business."""
+    section = await ExpenseSectionService.get_section_by_id(session, section_id, include_inactive=True)
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Section not found",
+        )
+
+    # Check if user can manage section's business
+    can_manage = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not can_manage:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this section",
+        )
+
+    success = await ExpenseSectionService.hard_delete_section(session, section_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to permanently delete section",
+        )
+
+    await session.commit()
