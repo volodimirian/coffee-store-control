@@ -329,18 +329,10 @@ export const expenseCategoriesApi = {
   },
 
   /**
-   * Delete category (soft delete)
+   * Delete category (hard delete - permanently remove from database)
    */
   delete: async (categoryId: number): Promise<void> => {
     await api.delete(`/expenses/categories/${categoryId}`);
-  },
-
-  /**
-   * Restore deleted category
-   */
-  restore: async (categoryId: number): Promise<ExpenseCategory> => {
-    const response = await api.post<ExpenseCategory>(`/expenses/categories/${categoryId}/restore`);
-    return response.data;
   },
 
   /**

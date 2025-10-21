@@ -261,8 +261,8 @@ async def delete_category(
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Soft delete category. User must be able to manage the business."""
-    category = await ExpenseCategoryService.get_category_by_id(session, category_id)
+    """Hard delete category (permanently remove from database). User must be able to manage the business."""
+    category = await ExpenseCategoryService.get_category_by_id(session, category_id, include_inactive=True)
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -294,96 +294,6 @@ async def delete_category(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete category",
-        )
-
-    await session.commit()
-
-
-@router.post("/{category_id}/restore", response_model=ExpenseCategoryOut)
-async def restore_category(
-    category_id: int,
-    session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
-):
-    """Restore soft-deleted category. User must be able to manage the business."""
-    category = await ExpenseCategoryService.get_category_by_id(session, category_id, include_inactive=True)
-    if not category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found",
-        )
-
-    # Get section to verify business access
-    section = await ExpenseSectionService.get_section_by_id(session, getattr(category, 'section_id'))
-    if not section:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category's section not found",
-        )
-
-    # Check if user can manage category's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this category",
-        )
-
-    success = await ExpenseCategoryService.restore_category(session, category_id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to restore category",
-        )
-
-    await session.commit()
-    
-    # Return updated category
-    restored_category = await ExpenseCategoryService.get_category_by_id(session, category_id)
-    return ExpenseCategoryOut.from_orm(restored_category)
-
-
-@router.post("/section/{section_id}/reorder", status_code=status.HTTP_204_NO_CONTENT)
-async def reorder_categories(
-    section_id: int,
-    reorder_request: ExpenseCategoryReorderRequest,
-    session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
-):
-    """Reorder categories within a section. User must be able to manage the business."""
-    # Get section to verify business access
-    section = await ExpenseSectionService.get_section_by_id(session, section_id)
-    if not section:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Section not found",
-        )
-
-    # Check if user can manage business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
-        )
-
-    success = await ExpenseCategoryService.reorder_categories(
-        session=session,
-        section_id=section_id,
-        category_orders=reorder_request.category_orders,
-    )
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to reorder categories",
         )
 
     await session.commit()
@@ -431,7 +341,7 @@ async def deactivate_category(
             detail="Insufficient permissions to manage this business",
         )
 
-    success = await ExpenseCategoryService.delete_category(
+    success = await ExpenseCategoryService.deactivate_category(
         session=session,
         category_id=category_id,
     )
@@ -439,6 +349,48 @@ async def deactivate_category(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to deactivate category",
+        )
+
+    await session.commit()
+
+
+@router.post("/section/{section_id}/reorder", status_code=status.HTTP_204_NO_CONTENT)
+async def reorder_categories(
+    section_id: int,
+    reorder_request: ExpenseCategoryReorderRequest,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Reorder categories within a section. User must be able to manage the business."""
+    # Get section to verify business access
+    section = await ExpenseSectionService.get_section_by_id(session, section_id)
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Section not found",
+        )
+
+    # Check if user can manage business
+    can_manage = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(section, 'business_id'),
+    )
+    if not can_manage:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this business",
+        )
+
+    success = await ExpenseCategoryService.reorder_categories(
+        session=session,
+        section_id=section_id,
+        category_orders=reorder_request.category_orders,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reorder categories",
         )
 
     await session.commit()
@@ -486,7 +438,7 @@ async def activate_category(
             detail="Insufficient permissions to manage this business",
         )
 
-    success = await ExpenseCategoryService.restore_category(
+    success = await ExpenseCategoryService.activate_category(
         session=session,
         category_id=category_id,
     )

@@ -167,7 +167,21 @@ class ExpenseCategoryService:
         session: AsyncSession,
         category_id: int,
     ) -> bool:
-        """Soft delete category."""
+        """Hard delete category (permanently remove from database)."""
+        category = await ExpenseCategoryService.get_category_by_id(session, category_id, include_inactive=True)
+        if not category:
+            return False
+
+        await session.delete(category)
+        await session.flush()
+        return True
+
+    @staticmethod
+    async def deactivate_category(
+        session: AsyncSession,
+        category_id: int,
+    ) -> bool:
+        """Soft delete category (set is_active = False)."""
         category = await ExpenseCategoryService.get_category_by_id(session, category_id)
         if not category:
             return False
@@ -177,11 +191,11 @@ class ExpenseCategoryService:
         return True
 
     @staticmethod
-    async def restore_category(
+    async def activate_category(
         session: AsyncSession,
         category_id: int,
     ) -> bool:
-        """Restore soft-deleted category."""
+        """Activate category (set is_active = True)."""
         category = await ExpenseCategoryService.get_category_by_id(session, category_id, include_inactive=True)
         if not category:
             return False

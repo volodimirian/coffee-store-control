@@ -126,7 +126,7 @@ class ExpenseSectionService:
         session: AsyncSession,
         section_id: int,
     ) -> bool:
-        """Soft delete section and all its categories."""
+        """Soft delete section and deactivate all its categories."""
         section = await ExpenseSectionService.get_section_by_id(session, section_id)
         if not section:
             return False
@@ -134,15 +134,9 @@ class ExpenseSectionService:
         # Deactivate the section
         setattr(section, 'is_active', False)
         
-        # Deactivate all categories in this section
-        from app.expenses.models import ExpenseCategory
-        from sqlalchemy import update
-        
-        await session.execute(
-            update(ExpenseCategory)
-            .where(ExpenseCategory.section_id == section_id)
-            .values(is_active=False)
-        )
+        # Deactivate all categories in this section using the new service method
+        from app.expenses.expense_category_service import ExpenseCategoryService
+        await ExpenseCategoryService.deactivate_all_categories_in_section(session, section_id)
         
         await session.flush()
         return True
