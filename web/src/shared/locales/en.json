@@ -4,6 +4,7 @@
     "error": "Error",
     "success": "Success",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "yes": "Yes",
@@ -228,6 +229,7 @@
       "inactiveCategories": "Inactive categories",
       "activate": "Activate",
       "deactivate": "Deactivate",
+      "editCategory": "Edit Category",
       "activeSections": "Active sections",
       "inactiveSections": "Inactive sections",
       "activateSection": "Activate section",
@@ -268,6 +270,27 @@
         "createButton": "Create Category",
         "createError": "An error occurred while creating the category",
         "unitsLoadError": "Error loading units of measurement"
+      },
+      "editCategory": {
+        "title": "Edit Category",
+        "nameLabel": "Category Name",
+        "namePlaceholder": "For example: Arabica, Robusta, Milk 3.2%",
+        "nameRequired": "Category name is required",
+        "nameMinLength": "Name must contain at least 1 character",
+        "nameMaxLength": "Name must contain no more than 200 characters",
+        "unitLabel": "Unit of Measurement",
+        "selectUnit": "Select unit of measurement",
+        "unitRequired": "You must select a unit of measurement",
+        "noUnitsWarning": "No units of measurement available. Create them first in settings.",
+        "orderLabel": "Order Number",
+        "orderDescription": "Determines the display order of the category. 0 = first.",
+        "orderIndexValidation": "Order number must be greater than or equal to 0",
+        "activeLabel": "Active Category",
+        "activeDescription": "Inactive categories are hidden from main lists",
+        "saveButton": "Save Changes",
+        "updateError": "An error occurred while updating the category",
+        "unitsLoadError": "Error loading units of measurement",
+        "selectBusinessFirst": "Please select a business first"
       }
     },
     "inventoryTracking": {

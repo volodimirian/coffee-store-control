@@ -12,6 +12,7 @@ import {
 import { useAppContext } from '~/shared/context/AppContext';
 import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
 import AddCategoryModal from '~/components/expenses/modals/AddCategoryModal';
+import EditCategoryModal from '~/components/expenses/modals/EditCategoryModal';
 
 interface SectionWithCategories extends ExpenseSection {
   categories: ExpenseCategory[];
@@ -22,6 +23,7 @@ interface SectionCardProps {
   section: SectionWithCategories;
   showInactive: boolean;
   onAddCategory: (sectionId: number) => void;
+  onEditCategory: (category: ExpenseCategory) => void;
   onDeleteSection: (sectionId: number) => void;
   onToggleSectionStatus: (sectionId: number, isActive: boolean) => void;
   onDeleteCategory: (categoryId: number, sectionId: number) => void;
@@ -34,6 +36,7 @@ function SectionCard({
   section,
   showInactive,
   onAddCategory,
+  onEditCategory,
   onDeleteSection,
   onToggleSectionStatus,
   onDeleteCategory,
@@ -126,7 +129,11 @@ function SectionCard({
                         <EyeSlashIcon className="h-3 w-3 mr-1" />
                         {t('expenses.categories.deactivate')}
                       </button>
-                      <button className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded">
+                      <button 
+                        onClick={() => onEditCategory(category)}
+                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                        title={t('expenses.categories.editCategory')}
+                      >
                         <PencilIcon className="h-3 w-3" />
                       </button>
                       <button 
@@ -221,7 +228,9 @@ export default function CategoriesTab() {
   // Modals
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
 
   const { currentLocation } = useAppContext();
 
@@ -388,6 +397,62 @@ export default function CategoriesTab() {
     setIsAddCategoryModalOpen(true);
   };
 
+  const handleEditCategory = (category: ExpenseCategory) => {
+    setSelectedCategory(category);
+    setIsEditCategoryModalOpen(true);
+  };
+
+  const handleCategoryUpdated = (updatedCategory: ExpenseCategory) => {
+    const updateSections = (sections: SectionWithCategories[]) =>
+      sections.map(section => {
+        // Update in active categories
+        const updatedActiveCategories = section.categories.map(cat =>
+          cat.id === updatedCategory.id ? updatedCategory : cat
+        );
+        
+        // Update in inactive categories
+        const updatedInactiveCategories = section.inactiveCategories.map(cat =>
+          cat.id === updatedCategory.id ? updatedCategory : cat
+        );
+
+        // If category status changed, move between active/inactive
+        if (updatedCategory.is_active) {
+          // Move to active if not already there
+          const categoryInActive = updatedActiveCategories.find(cat => cat.id === updatedCategory.id);
+          const categoryInInactive = updatedInactiveCategories.find(cat => cat.id === updatedCategory.id);
+          
+          if (!categoryInActive && categoryInInactive) {
+            return {
+              ...section,
+              categories: [...section.categories.filter(cat => cat.id !== updatedCategory.id), updatedCategory],
+              inactiveCategories: section.inactiveCategories.filter(cat => cat.id !== updatedCategory.id)
+            };
+          }
+        } else {
+          // Move to inactive if not already there
+          const categoryInActive = updatedActiveCategories.find(cat => cat.id === updatedCategory.id);
+          const categoryInInactive = updatedInactiveCategories.find(cat => cat.id === updatedCategory.id);
+          
+          if (categoryInActive && !categoryInInactive) {
+            return {
+              ...section,
+              categories: section.categories.filter(cat => cat.id !== updatedCategory.id),
+              inactiveCategories: [...section.inactiveCategories.filter(cat => cat.id !== updatedCategory.id), updatedCategory]
+            };
+          }
+        }
+
+        return {
+          ...section,
+          categories: updatedActiveCategories,
+          inactiveCategories: updatedInactiveCategories
+        };
+      });
+
+    setActiveSections(updateSections);
+    setInactiveSections(updateSections);
+  };
+
   const handleDeleteCategory = async (categoryId: number, sectionId: number) => {
     if (!confirm(t('expenses.categories.confirmDeleteCategory'))) return;
 
@@ -546,6 +611,7 @@ export default function CategoriesTab() {
                   section={section}
                   showInactive={showInactive}
                   onAddCategory={handleAddCategory}
+                  onEditCategory={handleEditCategory}
                   onDeleteSection={(sectionId) => handleDeleteSection(sectionId, true)}
                   onToggleSectionStatus={handleToggleSectionStatus}
                   onDeleteCategory={handleDeleteCategory}
@@ -571,6 +637,7 @@ export default function CategoriesTab() {
                     section={section}
                     showInactive={showInactive}
                     onAddCategory={handleAddCategory}
+                    onEditCategory={handleEditCategory}
                     onDeleteSection={(sectionId) => handleDeleteSection(sectionId, false)}
                     onToggleSectionStatus={handleToggleSectionStatus}
                     onDeleteCategory={handleDeleteCategory}
@@ -600,6 +667,16 @@ export default function CategoriesTab() {
         }}
         sectionId={selectedSectionId || 0}
         onCategoryAdded={handleCategoryAdded}
+      />
+
+      <EditCategoryModal
+        isOpen={isEditCategoryModalOpen}
+        onClose={() => {
+          setIsEditCategoryModalOpen(false);
+          setSelectedCategory(null);
+        }}
+        category={selectedCategory}
+        onCategoryUpdated={handleCategoryUpdated}
       />
     </div>
   );
