@@ -1,4 +1,4 @@
-// Типы для работы с локациями (businesses)
+// Types for working with locations (businesses)
 export interface Location {
   id: number;
   name: string;
@@ -53,7 +53,7 @@ export interface UserLocationUpdate {
   is_active?: boolean;
 }
 
-// Контекст для управления активной локацией
+// Context for managing active location
 export interface LocationContextType {
   currentLocation: Location | null;
   locations: Location[];

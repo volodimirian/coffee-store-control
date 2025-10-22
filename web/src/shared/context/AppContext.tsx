@@ -5,6 +5,7 @@ import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~
 export type AppContextType = {
   user: UserResponse | null;
   setUser: (user: UserResponse | null) => void;
+  logout: () => void;
   // Location management
   currentLocation: Location | null;
   locations: Location[];
@@ -16,6 +17,7 @@ export type AppContextType = {
   deleteLocation: (id: number) => Promise<void>;
   fetchLocations: () => Promise<void>;
   fetchLocationMembers: (id: number) => Promise<LocationMember[]>;
+  setIsInitialized: (initialized: boolean) => void;
 };
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);

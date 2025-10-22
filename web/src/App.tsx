@@ -8,6 +8,12 @@ import Products from "~/pages/Products";
 import Orders from "~/pages/Orders";
 import Analytics from "~/pages/Analytics";
 import Settings from "~/pages/Settings";
+import Locations from "~/pages/Locations";
+import Expenses from "~/pages/Expenses";
+import Overview from "~/pages/expenses/Overview";
+import InventoryTracking from "~/pages/expenses/InventoryTracking";
+import Categories from "~/pages/expenses/Categories";
+import Reports from "~/pages/expenses/Reports";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
 import Register from "~/pages/Register";
@@ -17,7 +23,7 @@ import { fetchMe } from "~/shared/api/authentication";
 import { hasToken } from "~/shared/lib/helpers";
 
 export default function App() {
-  const { setUser } = useAppContext();
+  const { setUser, setIsInitialized } = useAppContext();
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -28,12 +34,19 @@ export default function App() {
     // Only fetch user data if we have a token
     if (hasToken()) {
       fetchMe()
-        .then(user => setUser(user))
-        .catch(() => setUser(null));
+        .then(user => {
+          setUser(user);
+          setIsInitialized(true);
+        })
+        .catch(() => {
+          setUser(null);
+          setIsInitialized(true);
+        });
     } else {
       setUser(null);
+      setIsInitialized(true);
     }
-  }, [setUser]);
+  }, [setUser, setIsInitialized]);
 
   return (
     <BrowserRouter>
@@ -51,6 +64,15 @@ export default function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="locations" element={<Locations />} />
+            
+            {/* Expenses with nested routes */}
+            <Route path="expenses" element={<Expenses />}>
+              <Route index element={<Overview />} />
+              <Route path="inventory-tracking" element={<InventoryTracking />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="reports" element={<Reports />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<NotFound />} />

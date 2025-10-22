@@ -131,6 +131,18 @@ class BusinessService:
         return True
 
     @staticmethod
+    async def restore_business(session: AsyncSession, business_id: int) -> bool:
+        """Restore soft-deleted business by setting is_active to True."""
+        business = await BusinessService.get_business_by_id(session, business_id)
+        if not business:
+            return False
+
+        business.is_active = True
+        business.updated_at = datetime.utcnow()
+        await session.commit()
+        return True
+
+    @staticmethod
     async def add_user_to_business(
         session: AsyncSession,
         user_business_data: UserBusinessCreate,

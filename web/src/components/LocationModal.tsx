@@ -1,22 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
-import type { LocationCreate } from '~/shared/types/locations';
+import type { LocationCreate, Location } from '~/shared/types/locations';
 
-interface AddLocationModalProps {
+interface LocationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  location?: Location; // If location is passed, then edit mode
 }
 
-export const AddLocationModal: React.FC<AddLocationModalProps> = ({
+export const LocationModal: React.FC<LocationModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  location
 }) => {
   const { t } = useTranslation();
-  const { createLocation } = useAppContext();
+  const { createLocation, updateLocation } = useAppContext();
+  
+  const isEditMode = !!location;
   
   const [formData, setFormData] = useState<LocationCreate>({
     name: '',
@@ -26,6 +30,19 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (location) {
+      setFormData({
+        name: location.name,
+        city: location.city,
+        address: location.address
+      });
+    } else {
+      setFormData({ name: '', city: '', address: '' });
+    }
+  }, [location, isOpen]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -58,11 +75,19 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      await createLocation({
-        name: formData.name.trim(),
-        city: formData.city.trim(),
-        address: formData.address.trim()
-      });
+      if (isEditMode && location) {
+        await updateLocation(location.id, {
+          name: formData.name.trim(),
+          city: formData.city.trim(),
+          address: formData.address.trim()
+        });
+      } else {
+        await createLocation({
+          name: formData.name.trim(),
+          city: formData.city.trim(),
+          address: formData.address.trim()
+        });
+      }
       
       // Reset form
       setFormData({ name: '', city: '', address: '' });
@@ -73,9 +98,9 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
       onClose();
       
     } catch (error) {
-      console.error('Failed to create location:', error);
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} location:`, error);
       setErrors({ 
-        submit: t('locations.failedToCreate') 
+        submit: t(isEditMode ? 'locations.failedToUpdate' : 'locations.failedToCreate') 
       });
     } finally {
       setIsSubmitting(false);
@@ -106,8 +131,7 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
         <div 
-          className="fixed inset-0 transition-opacity"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          className="fixed inset-0 bg-black/50 transition-opacity"
           onClick={handleClose}
         />
         
@@ -116,7 +140,7 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">
-              {t('locations.addNewLocation')}
+              {t(isEditMode ? 'locations.editLocation' : 'locations.addNewLocation')}
             </h3>
             <button
               onClick={handleClose}
@@ -214,7 +238,7 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                 disabled={isSubmitting}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSubmitting ? t('common.loading') : t('locations.createLocation')}
+                {isSubmitting ? t('common.loading') : t(isEditMode ? 'common.save' : 'locations.createLocation')}
               </button>
             </div>
           </form>

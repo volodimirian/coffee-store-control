@@ -6,6 +6,7 @@ import { hasToken } from "~/shared/lib/helpers";
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from "~/shared/ui/LanguageSelector";
 import Sidebar from "~/components/Sidebar";
+import LocationIndicator from "~/components/LocationIndicator";
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -105,6 +106,9 @@ export default function Layout() {
                 </div>
               )}
             </div>
+
+            {/* Center: Current Location Indicator - only for authenticated users */}
+            {isAuthenticated && <LocationIndicator />}
 
             {/* Right side: Language + Auth buttons */}
             <div className="flex items-center space-x-4">

@@ -1,14 +1,14 @@
 """Dependency injection stubs (DB, auth, etc)."""
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Path
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
 from app.core.db import get_db
 from app.core.security import decode_token
 from app.core.error_codes import ErrorCode, create_error_response
-from app.core_models import User, UserRole
+from app.core_models import User, UserRole, UserBusiness
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")  # Login endpoint from auth.router
 
@@ -88,3 +88,36 @@ def require_admin_or_business_owner_role(current_user: User = Depends(get_curren
             detail=create_error_response(ErrorCode.SUPPLIERS_ONLY)
         )
     return current_user
+
+
+# Business access validation dependency
+async def validate_business_access(
+    business_id: int = Path(..., description="Business ID from URL path"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_dep)
+) -> tuple[User, int]:
+    """Validate that current user has access to specified business."""
+    
+    # Admin can access any business
+    if current_user.role.name == UserRole.ADMIN.value:
+        return current_user, business_id
+    
+    # Check if user is associated with this business
+    user_business = await db.scalar(
+        select(UserBusiness)
+        .where(
+            and_(
+                UserBusiness.user_id == current_user.id,
+                UserBusiness.business_id == business_id,
+                UserBusiness.is_active
+            )
+        )
+    )
+    
+    if not user_business:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=create_error_response(ErrorCode.UNAUTHORIZED)
+        )
+    
+    return current_user, business_id
