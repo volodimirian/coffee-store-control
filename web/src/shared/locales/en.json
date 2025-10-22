@@ -226,6 +226,8 @@
       "loadingError": "Error loading data",
       "showAllInactive": "Show all inactive",
       "hideAllInactive": "Hide all inactive",
+      "showAllInactiveTooltip": "Show inactive sections and categories (setting is remembered)",
+      "hideAllInactiveTooltip": "Hide inactive sections and categories (setting is remembered)",
       "activeCategories": "Active categories",
       "inactiveCategories": "Inactive categories",
       "activate": "Activate",

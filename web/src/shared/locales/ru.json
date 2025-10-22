@@ -271,6 +271,8 @@
       "loadingError": "Ошибка загрузки данных",
       "showAllInactive": "Показать все неактивные",
       "hideAllInactive": "Скрыть все неактивные",
+      "showAllInactiveTooltip": "Показать неактивные разделы и категории (настройка запоминается)",
+      "hideAllInactiveTooltip": "Скрыть неактивные разделы и категории (настройка запоминается)",
       "activeCategories": "Активные категории",
       "inactiveCategories": "Неактивные категории",
       "activate": "Активировать",

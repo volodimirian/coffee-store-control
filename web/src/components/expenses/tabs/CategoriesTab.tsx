@@ -10,6 +10,7 @@ import {
   type MonthPeriod,
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
+import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers';
 import SectionModal from '~/components/expenses/modals/SectionModal';
 import CategoryModal from '~/components/expenses/modals/CategoryModal';
 import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
@@ -234,7 +235,9 @@ export default function CategoriesTab() {
   const [currentPeriod, setCurrentPeriod] = useState<MonthPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
+  
+  // Initialize showInactive from localStorage, default to false (hide inactive)
+  const [showInactive, setShowInactive] = useState(() => getShowInactivePreference());
   
   // Modals
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -645,7 +648,13 @@ export default function CategoriesTab() {
             onClick={() => {
               const newShowInactive = !showInactive;
               setShowInactive(newShowInactive);
+              // Save to localStorage
+              setShowInactivePreference(newShowInactive);
             }}
+            title={showInactive ? 
+              t('expenses.categories.hideAllInactiveTooltip') : 
+              t('expenses.categories.showAllInactiveTooltip')
+            }
             className={`inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
               showInactive
                 ? 'border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100'
