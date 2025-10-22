@@ -11,7 +11,8 @@
     "continue": "Continue",
     "back": "Back",
     "brandName": "Business Control",
-    "actionCannotBeUndone": "This action cannot be undone."
+    "actionCannotBeUndone": "This action cannot be undone.",
+    "order": "Order"
   },
   "navigation": {
     "home": "Home",
@@ -220,7 +221,17 @@
       "errorDeleteCategory": "Error deleting category",
       "loadingData": "Loading data...",
       "noActivePeriod": "No active period found for this business",
-      "loadingError": "Error loading data"
+      "loadingError": "Error loading data",
+      "showAllInactive": "Show all inactive",
+      "hideAllInactive": "Hide all inactive",
+      "activeCategories": "Active categories",
+      "inactiveCategories": "Inactive categories",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "activeSections": "Active sections",
+      "inactiveSections": "Inactive sections",
+      "activateSection": "Activate section",
+      "deactivateSection": "Deactivate section"
     },
     "modals": {
       "addSection": {
