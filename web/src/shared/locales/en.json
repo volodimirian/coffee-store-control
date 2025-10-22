@@ -7,6 +7,7 @@
     "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
+    "deleting": "Deleting...",
     "yes": "Yes",
     "no": "No",
     "continue": "Continue",
@@ -230,6 +231,7 @@
       "activate": "Activate",
       "deactivate": "Deactivate",
       "editCategory": "Edit Category",
+      "editSection": "Edit Section",
       "activeSections": "Active sections",
       "inactiveSections": "Inactive sections",
       "activateSection": "Activate section",
@@ -291,6 +293,50 @@
         "updateError": "An error occurred while updating the category",
         "unitsLoadError": "Error loading units of measurement",
         "selectBusinessFirst": "Please select a business first"
+      },
+      "editSection": {
+        "title": "Edit Section",
+        "nameLabel": "Section Name",
+        "namePlaceholder": "For example: Coffee, Milk, Syrups",
+        "nameRequired": "Section name is required",
+        "nameMinLength": "Name must contain at least 1 character",
+        "nameMaxLength": "Name must contain no more than 200 characters",
+        "orderLabel": "Order Number",
+        "orderDescription": "Determines the display order of the section. 0 = first.",
+        "orderIndexValidation": "Order number must be greater than or equal to 0",
+        "activeLabel": "Active Section",
+        "activeDescription": "Inactive sections are hidden from main lists",
+        "saveButton": "Save Changes",
+        "updateError": "An error occurred while updating the section",
+        "sectionNotFound": "Section not found",
+        "selectBusinessFirst": "Please select a business first"
+      },
+      "createSection": {
+        "title": "Add Expense Section",
+        "nameLabel": "Section Name",
+        "namePlaceholder": "For example: Coffee, Milk, Syrups",
+        "nameRequired": "Section name is required",
+        "nameMinLength": "Name must contain at least 1 character",
+        "nameMaxLength": "Name must contain no more than 200 characters",
+        "orderLabel": "Order Number",
+        "orderDescription": "Determines the display order of the section. 0 = first.",
+        "orderIndexValidation": "Order number must be greater than or equal to 0",
+        "creating": "Creating...",
+        "createButton": "Create Section",
+        "businessNotSelected": "Business not selected",
+        "createError": "An error occurred while creating the section"
+      },
+      "confirmDelete": {
+        "section": {
+          "title": "Delete Section",
+          "message": "Are you sure you want to delete the section \"{{name}}\"? All categories in this section will also be deleted.",
+          "confirmButton": "Delete Section"
+        },
+        "category": {
+          "title": "Delete Category",
+          "message": "Are you sure you want to delete the category \"{{name}}\"? All related data will be lost.",
+          "confirmButton": "Delete Category"
+        }
       }
     },
     "inventoryTracking": {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import {
@@ -10,8 +10,9 @@ import {
   type MonthPeriod,
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
-import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
+import SectionModal from '~/components/expenses/modals/SectionModal';
 import CategoryModal from '~/components/expenses/modals/CategoryModal';
+import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
 
 interface SectionWithCategories extends ExpenseSection {
   categories: ExpenseCategory[];
@@ -23,6 +24,7 @@ interface SectionCardProps {
   showInactive: boolean;
   onAddCategory: (sectionId: number) => void;
   onEditCategory: (category: ExpenseCategory) => void;
+  onEditSection: (section: ExpenseSection) => void;
   onDeleteSection: (sectionId: number) => void;
   onToggleSectionStatus: (sectionId: number, isActive: boolean) => void;
   onDeleteCategory: (categoryId: number, sectionId: number) => void;
@@ -36,6 +38,7 @@ function SectionCard({
   showInactive,
   onAddCategory,
   onEditCategory,
+  onEditSection,
   onDeleteSection,
   onToggleSectionStatus,
   onDeleteCategory,
@@ -85,6 +88,15 @@ function SectionCard({
               <PlusIcon className="h-3 w-3 mr-1" />
               {t('expenses.categories.addCategory')}
             </button>
+            {isActive && (
+              <button 
+                onClick={() => onEditSection(section)}
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                title={t('expenses.categories.editSection')}
+              >
+                <PencilIcon className="h-4 w-4" />
+              </button>
+            )}
             <button 
               onClick={() => onDeleteSection(section.id)}
               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
@@ -226,100 +238,114 @@ export default function CategoriesTab() {
   
   // Modals
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
+  const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+  const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [deleteType, setDeleteType] = useState<'section' | 'category'>('section');
+  const [deleteItemName, setDeleteItemName] = useState<string>('');
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => Promise<void>) | null>(null);
+
 
   const { currentLocation } = useAppContext();
 
   // Load current active period and sections
-  useEffect(() => {
-    const loadData = async () => {
-      if (!currentLocation?.id) return;
+  const loadData = useCallback(async () => {
+    if (!currentLocation?.id) return;
 
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      try {
-                // Get current active period
-        const periodsResponse = await monthPeriodsApi.list({
-          business_id: currentLocation.id,
-          status: 'active',
-          is_active: true,
-          limit: 1,
-        });
+    try {
+              // Get current active period
+      const periodsResponse = await monthPeriodsApi.list({
+        business_id: currentLocation.id,
+        status: 'active',
+        is_active: true,
+        limit: 1,
+      });
 
-        if (periodsResponse.periods.length === 0) {
-          setError(t('expenses.categories.noActivePeriod'));
-          return;
-        }
-
-        const period = periodsResponse.periods[0];
-        setCurrentPeriod(period);
-
-        // Get sections for this period
-        const sectionsResponse = await expenseSectionsApi.list({
-          business_id: currentLocation.id,
-          include_categories: true
-        });
-
-        // Load categories for each section and separate active/inactive sections
-        const allSectionsWithCategories: SectionWithCategories[] = await Promise.all(
-          sectionsResponse.sections.map(async (section) => {
-            try {
-              // Get ALL categories (both active and inactive) for the section
-              const categoriesResponse = await expenseCategoriesApi.listBySection(section.id, {
-                // Explicitly set is_active to undefined to get both active and inactive categories
-                is_active: undefined,
-              });
-              const allCategories = categoriesResponse.categories;
-              
-              return {
-                ...section,
-                // Active categories: only if both category and section are active
-                categories: allCategories.filter(cat => cat.is_active && section.is_active),
-                // Inactive categories: if category is inactive OR section is inactive
-                inactiveCategories: allCategories.filter(cat => !cat.is_active || !section.is_active),
-              };
-            } catch (err) {
-              console.error(`Error loading categories for section ${section.id}:`, err);
-              return {
-                ...section,
-                categories: [],
-                inactiveCategories: [],
-              };
-            }
-          })
-        );
-
-        // Separate active and inactive sections
-        const activeSecs = allSectionsWithCategories.filter(section => section.is_active);
-        const inactiveSecs = allSectionsWithCategories.filter(section => !section.is_active);
-        
-        setActiveSections(activeSecs);
-        setInactiveSections(inactiveSecs);
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError(err instanceof Error ? err.message : t('expenses.categories.loadingError'));
-      } finally {
-        setIsLoading(false);
+      if (periodsResponse.periods.length === 0) {
+        setError(t('expenses.categories.noActivePeriod'));
+        return;
       }
-    };
 
+      const period = periodsResponse.periods[0];
+      setCurrentPeriod(period);
+
+      // Get sections for this period
+      const sectionsResponse = await expenseSectionsApi.list({
+        business_id: currentLocation.id,
+        include_categories: true
+      });
+
+      // Load categories for each section and separate active/inactive sections
+      const allSectionsWithCategories: SectionWithCategories[] = await Promise.all(
+        sectionsResponse.sections.map(async (section) => {
+          try {
+            // Get ALL categories (both active and inactive) for the section
+            const categoriesResponse = await expenseCategoriesApi.listBySection(section.id, {
+              // Explicitly set is_active to undefined to get both active and inactive categories
+              is_active: undefined,
+            });
+            const allCategories = categoriesResponse.categories;
+            
+            return {
+              ...section,
+              // Active categories: only if both category and section are active
+              categories: allCategories.filter(cat => cat.is_active && section.is_active),
+              // Inactive categories: if category is inactive OR section is inactive
+              inactiveCategories: allCategories.filter(cat => !cat.is_active || !section.is_active),
+            };
+          } catch (err) {
+            console.error(`Error loading categories for section ${section.id}:`, err);
+            return {
+              ...section,
+              categories: [],
+              inactiveCategories: [],
+            };
+          }
+        })
+      );
+
+      // Separate active and inactive sections
+      const activeSecs = allSectionsWithCategories.filter(section => section.is_active);
+      const inactiveSecs = allSectionsWithCategories.filter(section => !section.is_active);
+      
+      setActiveSections(activeSecs);
+      setInactiveSections(inactiveSecs);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err instanceof Error ? err.message : t('expenses.categories.loadingError'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentLocation?.id, t]);
+
+  useEffect(() => {
     if (currentLocation?.id) {
       loadData();
     }
-  }, [currentLocation?.id, t]);
+  }, [currentLocation?.id, t, loadData]);
 
   const handleSectionAdded = (newSection: ExpenseSection) => {
     setActiveSections(prev => [...prev, { ...newSection, categories: [], inactiveCategories: [] }]);
   };
 
-  const handleDeleteSection = async (sectionId: number, isActive: boolean) => {
-    if (!confirm(t('expenses.categories.confirmDeleteSection'))) return;
+  const handleDeleteSection = (sectionId: number, isActive: boolean) => {
+    // Find section to get its name
+    const section = isActive 
+      ? activeSections.find(s => s.id === sectionId)
+      : inactiveSections.find(s => s.id === sectionId);
+    
+    const sectionName = section ? section.name : '';
 
-    try {
+    setDeleteType('section');
+    setDeleteItemName(sectionName);
+    setPendingDeleteAction(() => async () => {
       await expenseSectionsApi.hardDelete(sectionId);
       
       if (isActive) {
@@ -327,9 +353,20 @@ export default function CategoriesTab() {
       } else {
         setInactiveSections(prev => prev.filter(section => section.id !== sectionId));
       }
-    } catch (err) {
-      console.error('Error deleting section:', err);
-      alert(t('expenses.categories.errorDeleteSection'));
+    });
+    setIsConfirmDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (pendingDeleteAction) {
+      try {
+        await pendingDeleteAction();
+        setIsConfirmDeleteModalOpen(false);
+        setPendingDeleteAction(null);
+      } catch (err) {
+        console.error(`Error deleting ${deleteType}:`, err);
+        alert(t(`expenses.categories.errorDelete${deleteType === 'section' ? 'Section' : 'Category'}`));
+      }
     }
   };
 
@@ -452,10 +489,67 @@ export default function CategoriesTab() {
     setInactiveSections(updateSections);
   };
 
-  const handleDeleteCategory = async (categoryId: number, sectionId: number) => {
-    if (!confirm(t('expenses.categories.confirmDeleteCategory'))) return;
+  const handleEditSection = (section: ExpenseSection) => {
+    setSelectedSection(section);
+    setIsEditSectionModalOpen(true);
+  };
 
-    try {
+  const handleSectionUpdated = (updatedSection: ExpenseSection) => {
+    // Find the existing section to check if status changed
+    const existingSection = [...activeSections, ...inactiveSections]
+      .find(section => section.id === updatedSection.id);
+    
+    // If section status changed (active <-> inactive), reload all data
+    // because when section becomes inactive, all its categories also become inactive
+    if (existingSection && existingSection.is_active !== updatedSection.is_active) {
+      loadData();
+      return;
+    }
+    
+    // Otherwise, just update the section data without changing categories
+    const removeFromBothLists = (sections: SectionWithCategories[]) =>
+      sections.filter(section => section.id !== updatedSection.id);
+    
+    let updatedActiveSections = removeFromBothLists(activeSections);
+    let updatedInactiveSections = removeFromBothLists(inactiveSections);
+    
+    if (existingSection) {
+      const sectionWithCategories = {
+        ...existingSection,
+        ...updatedSection
+      };
+      
+      // Add to the appropriate list based on active status
+      if (updatedSection.is_active) {
+        updatedActiveSections = [...updatedActiveSections, sectionWithCategories];
+      } else {
+        updatedInactiveSections = [...updatedInactiveSections, sectionWithCategories];
+      }
+    }
+    
+    setActiveSections(updatedActiveSections);
+    setInactiveSections(updatedInactiveSections);
+  };
+
+  const handleDeleteCategory = (categoryId: number, sectionId: number) => {
+    // Find category to get its name
+    const allSections = [...activeSections, ...inactiveSections];
+    let categoryName = '';
+    
+    for (const section of allSections) {
+      const category = [...section.categories, ...section.inactiveCategories]
+        .find(cat => cat.id === categoryId);
+      if (category) {
+        categoryName = category.name;
+        break;
+      }
+    }
+
+    setDeleteType('category');
+    setDeleteItemName(categoryName);
+    setSelectedSectionId(sectionId);
+    setSelectedCategory({ id: categoryId } as ExpenseCategory);
+    setPendingDeleteAction(() => async () => {
       await expenseCategoriesApi.delete(categoryId);
       const updateSections = (sections: SectionWithCategories[]) =>
         sections.map(section => 
@@ -470,10 +564,8 @@ export default function CategoriesTab() {
       
       setActiveSections(updateSections);
       setInactiveSections(updateSections);
-    } catch (err) {
-      console.error('Error deleting category:', err);
-      alert(t('expenses.categories.errorDeleteCategory'));
-    }
+    });
+    setIsConfirmDeleteModalOpen(true);
   };
 
   const handleToggleCategoryStatus = async (categoryId: number, isActive: boolean) => {
@@ -611,6 +703,7 @@ export default function CategoriesTab() {
                   showInactive={showInactive}
                   onAddCategory={handleAddCategory}
                   onEditCategory={handleEditCategory}
+                  onEditSection={handleEditSection}
                   onDeleteSection={(sectionId) => handleDeleteSection(sectionId, true)}
                   onToggleSectionStatus={handleToggleSectionStatus}
                   onDeleteCategory={handleDeleteCategory}
@@ -631,19 +724,20 @@ export default function CategoriesTab() {
               </h3>
               <div className="space-y-4">
                 {inactiveSections.map((section) => (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    showInactive={showInactive}
-                    onAddCategory={handleAddCategory}
-                    onEditCategory={handleEditCategory}
-                    onDeleteSection={(sectionId) => handleDeleteSection(sectionId, false)}
-                    onToggleSectionStatus={handleToggleSectionStatus}
-                    onDeleteCategory={handleDeleteCategory}
-                    onToggleCategoryStatus={handleToggleCategoryStatus}
-                    isActive={false}
-                    t={t}
-                  />
+                <SectionCard
+                  key={section.id}
+                  section={section}
+                  showInactive={showInactive}
+                  onAddCategory={handleAddCategory}
+                  onEditCategory={handleEditCategory}
+                  onEditSection={handleEditSection}
+                  onDeleteSection={(sectionId) => handleDeleteSection(sectionId, false)}
+                  onToggleSectionStatus={handleToggleSectionStatus}
+                  onDeleteCategory={handleDeleteCategory}
+                  onToggleCategoryStatus={handleToggleCategoryStatus}
+                  isActive={false}
+                  t={t}
+                />
                 ))}
               </div>
             </div>
@@ -652,10 +746,22 @@ export default function CategoriesTab() {
       )}
 
       {/* Modals */}
-      <AddSectionModal
+      <SectionModal
+        mode="create"
         isOpen={isAddSectionModalOpen}
         onClose={() => setIsAddSectionModalOpen(false)}
         onSectionAdded={handleSectionAdded}
+      />
+
+      <SectionModal
+        mode="edit"
+        isOpen={isEditSectionModalOpen}
+        onClose={() => {
+          setIsEditSectionModalOpen(false);
+          setSelectedSection(null);
+        }}
+        section={selectedSection}
+        onSectionUpdated={handleSectionUpdated}
       />
 
       <CategoryModal
@@ -678,6 +784,17 @@ export default function CategoriesTab() {
         }}
         category={selectedCategory}
         onCategoryUpdated={handleCategoryUpdated}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isConfirmDeleteModalOpen}
+        onClose={() => {
+          setIsConfirmDeleteModalOpen(false);
+          setPendingDeleteAction(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        type={deleteType}
+        itemName={deleteItemName}
       />
     </div>
   );

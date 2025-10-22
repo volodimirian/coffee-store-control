@@ -112,10 +112,18 @@ class ExpenseSectionService:
         if not section:
             return None
 
+        # Check if section is being deactivated
+        was_active = bool(section.is_active)
+        
         # Update fields
         update_fields = section_data.dict(exclude_unset=True)
         for field, value in update_fields.items():
             setattr(section, field, value)
+
+        # If section is being deactivated, deactivate all its categories
+        if was_active and 'is_active' in update_fields and not update_fields['is_active']:
+            from app.expenses.expense_category_service import ExpenseCategoryService
+            await ExpenseCategoryService.deactivate_all_categories_in_section(session, section_id)
 
         await session.flush()
         await session.refresh(section)
