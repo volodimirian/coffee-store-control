@@ -53,9 +53,14 @@ function SectionCard({
       <div className={`px-4 py-3 border-b border-gray-200 ${isActive ? 'bg-green-50' : 'bg-gray-50'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h3 className={`text-lg font-medium ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
-              {section.name}
-            </h3>
+            <div className="flex flex-col">
+              <h3 className={`text-lg font-medium ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
+                {section.name}
+              </h3>
+              <p className={`text-xs ${isActive ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
+                {t('common.order')}: {section.order_index}
+              </p>
+            </div>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               isActive ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'
             }`}>
