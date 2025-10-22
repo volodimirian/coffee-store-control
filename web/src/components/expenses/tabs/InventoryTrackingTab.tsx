@@ -12,7 +12,7 @@ import { ru } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
 import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
-import AddCategoryModal from '~/components/expenses/modals/AddCategoryModal';
+import CategoryModal from '~/components/expenses/modals/CategoryModal';
 import { expenseSectionsApi, expenseCategoriesApi, monthPeriodsApi } from '~/shared/api/expenses';
 import type { MonthPeriod } from '~/shared/api/types';
 
@@ -394,9 +394,10 @@ export default function InventoryTrackingTab() {
         onSectionAdded={handleSectionAdded}
       />
 
-      <AddCategoryModal
+      <CategoryModal
         isOpen={isAddItemModalOpen}
         onClose={() => setIsAddItemModalOpen(false)}
+        mode="create"
         sectionId={categories.length > 0 ? categories[0].id : 1}
         onCategoryAdded={handleItemAdded}
       />

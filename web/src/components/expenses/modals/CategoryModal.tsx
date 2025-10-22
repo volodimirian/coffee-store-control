@@ -1,23 +1,36 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
-import { expenseCategoriesApi, unitsApi, type ExpenseCategoryUpdate, type ExpenseCategory, type Unit } from '~/shared/api';
+import { 
+  expenseCategoriesApi, 
+  unitsApi, 
+  type ExpenseCategoryCreate, 
+  type ExpenseCategoryUpdate, 
+  type ExpenseCategory, 
+  type Unit 
+} from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 
-interface EditCategoryModalProps {
+interface CategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  category: ExpenseCategory | null;
+  mode: 'create' | 'edit';
+  sectionId?: number; // Required for create mode
+  category?: ExpenseCategory | null; // Required for edit mode
+  onCategoryAdded?: (category: ExpenseCategory) => void;
   onCategoryUpdated?: (category: ExpenseCategory) => void;
 }
 
-export default function EditCategoryModal({
+export default function CategoryModal({
   isOpen,
   onClose,
+  mode,
+  sectionId,
   category,
+  onCategoryAdded,
   onCategoryUpdated,
-}: EditCategoryModalProps) {
+}: CategoryModalProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingUnits, setIsLoadingUnits] = useState(false);
@@ -32,17 +45,28 @@ export default function EditCategoryModal({
   const [units, setUnits] = useState<Unit[]>([]);
   const { currentLocation } = useAppContext();
 
-  // Initialize form data when category changes
+  const isEditMode = mode === 'edit';
+  const modalKey = isEditMode ? 'editCategory' : 'addCategory';
+
+  // Initialize form data when category changes (edit mode)
   useEffect(() => {
-    if (category) {
+    if (isEditMode && category) {
       setFormData({
         name: category.name || '',
         default_unit_id: category.default_unit_id || 0,
         order_index: category.order_index || 0,
         is_active: category.is_active !== undefined ? category.is_active : true,
       });
+    } else if (!isEditMode) {
+      // Reset form for create mode
+      setFormData({
+        name: '',
+        default_unit_id: 0,
+        order_index: 0,
+        is_active: true,
+      });
     }
-  }, [category]);
+  }, [category, isEditMode, isOpen]);
 
   // Load units when modal opens
   useEffect(() => {
@@ -59,7 +83,7 @@ export default function EditCategoryModal({
         setUnits(response.units);
       } catch (err) {
         console.error('Error loading units:', err);
-        setError(t('expenses.modals.editCategory.unitsLoadError'));
+        setError(t(`expenses.modals.${modalKey}.unitsLoadError`));
       } finally {
         setIsLoadingUnits(false);
       }
@@ -68,7 +92,7 @@ export default function EditCategoryModal({
     if (isOpen && currentLocation?.id) {
       loadUnits();
     }
-  }, [isOpen, currentLocation?.id, t]);
+  }, [isOpen, currentLocation?.id, t, modalKey]);
 
   const handleClose = () => {
     setFormData({ name: '', default_unit_id: 0, order_index: 0, is_active: true });
@@ -81,23 +105,23 @@ export default function EditCategoryModal({
     const newErrors: Record<string, string> = {};
 
     if (!currentLocation?.id) {
-      newErrors.business = t('expenses.modals.editCategory.selectBusinessFirst');
+      newErrors.business = t(`expenses.modals.${modalKey}.selectBusinessFirst`);
     }
 
     if (!formData.name.trim()) {
-      newErrors.name = t('expenses.modals.editCategory.nameRequired');
+      newErrors.name = t(`expenses.modals.${modalKey}.nameRequired`);
     } else if (formData.name.trim().length < 1) {
-      newErrors.name = t('expenses.modals.editCategory.nameMinLength');
+      newErrors.name = t(`expenses.modals.${modalKey}.nameMinLength`);
     } else if (formData.name.trim().length > 200) {
-      newErrors.name = t('expenses.modals.editCategory.nameMaxLength');
+      newErrors.name = t(`expenses.modals.${modalKey}.nameMaxLength`);
     }
 
     if (!formData.default_unit_id || formData.default_unit_id <= 0) {
-      newErrors.default_unit_id = t('expenses.modals.editCategory.unitRequired');
+      newErrors.default_unit_id = t(`expenses.modals.${modalKey}.unitRequired`);
     }
 
     if (formData.order_index < 0) {
-      newErrors.order_index = t('expenses.modals.editCategory.orderIndexValidation');
+      newErrors.order_index = t(`expenses.modals.${modalKey}.orderMin`);
     }
 
     setErrors(newErrors);
@@ -107,7 +131,15 @@ export default function EditCategoryModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm() || !category) {
+    if (!validateForm()) {
+      return;
+    }
+
+    if (isEditMode && !category) {
+      return;
+    }
+
+    if (!isEditMode && !sectionId) {
       return;
     }
 
@@ -115,31 +147,51 @@ export default function EditCategoryModal({
     setError(null);
 
     try {
-      const updateData: ExpenseCategoryUpdate = {
-        name: formData.name.trim(),
-        default_unit_id: formData.default_unit_id,
-        order_index: formData.order_index,
-        is_active: formData.is_active,
-      };
+      if (isEditMode && category) {
+        // Update existing category
+        const updateData: ExpenseCategoryUpdate = {
+          name: formData.name.trim(),
+          default_unit_id: formData.default_unit_id,
+          order_index: formData.order_index,
+          is_active: formData.is_active,
+        };
 
-      const updatedCategory = await expenseCategoriesApi.update(category.id, updateData);
-      
-      if (onCategoryUpdated) {
-        onCategoryUpdated(updatedCategory);
+        const updatedCategory = await expenseCategoriesApi.update(category.id, updateData);
+        
+        if (onCategoryUpdated) {
+          onCategoryUpdated(updatedCategory);
+        }
+      } else {
+        // Create new category
+        const categoryData: ExpenseCategoryCreate = {
+          name: formData.name.trim(),
+          section_id: sectionId!,
+          business_id: currentLocation?.id || 1, // Fallback to 1 if no location
+          default_unit_id: formData.default_unit_id,
+          order_index: formData.order_index,
+          is_active: true,
+        };
+
+        const newCategory = await expenseCategoriesApi.create(categoryData);
+        
+        if (onCategoryAdded) {
+          onCategoryAdded(newCategory);
+        }
       }
 
       handleClose();
     } catch (err) {
-      console.error('Error updating category:', err);
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} category:`, err);
       setError(
-        err instanceof Error ? err.message : t('expenses.modals.editCategory.updateError')
+        err instanceof Error ? err.message : t(`expenses.modals.${modalKey}.${isEditMode ? 'updateError' : 'createError'}`)
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!category) {
+  // Don't render in edit mode if no category provided
+  if (isEditMode && !category) {
     return null;
   }
 
@@ -175,7 +227,7 @@ export default function EditCategoryModal({
                     as="h3"
                     className="text-lg font-medium leading-6 text-gray-900"
                   >
-                    {t('expenses.modals.editCategory.title')}
+                    {t(`expenses.modals.${modalKey}.title`)}
                   </Dialog.Title>
                   <button
                     type="button"
@@ -196,7 +248,7 @@ export default function EditCategoryModal({
                   {/* Category Name */}
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      {t('expenses.modals.editCategory.nameLabel')} <span className="text-red-500">*</span>
+                      {t(`expenses.modals.${modalKey}.nameLabel`)} <span className="text-red-500">*</span>
                     </label>
                     <div className="mt-1">
                       <input
@@ -205,7 +257,7 @@ export default function EditCategoryModal({
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                        placeholder={t('expenses.modals.editCategory.namePlaceholder')}
+                        placeholder={t(`expenses.modals.${modalKey}.namePlaceholder`)}
                         autoComplete="off"
                       />
                       {errors.name && (
@@ -217,7 +269,7 @@ export default function EditCategoryModal({
                   {/* Default Unit */}
                   <div>
                     <label htmlFor="default_unit_id" className="block text-sm font-medium text-gray-700">
-                      {t('expenses.modals.editCategory.unitLabel')} <span className="text-red-500">*</span>
+                      {t(`expenses.modals.${modalKey}.unitLabel`)} <span className="text-red-500">*</span>
                     </label>
                     <div className="mt-1">
                       <select
@@ -228,7 +280,7 @@ export default function EditCategoryModal({
                         disabled={isLoadingUnits}
                       >
                         <option value={0}>
-                          {isLoadingUnits ? t('common.loading') : t('expenses.modals.editCategory.selectUnit')}
+                          {isLoadingUnits ? t('common.loading') : t(`expenses.modals.${modalKey}.selectUnit`)}
                         </option>
                         {units.map((unit) => (
                           <option key={unit.id} value={unit.id}>
@@ -242,7 +294,7 @@ export default function EditCategoryModal({
                     </div>
                     {units.length === 0 && !isLoadingUnits && (
                       <p className="mt-1 text-xs text-amber-600">
-                        {t('expenses.modals.editCategory.noUnitsWarning')}
+                        {t(`expenses.modals.${modalKey}.noUnitsWarning`)}
                       </p>
                     )}
                   </div>
@@ -250,7 +302,7 @@ export default function EditCategoryModal({
                   {/* Order Index */}
                   <div>
                     <label htmlFor="order_index" className="block text-sm font-medium text-gray-700">
-                      {t('expenses.modals.editCategory.orderLabel')}
+                      {t(`expenses.modals.${modalKey}.orderLabel`)}
                     </label>
                     <div className="mt-1">
                       <input
@@ -267,27 +319,29 @@ export default function EditCategoryModal({
                       )}
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      {t('expenses.modals.editCategory.orderDescription')}
+                      {t(`expenses.modals.${modalKey}.orderDescription`)}
                     </p>
                   </div>
 
-                  {/* Active Status */}
-                  <div>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.is_active}
-                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">
-                        {t('expenses.modals.editCategory.activeLabel')}
-                      </span>
-                    </label>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {t('expenses.modals.editCategory.activeDescription')}
-                    </p>
-                  </div>
+                  {/* Active Status - Only show in edit mode */}
+                  {isEditMode && (
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.is_active}
+                          onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">
+                          {t('expenses.modals.editCategory.activeLabel')}
+                        </span>
+                      </label>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {t('expenses.modals.editCategory.activeDescription')}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="flex justify-end space-x-3 pt-4">
@@ -314,8 +368,12 @@ export default function EditCategoryModal({
                         </>
                       ) : (
                         <>
-                          <PencilIcon className="h-4 w-4 mr-2" />
-                          {t('expenses.modals.editCategory.saveButton')}
+                          {isEditMode ? (
+                            <PencilIcon className="h-4 w-4 mr-2" />
+                          ) : (
+                            <PlusIcon className="h-4 w-4 mr-2" />
+                          )}
+                          {t(`expenses.modals.${modalKey}.${isEditMode ? 'saveButton' : 'createButton'}`)}
                         </>
                       )}
                     </button>

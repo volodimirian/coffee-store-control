@@ -11,8 +11,7 @@ import {
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
-import AddCategoryModal from '~/components/expenses/modals/AddCategoryModal';
-import EditCategoryModal from '~/components/expenses/modals/EditCategoryModal';
+import CategoryModal from '~/components/expenses/modals/CategoryModal';
 
 interface SectionWithCategories extends ExpenseSection {
   categories: ExpenseCategory[];
@@ -659,7 +658,8 @@ export default function CategoriesTab() {
         onSectionAdded={handleSectionAdded}
       />
 
-      <AddCategoryModal
+      <CategoryModal
+        mode="create"
         isOpen={isAddCategoryModalOpen}
         onClose={() => {
           setIsAddCategoryModalOpen(false);
@@ -669,7 +669,8 @@ export default function CategoriesTab() {
         onCategoryAdded={handleCategoryAdded}
       />
 
-      <EditCategoryModal
+      <CategoryModal
+        mode="edit"
         isOpen={isEditCategoryModalOpen}
         onClose={() => {
           setIsEditCategoryModalOpen(false);

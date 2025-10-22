@@ -259,17 +259,17 @@
         "nameMinLength": "Name must be at least 1 character",
         "nameMaxLength": "Name must be at most 200 characters",
         "unitLabel": "Unit of Measurement",
-        "unitPlaceholder": "Select unit of measurement",
-        "unitLoading": "Loading...",
+        "selectUnit": "Select unit of measurement",
         "unitRequired": "Unit of measurement must be selected",
-        "noUnits": "No available units of measurement. Create them first in settings.",
+        "noUnitsWarning": "No available units of measurement. Create them first in settings.",
         "orderLabel": "Order Number",
-        "orderHelp": "Determines the display order of the category. 0 = first.",
+        "orderDescription": "Determines the display order of the category. 0 = first.",
         "orderMin": "Order number must be greater than or equal to 0",
         "creating": "Creating...",
         "createButton": "Create Category",
         "createError": "An error occurred while creating the category",
-        "unitsLoadError": "Error loading units of measurement"
+        "unitsLoadError": "Error loading units of measurement",
+        "selectBusinessFirst": "Please select a business first"
       },
       "editCategory": {
         "title": "Edit Category",
