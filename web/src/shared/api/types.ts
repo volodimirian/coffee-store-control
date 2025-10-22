@@ -83,6 +83,183 @@ export interface TokenResponse {
   token_type: string;
 }
 
+// ============ Expenses & Categories Types ============
+
+export type UnitType = 'weight' | 'volume' | 'count';
+export type MonthPeriodStatus = 'active' | 'closed' | 'archived';
+
+export interface Unit {
+  id: number;
+  name: string;
+  symbol: string;
+  unit_type: UnitType;
+  base_unit_id?: number;
+  conversion_factor: string; // Decimal as string
+  business_id: number;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UnitCreate {
+  name: string;
+  symbol: string;
+  unit_type: UnitType;
+  business_id: number;
+  base_unit_id?: number;
+  conversion_factor?: string;
+  description?: string;
+  is_active?: boolean;
+}
+
+export interface UnitUpdate {
+  name?: string;
+  symbol?: string;
+  unit_type?: UnitType;
+  base_unit_id?: number;
+  conversion_factor?: string;
+  description?: string;
+  is_active?: boolean;
+}
+
+export interface UnitListResponse {
+  units: Unit[];
+  total: number;
+}
+
+export interface MonthPeriod {
+  id: number;
+  name: string;
+  year: number;
+  month: number;
+  status: MonthPeriodStatus;
+  business_id: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MonthPeriodCreate {
+  name: string;
+  year: number;
+  month: number;
+  business_id: number;
+  status?: MonthPeriodStatus;
+  is_active?: boolean;
+}
+
+export interface MonthPeriodUpdate {
+  name?: string;
+  status?: MonthPeriodStatus;
+  is_active?: boolean;
+}
+
+export interface MonthPeriodListResponse {
+  periods: MonthPeriod[];
+  total: number;
+}
+
+export interface ExpenseSection {
+  id: number;
+  name: string;
+  business_id: number;
+  created_by: number;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpenseSectionCreate {
+  name: string;
+  business_id: number;
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface ExpenseSectionUpdate {
+  name?: string;
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface ExpenseSectionListResponse {
+  sections: ExpenseSection[];
+  total: number;
+}
+
+export interface ExpenseCategory {
+  id: number;
+  name: string;
+  section_id: number;
+  business_id: number;
+  default_unit_id: number;
+  created_by: number;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpenseCategoryCreate {
+  name: string;
+  section_id: number;
+  business_id: number;
+  default_unit_id: number;
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface ExpenseCategoryUpdate {
+  name?: string;
+  default_unit_id?: number;
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface ExpenseCategoryListResponse {
+  categories: ExpenseCategory[];
+  total: number;
+}
+
+export interface SupplierContactInfo {
+  phone?: string;
+  email?: string;
+  address?: string;
+  website?: string;
+  notes?: string;
+}
+
+export interface Supplier {
+  id: number;
+  name: string;
+  business_id: number;
+  created_by: number;
+  contact_info?: SupplierContactInfo;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupplierCreate {
+  name: string;
+  business_id: number;
+  contact_info?: SupplierContactInfo;
+  is_active?: boolean;
+}
+
+export interface SupplierUpdate {
+  name?: string;
+  contact_info?: SupplierContactInfo;
+  is_active?: boolean;
+}
+
+export interface SupplierListResponse {
+  suppliers: Supplier[];
+  total: number;
+}
+
 // ============ Generic API Response Wrappers ============
 
 export type AuthResponse = TokenResponse;
