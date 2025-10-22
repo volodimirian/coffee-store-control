@@ -69,8 +69,8 @@ async def get_categories_by_section(
     current_user: User = Depends(get_current_user),
 ):
     """Get all categories for a section."""
-    # Get section to verify business access
-    section = await ExpenseSectionService.get_section_by_id(session, section_id)
+    # Get section to verify business access (include inactive sections)
+    section = await ExpenseSectionService.get_section_by_id(session, section_id, include_inactive=True)
     if not section:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

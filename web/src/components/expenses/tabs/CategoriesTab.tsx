@@ -166,7 +166,7 @@ function SectionCard({
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {/* Кнопка активации категории доступна только в активных секциях */}
+                      {/* Category activation button is only available in active sections */}
                       {isActive && (
                         <button
                           onClick={() => onToggleCategoryStatus(category.id, false)}
@@ -266,10 +266,13 @@ export default function CategoriesTab() {
                 is_active: undefined,
               });
               const allCategories = categoriesResponse.categories;
+              
               return {
                 ...section,
-                categories: allCategories.filter(cat => cat.is_active),
-                inactiveCategories: allCategories.filter(cat => !cat.is_active),
+                // Active categories: only if both category and section are active
+                categories: allCategories.filter(cat => cat.is_active && section.is_active),
+                // Inactive categories: if category is inactive OR section is inactive
+                inactiveCategories: allCategories.filter(cat => !cat.is_active || !section.is_active),
               };
             } catch (err) {
               console.error(`Error loading categories for section ${section.id}:`, err);
@@ -285,18 +288,6 @@ export default function CategoriesTab() {
         // Separate active and inactive sections
         const activeSecs = allSectionsWithCategories.filter(section => section.is_active);
         const inactiveSecs = allSectionsWithCategories.filter(section => !section.is_active);
-        
-        console.log('Loaded sections:', {
-          activeSections: activeSecs.length,
-          inactiveSections: inactiveSecs.length,
-          allSections: allSectionsWithCategories.map(s => ({
-            id: s.id,
-            name: s.name,
-            is_active: s.is_active,
-            activeCategories: s.categories.length,
-            inactiveCategories: s.inactiveCategories.length
-          }))
-        });
         
         setActiveSections(activeSecs);
         setInactiveSections(inactiveSecs);
@@ -347,12 +338,12 @@ export default function CategoriesTab() {
         const section = activeSections.find(s => s.id === sectionId);
         if (section) {
           setActiveSections(prev => prev.filter(s => s.id !== sectionId));
-          // При деактивации секции все категории становятся неактивными
+          // When deactivating a section, all categories become inactive
           const updatedSection = {
             ...section,
             is_active: false,
-            categories: [], // Очищаем активные категории
-            inactiveCategories: [...section.categories, ...section.inactiveCategories] // Все категории становятся неактивными
+            categories: [], // Clear active categories
+            inactiveCategories: [...section.categories, ...section.inactiveCategories] // All categories become inactive
           };
           setInactiveSections(prev => [...prev, updatedSection]);
         }
@@ -361,10 +352,15 @@ export default function CategoriesTab() {
         const section = inactiveSections.find(s => s.id === sectionId);
         if (section) {
           setInactiveSections(prev => prev.filter(s => s.id !== sectionId));
-          // При активации секции категории остаются в своих состояниях
+          // When activating a section, need to properly distribute categories
+          const allSectionCategories = [...section.categories, ...section.inactiveCategories];
           const updatedSection = {
             ...section,
-            is_active: true
+            is_active: true,
+            // Active categories: only those that are actually active
+            categories: allSectionCategories.filter(cat => cat.is_active),
+            // Inactive categories: only those that are actually inactive
+            inactiveCategories: allSectionCategories.filter(cat => !cat.is_active),
           };
           setActiveSections(prev => [...prev, updatedSection]);
         }
