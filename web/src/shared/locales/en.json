@@ -16,7 +16,15 @@
     "back": "Back",
     "brandName": "Business Control",
     "actionCannotBeUndone": "This action cannot be undone.",
-    "order": "Order"
+    "order": "Order",
+    "filters": "Filters",
+    "clearFilters": "Clear Filters",
+    "previous": "Previous",
+    "next": "Next",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results"
   },
   "navigation": {
     "home": "Home",
@@ -442,6 +450,12 @@
       "errorMarkAsPaid": "Error marking invoice as paid",
       "errorMarkAsCancelled": "Error cancelling invoice",
       "filters": {
+        "status": "Status",
+        "supplier": "Supplier",
+        "allSuppliers": "All Suppliers",
+        "dateFrom": "Date From",
+        "dateTo": "Date To",
+        "searchPlaceholder": "Search by invoice number...",
         "all": "All Invoices",
         "pending": "Pending",
         "paid": "Paid",

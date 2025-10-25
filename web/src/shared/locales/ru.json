@@ -16,7 +16,15 @@
     "back": "Назад",
     "brandName": "Business Control",
     "actionCannotBeUndone": "Это действие нельзя отменить.",
-    "order": "Порядок"
+    "order": "Порядок",
+    "filters": "Фильтры",
+    "clearFilters": "Очистить фильтры",
+    "previous": "Предыдущая",
+    "next": "Следующая",
+    "showing": "Показано",
+    "to": "до",
+    "of": "из",
+    "results": "результатов"
   },
   "navigation": {
     "home": "Главная",
@@ -487,6 +495,12 @@
       "errorMarkAsPaid": "Ошибка при пометке счета как оплаченного",
       "errorMarkAsCancelled": "Ошибка при отмене счета",
       "filters": {
+        "status": "Статус",
+        "supplier": "Поставщик",
+        "allSuppliers": "Все поставщики",
+        "dateFrom": "Дата от",
+        "dateTo": "Дата до",
+        "searchPlaceholder": "Поиск по номеру счета...",
         "all": "Все счета",
         "pending": "Ожидают оплаты",
         "paid": "Оплачены",
