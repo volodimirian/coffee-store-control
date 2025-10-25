@@ -19,7 +19,7 @@ class UnitService:
     async def create_unit(
         session: AsyncSession,
         unit_data: UnitCreate,
-        created_by_user_id: int,
+        created_by_user_id: int,  # Keep parameter for future use but don't use it yet
     ) -> Unit:
         """Create a new measurement unit."""
         unit = Unit(
@@ -31,7 +31,6 @@ class UnitService:
             conversion_factor=unit_data.conversion_factor,
             description=unit_data.description,
             is_active=True,
-            created_by=created_by_user_id,
         )
         session.add(unit)
         await session.flush()

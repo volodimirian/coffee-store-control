@@ -272,9 +272,16 @@ export default function UnitModal({
                         </option>
                       ))}
                     </select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {t('expenses.units.modal.baseUnitDescription')}
-                    </p>
+                    {baseUnits.length === 0 && !loadingBaseUnits && (
+                      <p className="mt-1 text-xs text-amber-600">
+                        No base units found for this type. Create a base unit first (leave this field empty).
+                      </p>
+                    )}
+                    {baseUnits.length > 0 && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        {t('expenses.units.modal.baseUnitDescription')}
+                      </p>
+                    )}
                   </div>
 
                   {/* Conversion Factor (only if base unit is selected) */}
