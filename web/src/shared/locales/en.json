@@ -8,6 +8,8 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "deleting": "Deleting...",
+    "create": "Create",
+    "update": "Update",
     "yes": "Yes",
     "no": "No",
     "continue": "Continue",
@@ -344,6 +346,11 @@
           "message": "Are you sure you want to delete the unit \"{{name}}\"? This action cannot be undone.",
           "confirmButton": "Delete Unit",
           "withDerived": "⚠️ This will also delete {{count}} derived units"
+        },
+        "invoice": {
+          "title": "Delete Invoice",
+          "message": "Are you sure you want to delete invoice \"{{name}}\"? This action cannot be undone.",
+          "confirmButton": "Delete Invoice"
         }
       }
     },
@@ -420,6 +427,74 @@
         "businessNotSelected": "Business not selected",
         "baseUnitsLoadError": "Error loading base units",
         "selectBusinessFirst": "Please select a business first"
+      }
+    },
+    "invoices": {
+      "title": "Supplier Invoices",
+      "description": "Manage supplier invoices and track inventory purchases",
+      "addInvoice": "Add Invoice",
+      "createFirstInvoice": "Create First Invoice",
+      "noInvoices": "No invoices created",
+      "noInvoicesDescription": "Start by adding your first supplier invoice",
+      "loadingData": "Loading data...",
+      "loadingError": "Error loading invoices",
+      "errorDeleteInvoice": "Error deleting invoice",
+      "errorMarkAsPaid": "Error marking invoice as paid",
+      "errorMarkAsCancelled": "Error cancelling invoice",
+      "filters": {
+        "all": "All Invoices",
+        "pending": "Pending",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "status": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "table": {
+        "invoiceNumber": "Invoice #",
+        "supplier": "Supplier",
+        "date": "Date",
+        "totalAmount": "Total Amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "markAsPaid": "Mark as Paid",
+        "markAsCancelled": "Cancel"
+      },
+      "modal": {
+        "createTitle": "Create Invoice",
+        "editTitle": "Edit Invoice",
+        "supplier": "Supplier",
+        "selectSupplier": "Select supplier...",
+        "supplierRequired": "Supplier is required",
+        "invoiceNumber": "Invoice Number",
+        "invoiceNumberPlaceholder": "Optional",
+        "invoiceDate": "Invoice Date",
+        "dateRequired": "Invoice date is required",
+        "lineItems": "Line Items",
+        "itemsRequired": "At least one line item is required",
+        "addItem": "Add Item",
+        "removeItem": "Remove",
+        "category": "Category",
+        "selectCategory": "Select category...",
+        "categoryRequired": "Category is required for line {{line}}",
+        "quantity": "Quantity",
+        "quantityRequired": "Quantity is required for line {{line}}",
+        "unit": "Unit",
+        "selectUnit": "Select unit...",
+        "unitRequired": "Unit is required for line {{line}}",
+        "unitPrice": "Unit Price",
+        "priceRequired": "Unit price is required for line {{line}}",
+        "totalPrice": "Total Price",
+        "totalAmount": "Total Amount",
+        "loadDataError": "Error loading data",
+        "createError": "Error creating invoice",
+        "updateError": "Error updating invoice"
       }
     },
     "inventoryTracking": {
@@ -501,6 +576,7 @@
       "inventoryTracking": "Inventory Tracking",
       "categories": "Categories",
       "units": "Units of Measurement",
+      "invoices": "Invoices",
       "reports": "Reports"
     },
     "page": {

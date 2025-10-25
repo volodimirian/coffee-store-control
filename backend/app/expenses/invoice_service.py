@@ -115,6 +115,12 @@ class InvoiceService:
         if not invoice:
             return False
 
+        # First delete all invoice items
+        items = await InvoiceItemService.get_items_by_invoice(session, invoice_id)
+        for item in items:
+            await session.delete(item)
+        
+        # Then delete the invoice
         await session.delete(invoice)
         await session.flush()
         return True
@@ -497,4 +503,3 @@ class InvoiceItemService:
         await InventoryBalanceService.recalculate_balance_for_category(
             session, category_id, getattr(period, 'id')
         )
-        

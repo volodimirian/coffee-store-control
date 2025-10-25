@@ -24,6 +24,14 @@ import type {
   SupplierCreate,
   SupplierUpdate,
   SupplierListResponse,
+  Invoice,
+  InvoiceCreate,
+  InvoiceUpdate,
+  InvoiceListResponse,
+  InvoiceItem,
+  InvoiceItemCreate,
+  InvoiceItemUpdate,
+  InvoiceStatus,
 } from './types';
 
 // ============ Units API ============
@@ -444,5 +452,132 @@ export const suppliersApi = {
   restore: async (supplierId: number): Promise<Supplier> => {
     const response = await api.post<Supplier>(`/expenses/suppliers/${supplierId}/restore`);
     return response.data;
+  },
+};
+
+// ============ Invoices API ============
+
+interface InvoiceListParams {
+  business_id: number;
+  supplier_id?: number;
+  paid_status?: InvoiceStatus;
+  date_from?: string;
+  date_to?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export const invoicesApi = {
+  /**
+   * Get all invoices for a business
+   */
+  list: async (params: InvoiceListParams): Promise<InvoiceListResponse> => {
+    const queryParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '' && key !== 'business_id') {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    const response = await api.get<InvoiceListResponse>(
+      `/expenses/invoices/business/${params.business_id}?${queryParams.toString()}`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get invoice by ID
+   */
+  get: async (invoiceId: number, loadItems = false): Promise<Invoice> => {
+    const queryParams = loadItems ? '?load_items=true' : '';
+    const response = await api.get<Invoice>(`/expenses/invoices/${invoiceId}${queryParams}`);
+    return response.data;
+  },
+
+  /**
+   * Create new invoice
+   */
+  create: async (data: InvoiceCreate): Promise<Invoice> => {
+    const response = await api.post<Invoice>('/expenses/invoices/', data);
+    return response.data;
+  },
+
+  /**
+   * Update invoice
+   */
+  update: async (invoiceId: number, data: InvoiceUpdate): Promise<Invoice> => {
+    const response = await api.put<Invoice>(`/expenses/invoices/${invoiceId}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete invoice
+   */
+  delete: async (invoiceId: number): Promise<void> => {
+    await api.delete(`/expenses/invoices/${invoiceId}`);
+  },
+
+  /**
+   * Mark invoice as paid
+   */
+  markAsPaid: async (invoiceId: number, paidDate?: string): Promise<Invoice> => {
+    const response = await api.post<Invoice>(`/expenses/invoices/${invoiceId}/mark-paid`, {
+      paid_date: paidDate,
+    });
+    return response.data;
+  },
+
+  /**
+   * Mark invoice as cancelled
+   */
+  markAsCancelled: async (invoiceId: number): Promise<Invoice> => {
+    const response = await api.post<Invoice>(`/expenses/invoices/${invoiceId}/mark-cancelled`);
+    return response.data;
+  },
+
+  /**
+   * Search invoices
+   */
+  search: async (businessId: number, query: string, skip = 0, limit = 50): Promise<InvoiceListResponse> => {
+    const response = await api.get<InvoiceListResponse>(
+      `/expenses/invoices/business/${businessId}/search?q=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`
+    );
+    return response.data;
+  },
+};
+
+// ============ Invoice Items API ============
+
+export const invoiceItemsApi = {
+  /**
+   * Get all items for an invoice
+   */
+  list: async (invoiceId: number): Promise<InvoiceItem[]> => {
+    const response = await api.get<InvoiceItem[]>(`/expenses/invoices/${invoiceId}/items`);
+    return response.data;
+  },
+
+  /**
+   * Create new invoice item
+   */
+  create: async (data: InvoiceItemCreate): Promise<InvoiceItem> => {
+    const response = await api.post<InvoiceItem>(`/expenses/invoices/${data.invoice_id}/items`, data);
+    return response.data;
+  },
+
+  /**
+   * Update invoice item
+   */
+  update: async (itemId: number, data: InvoiceItemUpdate): Promise<InvoiceItem> => {
+    const response = await api.put<InvoiceItem>(`/expenses/invoices/items/${itemId}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete invoice item
+   */
+  delete: async (itemId: number): Promise<void> => {
+    await api.delete(`/expenses/invoices/items/${itemId}`);
   },
 };

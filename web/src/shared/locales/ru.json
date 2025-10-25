@@ -8,6 +8,8 @@
     "cancel": "Отмена",
     "delete": "Удалить",
     "deleting": "Удаление...",
+    "create": "Создать",
+    "update": "Обновить",
     "yes": "Да",
     "no": "Нет",
     "continue": "Продолжить",
@@ -389,6 +391,11 @@
           "message": "Вы уверены, что хотите удалить единицу измерения \"{{name}}\"? Это действие нельзя отменить.",
           "confirmButton": "Удалить единицу",
           "withDerived": "⚠️ Также будет удалено {{count}} производных единиц измерения"
+        },
+        "invoice": {
+          "title": "Удалить счет",
+          "message": "Вы уверены, что хотите удалить счет \"{{name}}\"? Это действие нельзя отменить.",
+          "confirmButton": "Удалить счет"
         }
       }
     },
@@ -465,6 +472,74 @@
         "businessNotSelected": "Бизнес не выбран",
         "baseUnitsLoadError": "Ошибка загрузки базовых единиц",
         "selectBusinessFirst": "Сначала выберите бизнес"
+      }
+    },
+    "invoices": {
+      "title": "Счета от поставщиков",
+      "description": "Управление счетами от поставщиков и учет закупок",
+      "addInvoice": "Добавить счет",
+      "createFirstInvoice": "Создать первый счет",
+      "noInvoices": "Счета не созданы",
+      "noInvoicesDescription": "Начните с добавления первого счета от поставщика",
+      "loadingData": "Загрузка данных...",
+      "loadingError": "Ошибка загрузки счетов",
+      "errorDeleteInvoice": "Ошибка удаления счета",
+      "errorMarkAsPaid": "Ошибка при пометке счета как оплаченного",
+      "errorMarkAsCancelled": "Ошибка при отмене счета",
+      "filters": {
+        "all": "Все счета",
+        "pending": "Ожидают оплаты",
+        "paid": "Оплачены",
+        "cancelled": "Отменены"
+      },
+      "status": {
+        "pending": "Ожидает",
+        "paid": "Оплачен",
+        "cancelled": "Отменен"
+      },
+      "table": {
+        "invoiceNumber": "№ счета",
+        "supplier": "Поставщик",
+        "date": "Дата",
+        "totalAmount": "Сумма",
+        "status": "Статус",
+        "actions": "Действия"
+      },
+      "actions": {
+        "edit": "Редактировать",
+        "delete": "Удалить",
+        "markAsPaid": "Отметить оплаченным",
+        "markAsCancelled": "Отменить"
+      },
+      "modal": {
+        "createTitle": "Создать счет",
+        "editTitle": "Редактировать счет",
+        "supplier": "Поставщик",
+        "selectSupplier": "Выберите поставщика...",
+        "supplierRequired": "Поставщик обязателен",
+        "invoiceNumber": "Номер счета",
+        "invoiceNumberPlaceholder": "Необязательно",
+        "invoiceDate": "Дата счета",
+        "dateRequired": "Дата счета обязательна",
+        "lineItems": "Позиции",
+        "itemsRequired": "Требуется хотя бы одна позиция",
+        "addItem": "Добавить позицию",
+        "removeItem": "Удалить",
+        "category": "Категория",
+        "selectCategory": "Выберите категорию...",
+        "categoryRequired": "Категория обязательна для строки {{line}}",
+        "quantity": "Количество",
+        "quantityRequired": "Количество обязательно для строки {{line}}",
+        "unit": "Единица",
+        "selectUnit": "Выберите единицу...",
+        "unitRequired": "Единица измерения обязательна для строки {{line}}",
+        "unitPrice": "Цена за единицу",
+        "priceRequired": "Цена обязательна для строки {{line}}",
+        "totalPrice": "Итого",
+        "totalAmount": "Общая сумма",
+        "loadDataError": "Ошибка загрузки данных",
+        "createError": "Ошибка создания счета",
+        "updateError": "Ошибка обновления счета"
       }
     },
     "inventoryTracking": {
@@ -546,6 +621,7 @@
       "inventoryTracking": "Учет расходов", 
       "categories": "Категории",
       "units": "Единицы измерения",
+      "invoices": "Счета",
       "reports": "Отчеты"
     },
     "page": {
