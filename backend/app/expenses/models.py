@@ -26,7 +26,7 @@ class Unit(Base):
     unit_type = Column(String(20), nullable=False)  # UnitType enum
     business_id = Column(Integer, ForeignKey("businesses.id"), nullable=False)
     description = Column(String(500), nullable=True)  # Optional description
-    base_unit_id = Column(Integer, ForeignKey("units.id"), nullable=True)  # Base unit for conversion
+    base_unit_id = Column(Integer, ForeignKey("units.id", ondelete="CASCADE"), nullable=True)  # Base unit for conversion
     conversion_factor = Column(Numeric(10, 4), nullable=False, default=1.0)  # Factor to convert to base unit
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

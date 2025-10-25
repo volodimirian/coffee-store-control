@@ -23,3 +23,25 @@ export const logout = () => {
     window.location.href = "/login";
 }
 
+// UI Settings helpers
+export const getUIPreference = <T>(key: string, defaultValue: T): T => {
+    try {
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : defaultValue;
+    } catch {
+        return defaultValue;
+    }
+};
+
+export const setUIPreference = (key: string, value: unknown) => {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn('Failed to save UI preference:', error);
+    }
+};
+
+// Specific UI preferences
+export const getShowInactivePreference = () => getUIPreference('expenses-show-inactive', false);
+export const setShowInactivePreference = (value: boolean) => setUIPreference('expenses-show-inactive', value);
+

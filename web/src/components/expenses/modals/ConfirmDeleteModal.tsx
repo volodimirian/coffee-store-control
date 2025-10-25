@@ -7,9 +7,10 @@ interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  type: 'section' | 'category';
+  type: 'section' | 'category' | 'unit';
   itemName?: string;
   isLoading?: boolean;
+  additionalInfo?: string; // Additional warning or info message
 }
 
 export default function ConfirmDeleteModal({
@@ -19,6 +20,7 @@ export default function ConfirmDeleteModal({
   type,
   itemName,
   isLoading = false,
+  additionalInfo,
 }: ConfirmDeleteModalProps) {
   const { t } = useTranslation();
 
@@ -74,6 +76,11 @@ export default function ConfirmDeleteModal({
                       <p>
                         {t(messageKey, { name: itemName })}
                       </p>
+                      {additionalInfo && (
+                        <p className="mt-2 text-sm font-medium text-amber-700 bg-amber-50 p-2 rounded">
+                          {additionalInfo}
+                        </p>
+                      )}
                       <p className="mt-2 text-xs text-red-600">
                         {t('common.actionCannotBeUndone')}
                       </p>

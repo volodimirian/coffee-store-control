@@ -10,6 +10,7 @@ import {
   type MonthPeriod,
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
+import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers';
 import SectionModal from '~/components/expenses/modals/SectionModal';
 import CategoryModal from '~/components/expenses/modals/CategoryModal';
 import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
@@ -52,9 +53,14 @@ function SectionCard({
       <div className={`px-4 py-3 border-b border-gray-200 ${isActive ? 'bg-green-50' : 'bg-gray-50'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h3 className={`text-lg font-medium ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
-              {section.name}
-            </h3>
+            <div className="flex flex-col">
+              <h3 className={`text-lg font-medium ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
+                {section.name}
+              </h3>
+              <p className={`text-xs ${isActive ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
+                {t('common.order')}: {section.order_index}
+              </p>
+            </div>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               isActive ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'
             }`}>
@@ -234,7 +240,9 @@ export default function CategoriesTab() {
   const [currentPeriod, setCurrentPeriod] = useState<MonthPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
+  
+  // Initialize showInactive from localStorage, default to false (hide inactive)
+  const [showInactive, setShowInactive] = useState(() => getShowInactivePreference());
   
   // Modals
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -251,6 +259,31 @@ export default function CategoriesTab() {
 
 
   const { currentLocation } = useAppContext();
+
+  // Sorting functions - match backend logic exactly
+  // Backend SQL: ORDER BY order_index, name
+  // This ensures consistent sorting when order_index values are identical
+  const sortSections = (sections: SectionWithCategories[]) => {
+    return sections.sort((a, b) => {
+      // First sort by order_index
+      if (a.order_index !== b.order_index) {
+        return a.order_index - b.order_index;
+      }
+      // If order_index is the same, sort by name (alphabetically)
+      return a.name.localeCompare(b.name);
+    });
+  };
+
+  const sortCategories = (categories: ExpenseCategory[]) => {
+    return categories.sort((a, b) => {
+      // First sort by order_index
+      if (a.order_index !== b.order_index) {
+        return a.order_index - b.order_index;
+      }
+      // If order_index is the same, sort by name (alphabetically)
+      return a.name.localeCompare(b.name);
+    });
+  };
 
   // Load current active period and sections
   const loadData = useCallback(async () => {
@@ -296,9 +329,9 @@ export default function CategoriesTab() {
             return {
               ...section,
               // Active categories: only if both category and section are active
-              categories: allCategories.filter(cat => cat.is_active && section.is_active),
+              categories: sortCategories(allCategories.filter(cat => cat.is_active && section.is_active)),
               // Inactive categories: if category is inactive OR section is inactive
-              inactiveCategories: allCategories.filter(cat => !cat.is_active || !section.is_active),
+              inactiveCategories: sortCategories(allCategories.filter(cat => !cat.is_active || !section.is_active)),
             };
           } catch (err) {
             console.error(`Error loading categories for section ${section.id}:`, err);
@@ -311,9 +344,9 @@ export default function CategoriesTab() {
         })
       );
 
-      // Separate active and inactive sections
-      const activeSecs = allSectionsWithCategories.filter(section => section.is_active);
-      const inactiveSecs = allSectionsWithCategories.filter(section => !section.is_active);
+      // Separate active and inactive sections and sort them
+      const activeSecs = sortSections(allSectionsWithCategories.filter(section => section.is_active));
+      const inactiveSecs = sortSections(allSectionsWithCategories.filter(section => !section.is_active));
       
       setActiveSections(activeSecs);
       setInactiveSections(inactiveSecs);
@@ -332,7 +365,7 @@ export default function CategoriesTab() {
   }, [currentLocation?.id, t, loadData]);
 
   const handleSectionAdded = (newSection: ExpenseSection) => {
-    setActiveSections(prev => [...prev, { ...newSection, categories: [], inactiveCategories: [] }]);
+    setActiveSections(prev => sortSections([...prev, { ...newSection, categories: [], inactiveCategories: [] }]));
   };
 
   const handleDeleteSection = (sectionId: number, isActive: boolean) => {
@@ -388,9 +421,9 @@ export default function CategoriesTab() {
             ...section,
             is_active: false,
             categories: [], // Clear active categories
-            inactiveCategories: [...section.categories, ...section.inactiveCategories] // All categories become inactive
+            inactiveCategories: sortCategories([...section.categories, ...section.inactiveCategories]) // All categories become inactive
           };
-          setInactiveSections(prev => [...prev, updatedSection]);
+          setInactiveSections(prev => sortSections([...prev, updatedSection]));
         }
       } else {
         // Move from inactive to active
@@ -403,11 +436,11 @@ export default function CategoriesTab() {
             ...section,
             is_active: true,
             // Active categories: only those that are actually active
-            categories: allSectionCategories.filter(cat => cat.is_active),
+            categories: sortCategories(allSectionCategories.filter(cat => cat.is_active)),
             // Inactive categories: only those that are actually inactive
-            inactiveCategories: allSectionCategories.filter(cat => !cat.is_active),
+            inactiveCategories: sortCategories(allSectionCategories.filter(cat => !cat.is_active)),
           };
-          setActiveSections(prev => [...prev, updatedSection]);
+          setActiveSections(prev => sortSections([...prev, updatedSection]));
         }
       }
     } catch (error) {
@@ -419,7 +452,7 @@ export default function CategoriesTab() {
     const updateSection = (sections: SectionWithCategories[]) => 
       sections.map(section => 
         section.id === newCategory.section_id 
-          ? { ...section, categories: [...section.categories, newCategory] }
+          ? { ...section, categories: sortCategories([...section.categories, newCategory]) }
           : section
       );
     
@@ -458,9 +491,10 @@ export default function CategoriesTab() {
           const categoryInInactive = updatedInactiveCategories.find(cat => cat.id === updatedCategory.id);
           
           if (!categoryInActive && categoryInInactive) {
+            const newCategories = [...section.categories.filter(cat => cat.id !== updatedCategory.id), updatedCategory];
             return {
               ...section,
-              categories: [...section.categories.filter(cat => cat.id !== updatedCategory.id), updatedCategory],
+              categories: sortCategories(newCategories),
               inactiveCategories: section.inactiveCategories.filter(cat => cat.id !== updatedCategory.id)
             };
           }
@@ -470,18 +504,19 @@ export default function CategoriesTab() {
           const categoryInInactive = updatedInactiveCategories.find(cat => cat.id === updatedCategory.id);
           
           if (categoryInActive && !categoryInInactive) {
+            const newInactiveCategories = [...section.inactiveCategories.filter(cat => cat.id !== updatedCategory.id), updatedCategory];
             return {
               ...section,
               categories: section.categories.filter(cat => cat.id !== updatedCategory.id),
-              inactiveCategories: [...section.inactiveCategories.filter(cat => cat.id !== updatedCategory.id), updatedCategory]
+              inactiveCategories: sortCategories(newInactiveCategories)
             };
           }
         }
 
         return {
           ...section,
-          categories: updatedActiveCategories,
-          inactiveCategories: updatedInactiveCategories
+          categories: sortCategories(updatedActiveCategories),
+          inactiveCategories: sortCategories(updatedInactiveCategories)
         };
       });
 
@@ -527,8 +562,8 @@ export default function CategoriesTab() {
       }
     }
     
-    setActiveSections(updatedActiveSections);
-    setInactiveSections(updatedInactiveSections);
+    setActiveSections(sortSections(updatedActiveSections));
+    setInactiveSections(sortSections(updatedInactiveSections));
   };
 
   const handleDeleteCategory = (categoryId: number, sectionId: number) => {
@@ -586,13 +621,13 @@ export default function CategoriesTab() {
             return {
               ...section,
               categories: section.categories.filter(cat => cat.id !== categoryId),
-              inactiveCategories: [...section.inactiveCategories, { ...activeCategory, is_active: false }]
+              inactiveCategories: sortCategories([...section.inactiveCategories, { ...activeCategory, is_active: false }])
             };
           } else if (inactiveCategory) {
             // Move from inactive to active
             return {
               ...section,
-              categories: [...section.categories, { ...inactiveCategory, is_active: true }],
+              categories: sortCategories([...section.categories, { ...inactiveCategory, is_active: true }]),
               inactiveCategories: section.inactiveCategories.filter(cat => cat.id !== categoryId)
             };
           }
@@ -645,7 +680,13 @@ export default function CategoriesTab() {
             onClick={() => {
               const newShowInactive = !showInactive;
               setShowInactive(newShowInactive);
+              // Save to localStorage
+              setShowInactivePreference(newShowInactive);
             }}
+            title={showInactive ? 
+              t('expenses.categories.hideAllInactiveTooltip') : 
+              t('expenses.categories.showAllInactiveTooltip')
+            }
             className={`inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
               showInactive
                 ? 'border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100'

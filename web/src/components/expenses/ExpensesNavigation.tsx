@@ -3,6 +3,7 @@ import {
   ChartBarIcon, 
   TableCellsIcon,
   TagIcon,
+  ScaleIcon,
   DocumentChartBarIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,11 @@ export default function ExpensesNavigation() {
       name: t('expenses.navigation.categories'),
       icon: TagIcon,
       path: '/expenses/categories',
+    },
+    {
+      name: t('expenses.navigation.units'),
+      icon: ScaleIcon,
+      path: '/expenses/units',
     },
     {
       name: t('expenses.navigation.reports'),

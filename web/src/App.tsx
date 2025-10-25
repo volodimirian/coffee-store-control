@@ -13,6 +13,7 @@ import Expenses from "~/pages/Expenses";
 import Overview from "~/pages/expenses/Overview";
 import InventoryTracking from "~/pages/expenses/InventoryTracking";
 import Categories from "~/pages/expenses/Categories";
+import Units from "~/pages/expenses/Units";
 import Reports from "~/pages/expenses/Reports";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
@@ -71,6 +72,7 @@ export default function App() {
               <Route index element={<Overview />} />
               <Route path="inventory-tracking" element={<InventoryTracking />} />
               <Route path="categories" element={<Categories />} />
+              <Route path="units" element={<Units />} />
               <Route path="reports" element={<Reports />} />
             </Route>
           </Route>
