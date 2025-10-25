@@ -15,6 +15,7 @@ from app.expenses.models import (
     ExpenseCategory,
     MonthPeriod,
     InvoiceStatus,
+    Unit,
 )
 
 
@@ -115,6 +116,16 @@ class InventoryBalanceService:
         if not period:
             return Decimal("0")
         
+        # Get category to know default unit
+        category_result = await session.execute(
+            select(ExpenseCategory).where(ExpenseCategory.id == category_id)
+        )
+        category = category_result.scalars().first()
+        if not category:
+            return Decimal("0")
+        
+        default_unit_id = getattr(category, 'default_unit_id')
+        
         # Create date range for the month
         from datetime import date
         
@@ -127,9 +138,9 @@ class InventoryBalanceService:
         else:
             end_date = date(period_year, period_month + 1, 1)
 
-        # Sum quantities from paid invoice items in this month
+        # Get all paid invoice items in this month for this category
         result = await session.execute(
-            select(func.sum(InvoiceItem.quantity))
+            select(InvoiceItem)
             .join(Invoice)
             .where(
                 and_(
@@ -140,8 +151,25 @@ class InventoryBalanceService:
                 )
             )
         )
-        total = result.scalar()
-        return Decimal(str(total)) if total else Decimal("0")
+        invoice_items = result.scalars().all()
+        
+        # Convert each item's quantity to default unit and sum
+        total = Decimal("0")
+        for item in invoice_items:
+            item_quantity = getattr(item, 'quantity')
+            item_unit_id = getattr(item, 'unit_id')
+            
+            if item_unit_id == default_unit_id:
+                # Same unit, no conversion needed
+                total += item_quantity
+            else:
+                # Need to convert
+                converted_quantity = await InventoryBalanceService._convert_quantity_to_target_unit(
+                    session, item_quantity, item_unit_id, default_unit_id
+                )
+                total += converted_quantity
+        
+        return total
 
     @staticmethod
     async def calculate_usage_for_category(
@@ -150,8 +178,19 @@ class InventoryBalanceService:
         month_period_id: int,
     ) -> Decimal:
         """Calculate total usage for a category in a specific month."""
+        # Get category to know default unit
+        category_result = await session.execute(
+            select(ExpenseCategory).where(ExpenseCategory.id == category_id)
+        )
+        category = category_result.scalars().first()
+        if not category:
+            return Decimal("0")
+        
+        default_unit_id = getattr(category, 'default_unit_id')
+        
+        # Get all expense records for this category and period
         result = await session.execute(
-            select(func.sum(ExpenseRecord.quantity_used))
+            select(ExpenseRecord)
             .where(
                 and_(
                     ExpenseRecord.category_id == category_id,
@@ -159,8 +198,25 @@ class InventoryBalanceService:
                 )
             )
         )
-        total = result.scalar()
-        return Decimal(str(total)) if total else Decimal("0")
+        expense_records = result.scalars().all()
+        
+        # Convert each record's quantity to default unit and sum
+        total = Decimal("0")
+        for record in expense_records:
+            record_quantity = getattr(record, 'quantity_used')
+            record_unit_id = getattr(record, 'unit_id')
+            
+            if record_unit_id == default_unit_id:
+                # Same unit, no conversion needed
+                total += record_quantity
+            else:
+                # Need to convert
+                converted_quantity = await InventoryBalanceService._convert_quantity_to_target_unit(
+                    session, record_quantity, record_unit_id, default_unit_id
+                )
+                total += converted_quantity
+        
+        return total
 
     @staticmethod
     async def get_previous_month_closing_balance(
@@ -404,6 +460,42 @@ class InventoryBalanceService:
             .order_by(InventoryBalance.closing_balance.asc())
         )
         return list(result.scalars().all())
+
+    @staticmethod
+    async def _convert_quantity_to_target_unit(
+        session: AsyncSession,
+        quantity: Decimal,
+        from_unit_id: int,
+        to_unit_id: int,
+    ) -> Decimal:
+        """Convert quantity from one unit to another using conversion factors."""
+        if from_unit_id == to_unit_id:
+            return quantity
+        
+        # Get both units
+        from_unit_result = await session.execute(
+            select(Unit).where(Unit.id == from_unit_id)
+        )
+        from_unit = from_unit_result.scalars().first()
+        
+        to_unit_result = await session.execute(
+            select(Unit).where(Unit.id == to_unit_id)
+        )
+        to_unit = to_unit_result.scalars().first()
+        
+        if not from_unit or not to_unit:
+            # Cannot convert, return original quantity
+            return quantity
+        
+        from_conversion = getattr(from_unit, 'conversion_factor')
+        to_conversion = getattr(to_unit, 'conversion_factor')
+        
+        # Convert from_unit to base unit, then to target unit
+        # quantity * from_conversion = quantity in base unit
+        # quantity_in_base / to_conversion = quantity in target unit
+        converted = quantity * from_conversion / to_conversion
+        
+        return converted
 
     @staticmethod
     async def calculate_average_monthly_usage(
