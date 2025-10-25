@@ -7,7 +7,7 @@ interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  type: 'section' | 'category';
+  type: 'section' | 'category' | 'unit';
   itemName?: string;
   isLoading?: boolean;
 }

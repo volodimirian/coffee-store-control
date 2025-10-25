@@ -91,6 +91,13 @@ export const unitsApi = {
   },
 
   /**
+   * Hard delete unit (permanently remove from database)
+   */
+  hardDelete: async (unitId: number): Promise<void> => {
+    await api.delete(`/expenses/units/${unitId}/hard`);
+  },
+
+  /**
    * Restore deleted unit
    */
   restore: async (unitId: number): Promise<Unit> => {

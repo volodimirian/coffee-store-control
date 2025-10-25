@@ -338,7 +338,85 @@
           "title": "Delete Category",
           "message": "Are you sure you want to delete the category \"{{name}}\"? All related data will be lost.",
           "confirmButton": "Delete Category"
+        },
+        "unit": {
+          "title": "Delete Unit of Measurement",
+          "message": "Are you sure you want to delete the unit \"{{name}}\"? This action cannot be undone.",
+          "confirmButton": "Delete Unit"
         }
+      }
+    },
+    "units": {
+      "title": "Units of Measurement Management",
+      "description": "Create and edit units of measurement for inventory tracking",
+      "addUnit": "Add Unit",
+      "createFirstUnit": "Create First Unit",
+      "noUnits": "No units of measurement created",
+      "noUnitsDescription": "Start by creating base units of measurement",
+      "baseUnitsCount": "{{count}} base units",
+      "derivedUnitsCount": "{{count}} derived units",
+      "confirmDeleteUnit": "Are you sure you want to delete this unit of measurement?",
+      "errorDeleteUnit": "Error deleting unit of measurement",
+      "loadingData": "Loading data...",
+      "loadingError": "Error loading data",
+      "showInactive": "Show inactive",
+      "hideInactive": "Hide inactive",
+      "activeUnits": "Active units",
+      "inactiveUnits": "Inactive units",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "editUnit": "Edit unit",
+      "deleteUnit": "Delete unit",
+      "baseUnit": "Base unit",
+      "derivedUnit": "Derived unit",
+      "conversionFactor": "Conversion factor",
+      "conversionInfo": "{{value}} {{fromSymbol}} = 1 {{toSymbol}}",
+      "noBaseUnit": "No base unit",
+      "selectBaseUnit": "Select base unit",
+      "unitTypes": {
+        "weight": "Weight",
+        "volume": "Volume",
+        "count": "Count"
+      },
+      "modal": {
+        "add": {
+          "title": "Add Unit of Measurement",
+          "createButton": "Create Unit"
+        },
+        "edit": {
+          "title": "Edit Unit of Measurement",
+          "saveButton": "Save Changes"
+        },
+        "nameLabel": "Name",
+        "namePlaceholder": "e.g., Kilogram, Liter, Piece",
+        "nameRequired": "Name is required",
+        "nameMinLength": "Name must be at least 1 character",
+        "nameMaxLength": "Name must be at most 100 characters",
+        "symbolLabel": "Symbol",
+        "symbolPlaceholder": "kg, l, pcs",
+        "symbolRequired": "Symbol is required",
+        "symbolMinLength": "Symbol must be at least 1 character",
+        "symbolMaxLength": "Symbol must be at most 10 characters",
+        "unitTypeLabel": "Unit Type",
+        "unitTypeRequired": "Unit type must be selected",
+        "baseUnitLabel": "Base Unit",
+        "baseUnitDescription": "Leave empty to create a base unit",
+        "conversionFactorLabel": "Conversion Factor",
+        "conversionFactorDescription": "How many base units are in one of this unit (e.g., 1 kg = 1000 g, factor = 1000)",
+        "conversionFactorRequired": "Conversion factor is required for derived unit",
+        "conversionFactorMin": "Conversion factor must be greater than 0",
+        "descriptionLabel": "Description (optional)",
+        "descriptionPlaceholder": "Additional information about the unit of measurement",
+        "descriptionMaxLength": "Description must be at most 500 characters",
+        "activeLabel": "Active Unit",
+        "activeDescription": "Inactive units are hidden from main lists",
+        "creating": "Creating...",
+        "updating": "Updating...",
+        "createError": "An error occurred while creating the unit of measurement",
+        "updateError": "An error occurred while updating the unit of measurement",
+        "businessNotSelected": "Business not selected",
+        "baseUnitsLoadError": "Error loading base units",
+        "selectBusinessFirst": "Please select a business first"
       }
     },
     "inventoryTracking": {
@@ -418,7 +496,8 @@
     "navigation": {
       "overview": "Overview",
       "inventoryTracking": "Inventory Tracking",
-      "categories": "Categories", 
+      "categories": "Categories",
+      "units": "Units of Measurement",
       "reports": "Reports"
     },
     "page": {

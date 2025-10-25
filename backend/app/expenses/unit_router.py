@@ -298,6 +298,44 @@ async def delete_unit(
     await session.commit()
 
 
+@router.delete("/{unit_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
+async def hard_delete_unit(
+    unit_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Permanently delete unit from database. User must be able to manage the business."""
+    unit = await UnitService.get_unit_by_id(session, unit_id, include_inactive=True)
+    if not unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unit not found",
+        )
+
+    # Check if user can manage unit's business
+    can_manage = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(unit, 'business_id'),
+    )
+    if not can_manage:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this unit",
+        )
+
+    # Check if unit has derived units (dependencies)
+    if hasattr(unit, 'derived_units') and unit.derived_units:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete unit that has derived units depending on it",
+        )
+
+    # Perform hard delete
+    await session.delete(unit)
+    await session.commit()
+
+
 @router.post("/{unit_id}/restore", response_model=UnitOut)
 async def restore_unit(
     unit_id: int,
