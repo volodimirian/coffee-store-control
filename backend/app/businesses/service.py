@@ -306,4 +306,29 @@ class BusinessService:
             )
         )
         return result.scalars().first() is not None
+
+    @staticmethod
+    async def is_user_owner_or_admin(
+        session: AsyncSession,
+        user_id: int,
+        business_id: int,
+    ) -> bool:
+        """Check if user is owner or has admin role in the business."""
+        # Check if user is owner
+        business = await BusinessService.get_business_by_id(session, business_id)
+        if business and business.owner_id == user_id:
+            return True
+
+        # Check if user has admin role
+        result = await session.execute(
+            select(UserBusiness).where(
+                and_(
+                    UserBusiness.user_id == user_id,
+                    UserBusiness.business_id == business_id,
+                    UserBusiness.role_in_business == "admin",
+                    UserBusiness.is_active,
+                )
+            )
+        )
+        return result.scalars().first() is not None
     

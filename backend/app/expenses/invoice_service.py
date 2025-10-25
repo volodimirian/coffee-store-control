@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.expenses.models import Invoice, InvoiceItem, InvoiceStatus
 from app.expenses.schemas import InvoiceCreate, InvoiceUpdate, InvoiceItemCreate, InvoiceItemUpdate
+from app.expenses.inventory_balance_service import InventoryBalanceService
 
 
 class InvoiceService:
@@ -124,7 +125,7 @@ class InvoiceService:
         invoice_id: int,
         paid_date: Optional[datetime] = None,
     ) -> Optional[Invoice]:
-        """Mark invoice as paid."""
+        """Mark invoice as paid and update inventory balances for all categories."""
         invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
         if not invoice:
             return None
@@ -134,6 +135,16 @@ class InvoiceService:
         setattr(invoice, 'updated_at', datetime.utcnow())
         await session.flush()
         await session.refresh(invoice)
+        
+        # Update inventory balances for all categories in this invoice
+        items = await InvoiceItemService.get_items_by_invoice(session, invoice_id)
+        category_ids = set(getattr(item, 'category_id') for item in items)
+        
+        for category_id in category_ids:
+            await InvoiceItemService._update_inventory_balance_if_paid(
+                session, invoice_id, category_id
+            )
+        
         return invoice
 
     @staticmethod
@@ -141,16 +152,48 @@ class InvoiceService:
         session: AsyncSession,
         invoice_id: int,
     ) -> Optional[Invoice]:
-        """Mark invoice as cancelled."""
+        """Mark invoice as cancelled and recalculate inventory balances if was paid."""
         invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
         if not invoice:
             return None
+        
+        # Check if invoice was paid (need to update balances)
+        was_paid = getattr(invoice, 'paid_status') == InvoiceStatus.PAID
 
         setattr(invoice, 'paid_status', InvoiceStatus.CANCELLED)
         setattr(invoice, 'paid_date', None)
         setattr(invoice, 'updated_at', datetime.utcnow())
         await session.flush()
         await session.refresh(invoice)
+        
+        # If invoice was paid, recalculate inventory balances (remove purchases)
+        if was_paid:
+            items = await InvoiceItemService.get_items_by_invoice(session, invoice_id)
+            category_ids = set(getattr(item, 'category_id') for item in items)
+            
+            for category_id in category_ids:
+                # Recalculate balance now that invoice is no longer paid
+                invoice_date = getattr(invoice, 'invoice_date')
+                business_id = getattr(invoice, 'business_id')
+                
+                from app.expenses.models import MonthPeriod
+                period_result = await session.execute(
+                    select(MonthPeriod)
+                    .where(
+                        and_(
+                            MonthPeriod.business_id == business_id,
+                            MonthPeriod.year == invoice_date.year,
+                            MonthPeriod.month == invoice_date.month,
+                        )
+                    )
+                )
+                period = period_result.scalars().first()
+                
+                if period:
+                    await InventoryBalanceService.recalculate_balance_for_category(
+                        session, category_id, getattr(period, 'id')
+                    )
+        
         return invoice
 
     @staticmethod
@@ -226,7 +269,7 @@ class InvoiceItemService:
         session: AsyncSession,
         item_data: InvoiceItemCreate,
     ) -> InvoiceItem:
-        """Create a new invoice item."""
+        """Create a new invoice item and update inventory balance if invoice is paid."""
         # Calculate total_price if not provided
         total_price = item_data.total_price
         if total_price == 0:
@@ -245,6 +288,12 @@ class InvoiceItemService:
         session.add(db_item)
         await session.flush()
         await session.refresh(db_item)
+        
+        # Update inventory balance if invoice is paid
+        await InvoiceItemService._update_inventory_balance_if_paid(
+            session, item_data.invoice_id, item_data.category_id
+        )
+        
         return db_item
 
     @staticmethod
@@ -274,14 +323,20 @@ class InvoiceItemService:
         item_id: int,
         item_data: InvoiceItemUpdate,
     ) -> Optional[InvoiceItem]:
-        """Update invoice item information."""
+        """Update invoice item information and recalculate inventory balance if needed."""
         item = await InvoiceItemService.get_invoice_item_by_id(session, item_id)
         if not item:
             return None
 
+        # Track if category changed to update multiple balances
+        old_category_id = getattr(item, 'category_id')
+        category_changed = False
+        
         update_data = item_data.model_dump(exclude_unset=True)
         if update_data:
             for field, value in update_data.items():
+                if field == 'category_id' and value != old_category_id:
+                    category_changed = True
                 setattr(item, field, value)
             
             # Recalculate total_price if quantity or unit_price changed
@@ -291,18 +346,45 @@ class InvoiceItemService:
             setattr(item, 'updated_at', datetime.utcnow())
             await session.flush()
             await session.refresh(item)
+            
+            # Update inventory balances if invoice is paid
+            invoice_id = getattr(item, 'invoice_id')
+            new_category_id = getattr(item, 'category_id')
+            
+            if category_changed:
+                # Update both old and new category balances
+                await InvoiceItemService._update_inventory_balance_if_paid(
+                    session, invoice_id, old_category_id
+                )
+                await InvoiceItemService._update_inventory_balance_if_paid(
+                    session, invoice_id, new_category_id
+                )
+            else:
+                # Update current category balance
+                await InvoiceItemService._update_inventory_balance_if_paid(
+                    session, invoice_id, new_category_id
+                )
 
         return item
 
     @staticmethod
     async def delete_invoice_item(session: AsyncSession, item_id: int) -> bool:
-        """Delete invoice item (hard delete)."""
+        """Delete invoice item and update inventory balance if invoice was paid."""
         item = await InvoiceItemService.get_invoice_item_by_id(session, item_id)
         if not item:
             return False
 
+        invoice_id = getattr(item, 'invoice_id')
+        category_id = getattr(item, 'category_id')
+        
         await session.delete(item)
         await session.flush()
+        
+        # Update inventory balance if invoice is paid
+        await InvoiceItemService._update_inventory_balance_if_paid(
+            session, invoice_id, category_id
+        )
+        
         return True
 
     @staticmethod
@@ -368,3 +450,51 @@ class InvoiceItemService:
             return total_amount
             
         return None
+
+    @staticmethod
+    async def _update_inventory_balance_if_paid(
+        session: AsyncSession,
+        invoice_id: int,
+        category_id: int,
+    ) -> None:
+        """
+        Update inventory balance for category if the invoice is paid.
+        This recalculates purchases_total from all paid invoice items.
+        """
+        # Get invoice to check paid status
+        invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
+        if not invoice:
+            return
+            
+        # Only update inventory if invoice is paid
+        if getattr(invoice, 'paid_status') != InvoiceStatus.PAID:
+            return
+            
+        # Get the invoice date to determine which month period to update
+        invoice_date = getattr(invoice, 'invoice_date')
+        business_id = getattr(invoice, 'business_id')
+        
+        # Find the month period for this invoice
+        from app.expenses.models import MonthPeriod
+        period_result = await session.execute(
+            select(MonthPeriod)
+            .where(
+                and_(
+                    MonthPeriod.business_id == business_id,
+                    MonthPeriod.year == invoice_date.year,
+                    MonthPeriod.month == invoice_date.month,
+                )
+            )
+        )
+        period = period_result.scalars().first()
+        
+        if not period:
+            # Period doesn't exist yet, don't update balance
+            return
+            
+        # Recalculate the entire balance for this category and period
+        # This will automatically sum all paid invoice items with proper unit conversion
+        await InventoryBalanceService.recalculate_balance_for_category(
+            session, category_id, getattr(period, 'id')
+        )
+        
