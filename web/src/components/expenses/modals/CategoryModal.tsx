@@ -94,6 +94,19 @@ export default function CategoryModal({
     }
   }, [isOpen, currentLocation?.id, t, modalKey]);
 
+  // Group units by base unit for hierarchical display
+  const groupedUnits = () => {
+    const baseUnits = units.filter(u => !u.base_unit_id);
+    const result: Array<{ unit: Unit; derived: Unit[] }> = [];
+
+    baseUnits.forEach(baseUnit => {
+      const derivedUnits = units.filter(u => u.base_unit_id === baseUnit.id);
+      result.push({ unit: baseUnit, derived: derivedUnits });
+    });
+
+    return result;
+  };
+
   const handleClose = () => {
     setFormData({ name: '', default_unit_id: 0, order_index: 0, is_active: true });
     setErrors({});
@@ -282,10 +295,17 @@ export default function CategoryModal({
                         <option value={0}>
                           {isLoadingUnits ? t('common.loading') : t(`expenses.modals.${modalKey}.selectUnit`)}
                         </option>
-                        {units.map((unit) => (
-                          <option key={unit.id} value={unit.id}>
-                            {unit.name} ({unit.symbol})
-                          </option>
+                        {groupedUnits().map(({ unit: baseUnit, derived }) => (
+                          <optgroup key={baseUnit.id} label={`${baseUnit.name} (${baseUnit.symbol})`}>
+                            <option value={baseUnit.id}>
+                              ✓ {baseUnit.name} ({baseUnit.symbol})
+                            </option>
+                            {derived.map((derivedUnit) => (
+                              <option key={derivedUnit.id} value={derivedUnit.id}>
+                                ↳ {derivedUnit.name} ({derivedUnit.symbol}) = {derivedUnit.conversion_factor} {baseUnit.symbol}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                       {errors.default_unit_id && (

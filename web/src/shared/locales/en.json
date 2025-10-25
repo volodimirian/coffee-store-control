@@ -342,7 +342,8 @@
         "unit": {
           "title": "Delete Unit of Measurement",
           "message": "Are you sure you want to delete the unit \"{{name}}\"? This action cannot be undone.",
-          "confirmButton": "Delete Unit"
+          "confirmButton": "Delete Unit",
+          "withDerived": "⚠️ This will also delete {{count}} derived units"
         }
       }
     },
@@ -357,6 +358,8 @@
       "derivedUnitsCount": "{{count}} derived units",
       "confirmDeleteUnit": "Are you sure you want to delete this unit of measurement?",
       "errorDeleteUnit": "Error deleting unit of measurement",
+      "errorUnitInUse": "Cannot delete unit because it is being used in categories, invoices, expense records, or inventory balances. Please deactivate it instead.",
+      "errorDerivedUnitInUse": "Cannot delete base unit because a derived unit is being used. Please deactivate it instead.",
       "loadingData": "Loading data...",
       "loadingError": "Error loading data",
       "showInactive": "Show inactive",

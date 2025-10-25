@@ -148,7 +148,11 @@ class UnitService:
 
     @staticmethod
     async def delete_unit(session: AsyncSession, unit_id: int) -> bool:
-        """Soft delete a unit."""
+        """Soft delete a unit.
+        
+        Note: This only deactivates the single unit. For cascading deactivation of derived units,
+        use the frontend implementation or call this method for each derived unit separately.
+        """
         unit = await UnitService.get_unit_by_id(session, unit_id, include_inactive=True)
         if not unit:
             return False
@@ -159,7 +163,10 @@ class UnitService:
 
     @staticmethod
     async def restore_unit(session: AsyncSession, unit_id: int) -> bool:
-        """Restore a soft-deleted unit."""
+        """Restore a soft-deleted unit.
+        
+        Note: If this is a base unit, derived units must be activated manually.
+        """
         unit = await UnitService.get_unit_by_id(session, unit_id, include_inactive=True)
         if not unit:
             return False

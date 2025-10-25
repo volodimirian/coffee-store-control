@@ -124,14 +124,29 @@ export default function UnitsTab() {
     if (!unitToDelete) return;
 
     setIsDeleting(true);
+    setError(null);
     try {
       await unitsApi.hardDelete(unitToDelete.id);
       await loadUnits();
       setIsDeleteModalOpen(false);
       setUnitToDelete(null);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to delete unit:', err);
-      setError(t('expenses.units.errorDeleteUnit'));
+      
+      // Check if error response contains a message about unit being in use
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      const regularError = err as Error;
+      const errorMessage = axiosError?.response?.data?.detail || regularError?.message || '';
+      
+      if (errorMessage.includes('being used') || errorMessage.includes('is being used')) {
+        setError(t('expenses.units.errorUnitInUse'));
+      } else if (errorMessage.includes('derived unit')) {
+        setError(t('expenses.units.errorDerivedUnitInUse'));
+      } else {
+        setError(t('expenses.units.errorDeleteUnit'));
+      }
+      
+      // Don't close the modal so user can see the error
     } finally {
       setIsDeleting(false);
     }
@@ -141,7 +156,16 @@ export default function UnitsTab() {
     try {
       if (currentStatus) {
         // Deactivate
+        const unitToDeactivate = units.find(u => u.id === unitId);
         await unitsApi.update(unitId, { is_active: false });
+        
+        // If this is a base unit, deactivate all derived units
+        if (unitToDeactivate && !unitToDeactivate.base_unit_id) {
+          const derivedUnits = units.filter(u => u.base_unit_id === unitId);
+          for (const derivedUnit of derivedUnits) {
+            await unitsApi.update(derivedUnit.id, { is_active: false });
+          }
+        }
       } else {
         // Activate via restore
         await unitsApi.restore(unitId);
@@ -294,6 +318,16 @@ export default function UnitsTab() {
         type="unit"
         itemName={unitToDelete?.name}
         isLoading={isDeleting}
+        additionalInfo={
+          unitToDelete && !unitToDelete.base_unit_id
+            ? (() => {
+                const derivedCount = units.filter(u => u.base_unit_id === unitToDelete.id).length;
+                return derivedCount > 0
+                  ? t('expenses.modals.confirmDelete.unit.withDerived', { count: derivedCount })
+                  : undefined;
+              })()
+            : undefined
+        }
       />
     </div>
   );
