@@ -283,13 +283,13 @@ class InvoiceItemOut(InvoiceItemBase):
         from_attributes = True
 
 
-# Expense Record schemas
+# Expense Record schemas (РАСХОД товара из партии)
 class ExpenseRecordBase(BaseModel):
     category_id: int
     date: datetime
     quantity_used: Decimal = Field(..., gt=0)
     unit_id: int
-    invoice_item_id: Optional[int] = None
+    invoice_item_id: Optional[int] = None  # From which batch the item was taken
 
 
 class ExpenseRecordCreate(ExpenseRecordBase):

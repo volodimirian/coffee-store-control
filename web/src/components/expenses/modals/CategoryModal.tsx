@@ -11,6 +11,7 @@ import {
   type Unit 
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
+import { groupUnits } from '~/shared/lib/helpers/unitHelpers';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -282,10 +283,17 @@ export default function CategoryModal({
                         <option value={0}>
                           {isLoadingUnits ? t('common.loading') : t(`expenses.modals.${modalKey}.selectUnit`)}
                         </option>
-                        {units.map((unit) => (
-                          <option key={unit.id} value={unit.id}>
-                            {unit.name} ({unit.symbol})
-                          </option>
+                        {groupUnits(units).map(({ unit: baseUnit, derived }) => (
+                          <optgroup key={baseUnit.id} label={`${baseUnit.name} (${baseUnit.symbol})`}>
+                            <option value={baseUnit.id}>
+                              ✓ {baseUnit.name} ({baseUnit.symbol})
+                            </option>
+                            {derived.map((derivedUnit) => (
+                              <option key={derivedUnit.id} value={derivedUnit.id}>
+                                ↳ {derivedUnit.name} ({derivedUnit.symbol}) = {derivedUnit.conversion_factor} {baseUnit.symbol}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                       {errors.default_unit_id && (

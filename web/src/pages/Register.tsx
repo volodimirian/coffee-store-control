@@ -5,7 +5,7 @@ import { fetchMe, register, USER_ROLES } from "~/shared/api/authentication"
 import type { AuthResponse, UserResponse, UserRole } from "~/shared/api/types"
 import { useAppContext } from "~/shared/context/AppContext";
 import { VALIDATION_RULES, getValidationMessages } from "~/shared/constants/validation";
-import { saveToken } from "~/shared/lib/helpers";
+import { saveToken } from "~/shared/lib/helpers/storageHelpers";
 
 type FieldErrors = {
   email?: string;

@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import { getToken, logout } from "~/shared/lib/helpers";
+import { getToken, logout } from "~/shared/lib/helpers/storageHelpers";
 import type { ApiErrorResponse } from "./types";
 
 // Auto-logout functionality for 401 errors

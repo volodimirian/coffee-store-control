@@ -343,6 +343,54 @@ async def reopen_period(
     return MonthPeriodOut.from_orm(updated_period)
 
 
+@router.post("/{period_id}/archive", response_model=MonthPeriodOut)
+async def archive_period(
+    period_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Archive a closed period (set status to ARCHIVED). Only owner or admin can archive periods."""
+    period = await MonthPeriodService.get_period_by_id(session, period_id)
+    if not period:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Period not found",
+        )
+
+    # Check if user is owner or admin
+    is_owner_or_admin = await BusinessService.is_user_owner_or_admin(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(period, 'business_id'),
+    )
+    if not is_owner_or_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only owners and admins can archive periods",
+        )
+
+    # Check if period is in CLOSED status
+    current_status = getattr(period, 'status')
+    if str(current_status) != str(MonthPeriodStatus.CLOSED):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only closed periods can be archived",
+        )
+
+    success = await MonthPeriodService.archive_period(session, period_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to archive period",
+        )
+
+    await session.commit()
+    
+    # Return updated period
+    updated_period = await MonthPeriodService.get_period_by_id(session, period_id)
+    return MonthPeriodOut.from_orm(updated_period)
+
+
 @router.delete("/{period_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_period(
     period_id: int,

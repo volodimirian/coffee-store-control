@@ -124,6 +124,7 @@ async def get_categories_by_section(
 async def get_categories_by_business(
     business_id: int,
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    month_period_id: Optional[int] = Query(None, description="Filter by month period (auto-adjusts active filter based on period status)"),
     include_relations: bool = Query(False, description="Include section and unit relations"),
     skip: int = Query(0, ge=0, description="Number of categories to skip"),
     limit: int = Query(200, ge=1, le=1000, description="Number of categories to return"),
@@ -131,7 +132,14 @@ async def get_categories_by_business(
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all categories for a business across all sections."""
+    """
+    Get all categories for a business across all sections.
+    
+    Category filtering logic based on month period status:
+    - ACTIVE period: only returns is_active=True categories
+    - CLOSED/ARCHIVED period: returns all categories (active and inactive)
+    - No period specified: uses is_active parameter as provided
+    """
     # Check if user has access to business
     has_access = await BusinessService.can_user_access_business(
         session=session,
@@ -149,6 +157,7 @@ async def get_categories_by_business(
         session=session,
         business_id=business_id,
         is_active=is_active,
+        month_period_id=month_period_id,
         include_relations=include_relations,
         skip=skip,
         limit=limit,

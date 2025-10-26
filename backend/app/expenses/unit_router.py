@@ -298,6 +298,107 @@ async def delete_unit(
     await session.commit()
 
 
+@router.delete("/{unit_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
+async def hard_delete_unit(
+    unit_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Permanently delete unit from database. User must be able to manage the business."""
+    from sqlalchemy import select, func
+    from app.expenses.models import ExpenseCategory, InvoiceItem, ExpenseRecord, InventoryBalance
+    
+    unit = await UnitService.get_unit_by_id(session, unit_id, include_inactive=True)
+    if not unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unit not found",
+        )
+
+    # Check if user can manage unit's business
+    can_manage = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=getattr(unit, 'business_id'),
+    )
+    if not can_manage:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to manage this unit",
+        )
+
+    # Check if unit is used in categories (default_unit_id)
+    category_count_query = select(func.count(ExpenseCategory.id)).where(
+        ExpenseCategory.default_unit_id == unit_id
+    )
+    category_count = await session.scalar(category_count_query)
+    
+    # Check if unit is used in invoice items
+    invoice_item_count_query = select(func.count(InvoiceItem.id)).where(
+        InvoiceItem.unit_id == unit_id
+    )
+    invoice_item_count = await session.scalar(invoice_item_count_query)
+    
+    # Check if unit is used in expense records
+    expense_record_count_query = select(func.count(ExpenseRecord.id)).where(
+        ExpenseRecord.unit_id == unit_id
+    )
+    expense_record_count = await session.scalar(expense_record_count_query)
+    
+    # Check if unit is used in inventory balances
+    inventory_balance_count_query = select(func.count(InventoryBalance.id)).where(
+        InventoryBalance.unit_id == unit_id
+    )
+    inventory_balance_count = await session.scalar(inventory_balance_count_query)
+    
+    # Check if unit has derived units
+    from app.expenses.models import Unit
+    derived_units_query = select(Unit).where(Unit.base_unit_id == unit_id)
+    derived_units_result = await session.execute(derived_units_query)
+    derived_units = derived_units_result.scalars().all()
+    
+    # If unit or its derived units are in use, prevent deletion
+    if category_count or invoice_item_count or expense_record_count or inventory_balance_count:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete unit that is being used in categories, invoices, expense records, or inventory balances. Please deactivate it instead.",
+        )
+    
+    # Check if any derived units are in use
+    for derived_unit in derived_units:
+        # Check categories
+        derived_category_count = await session.scalar(
+            select(func.count(ExpenseCategory.id)).where(ExpenseCategory.default_unit_id == derived_unit.id)
+        )
+        # Check invoice items
+        derived_invoice_count = await session.scalar(
+            select(func.count(InvoiceItem.id)).where(InvoiceItem.unit_id == derived_unit.id)
+        )
+        # Check expense records
+        derived_expense_count = await session.scalar(
+            select(func.count(ExpenseRecord.id)).where(ExpenseRecord.unit_id == derived_unit.id)
+        )
+        # Check inventory balances
+        derived_inventory_count = await session.scalar(
+            select(func.count(InventoryBalance.id)).where(InventoryBalance.unit_id == derived_unit.id)
+        )
+        
+        if derived_category_count or derived_invoice_count or derived_expense_count or derived_inventory_count:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete base unit because derived unit '{derived_unit.name}' is being used. Please deactivate instead.",
+            )
+
+    # Perform hard delete
+    # First, manually delete all derived units (SQLAlchemy doesn't always handle CASCADE correctly)
+    for derived_unit in derived_units:
+        await session.delete(derived_unit)
+    
+    # Then delete the base unit
+    await session.delete(unit)
+    await session.commit()
+
+
 @router.post("/{unit_id}/restore", response_model=UnitOut)
 async def restore_unit(
     unit_id: int,

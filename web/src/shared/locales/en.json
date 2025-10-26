@@ -8,13 +8,24 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "deleting": "Deleting...",
+    "create": "Create",
+    "update": "Update",
     "yes": "Yes",
     "no": "No",
     "continue": "Continue",
     "back": "Back",
     "brandName": "Business Control",
     "actionCannotBeUndone": "This action cannot be undone.",
-    "order": "Order"
+    "order": "Order",
+    "filters": "Filters",
+    "clearFilters": "Clear Filters",
+    "previous": "Previous",
+    "next": "Next",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results",
+    "today": "Today"
   },
   "navigation": {
     "home": "Home",
@@ -226,6 +237,8 @@
       "loadingError": "Error loading data",
       "showAllInactive": "Show all inactive",
       "hideAllInactive": "Hide all inactive",
+      "showAllInactiveTooltip": "Show inactive sections and categories (setting is remembered)",
+      "hideAllInactiveTooltip": "Hide inactive sections and categories (setting is remembered)",
       "activeCategories": "Active categories",
       "inactiveCategories": "Inactive categories",
       "activate": "Activate",
@@ -236,6 +249,9 @@
       "inactiveSections": "Inactive sections",
       "activateSection": "Activate section",
       "deactivateSection": "Deactivate section"
+    },
+    "sections": {
+      "add": "Add Section"
     },
     "modals": {
       "addSection": {
@@ -336,22 +352,190 @@
           "title": "Delete Category",
           "message": "Are you sure you want to delete the category \"{{name}}\"? All related data will be lost.",
           "confirmButton": "Delete Category"
+        },
+        "unit": {
+          "title": "Delete Unit of Measurement",
+          "message": "Are you sure you want to delete the unit \"{{name}}\"? This action cannot be undone.",
+          "confirmButton": "Delete Unit",
+          "withDerived": "⚠️ This will also delete {{count}} derived units"
+        },
+        "invoice": {
+          "title": "Delete Invoice",
+          "message": "Are you sure you want to delete invoice \"{{name}}\"? This action cannot be undone.",
+          "confirmButton": "Delete Invoice"
         }
       }
     },
+    "units": {
+      "title": "Units of Measurement Management",
+      "description": "Create and edit units of measurement for inventory tracking",
+      "addUnit": "Add Unit",
+      "createFirstUnit": "Create First Unit",
+      "noUnits": "No units of measurement created",
+      "noUnitsDescription": "Start by creating base units of measurement",
+      "baseUnitsCount": "{{count}} base units",
+      "derivedUnitsCount": "{{count}} derived units",
+      "confirmDeleteUnit": "Are you sure you want to delete this unit of measurement?",
+      "errorDeleteUnit": "Error deleting unit of measurement",
+      "errorUnitInUse": "Cannot delete unit because it is being used in categories, invoices, expense records, or inventory balances. Please deactivate it instead.",
+      "errorDerivedUnitInUse": "Cannot delete base unit because a derived unit is being used. Please deactivate it instead.",
+      "loadingData": "Loading data...",
+      "loadingError": "Error loading data",
+      "showInactive": "Show inactive",
+      "hideInactive": "Hide inactive",
+      "activeUnits": "Active units",
+      "inactiveUnits": "Inactive units",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "editUnit": "Edit unit",
+      "deleteUnit": "Delete unit",
+      "baseUnit": "Base unit",
+      "derivedUnit": "Derived unit",
+      "conversionFactor": "Conversion factor",
+      "conversionInfo": "{{value}} {{fromSymbol}} = 1 {{toSymbol}}",
+      "noBaseUnit": "No base unit",
+      "selectBaseUnit": "Select base unit",
+      "unitTypes": {
+        "weight": "Weight",
+        "volume": "Volume",
+        "count": "Count"
+      },
+      "modal": {
+        "add": {
+          "title": "Add Unit of Measurement",
+          "createButton": "Create Unit"
+        },
+        "edit": {
+          "title": "Edit Unit of Measurement",
+          "saveButton": "Save Changes"
+        },
+        "nameLabel": "Name",
+        "namePlaceholder": "e.g., Kilogram, Liter, Piece",
+        "nameRequired": "Name is required",
+        "nameMinLength": "Name must be at least 1 character",
+        "nameMaxLength": "Name must be at most 100 characters",
+        "symbolLabel": "Symbol",
+        "symbolPlaceholder": "kg, l, pcs",
+        "symbolRequired": "Symbol is required",
+        "symbolMinLength": "Symbol must be at least 1 character",
+        "symbolMaxLength": "Symbol must be at most 10 characters",
+        "unitTypeLabel": "Unit Type",
+        "unitTypeRequired": "Unit type must be selected",
+        "baseUnitLabel": "Base Unit",
+        "baseUnitDescription": "Leave empty to create a base unit",
+        "conversionFactorLabel": "Conversion Factor",
+        "conversionFactorDescription": "How many base units are in one of this unit (e.g., 1 kg = 1000 g, factor = 1000)",
+        "conversionFactorRequired": "Conversion factor is required for derived unit",
+        "conversionFactorMin": "Conversion factor must be greater than 0",
+        "descriptionLabel": "Description (optional)",
+        "descriptionPlaceholder": "Additional information about the unit of measurement",
+        "descriptionMaxLength": "Description must be at most 500 characters",
+        "activeLabel": "Active Unit",
+        "activeDescription": "Inactive units are hidden from main lists",
+        "creating": "Creating...",
+        "updating": "Updating...",
+        "createError": "An error occurred while creating the unit of measurement",
+        "updateError": "An error occurred while updating the unit of measurement",
+        "businessNotSelected": "Business not selected",
+        "baseUnitsLoadError": "Error loading base units",
+        "selectBusinessFirst": "Please select a business first"
+      }
+    },
+    "invoices": {
+      "title": "Supplier Invoices",
+      "description": "Manage supplier invoices and track inventory purchases",
+      "addInvoice": "Add Invoice",
+      "createFirstInvoice": "Create First Invoice",
+      "noInvoices": "No invoices created",
+      "noInvoicesDescription": "Start by adding your first supplier invoice",
+      "loadingData": "Loading data...",
+      "loadingError": "Error loading invoices",
+      "errorDeleteInvoice": "Error deleting invoice",
+      "errorMarkAsPaid": "Error marking invoice as paid",
+      "errorMarkAsCancelled": "Error cancelling invoice",
+      "filters": {
+        "status": "Status",
+        "supplier": "Supplier",
+        "allSuppliers": "All Suppliers",
+        "dateFrom": "Date From",
+        "dateTo": "Date To",
+        "searchPlaceholder": "Search by invoice number...",
+        "all": "All Invoices",
+        "pending": "Pending",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "status": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "table": {
+        "invoiceNumber": "Invoice #",
+        "supplier": "Supplier",
+        "date": "Date",
+        "totalAmount": "Total Amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "number": "Invoice #",
+      "date": "Date",
+      "amount": "Amount",
+      "statuses": {
+        "pending": "Pending Payment",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "markAsPaid": "Mark as Paid",
+        "markAsCancelled": "Cancel"
+      },
+      "modal": {
+        "createTitle": "Create Invoice",
+        "editTitle": "Edit Invoice",
+        "supplier": "Supplier",
+        "selectSupplier": "Select supplier...",
+        "supplierRequired": "Supplier is required",
+        "invoiceNumber": "Invoice Number",
+        "invoiceNumberPlaceholder": "Optional",
+        "invoiceDate": "Invoice Date",
+        "dateRequired": "Invoice date is required",
+        "lineItems": "Line Items",
+        "itemsRequired": "At least one line item is required",
+        "addItem": "Add Item",
+        "removeItem": "Remove",
+        "category": "Category",
+        "selectCategory": "Select category...",
+        "categoryRequired": "Category is required for line {{line}}",
+        "quantity": "Quantity",
+        "quantityRequired": "Quantity is required for line {{line}}",
+        "unit": "Unit",
+        "selectUnit": "Select unit...",
+        "unitRequired": "Unit is required for line {{line}}",
+        "unitPrice": "Unit Price",
+        "priceRequired": "Unit price is required for line {{line}}",
+        "totalPrice": "Total Price",
+        "totalAmount": "Total Amount",
+        "loadDataError": "Error loading data",
+        "createError": "Error creating invoice",
+        "updateError": "Error updating invoice"
+      }
+    },
     "inventoryTracking": {
-      "todayButton": "Today",
-      "addItemButton": "Item",
-      "addSectionButton": "Section",
-      "exportButton": "Download to Excel, PDF",
-      "exportAlert": "Export function will be implemented later",
-      "tableHeader": "Section/Item",
-      "totalColumn": "Total",
-      "itemsCount": "{{count}} items",
-      "selectBusiness": "Please select a business to view inventory tracking",
-      "currentDayTitle": "Current Day Highlighting",
-      "currentDayDescription": "When adding a \"Section\", a new empty section is added to the table",
-      "todayLabel": "Today"
+      "title": "Inventory Tracking",
+      "selectLocation": "Please select a location to view inventory tracking",
+      "loadingError": "Failed to load inventory data",
+      "noCategories": "No categories found",
+      "noCategoriesDescription": "Create expense categories to start tracking inventory",
+      "table": {
+        "category": "Category",
+        "qty": "Qty",
+        "amount": "Amount",
+        "total": "Total",
+        "sectionTotal": "Section Total"
+      }
     },
     "reports": {
       "title": "Reports in Development",
@@ -416,7 +600,9 @@
     "navigation": {
       "overview": "Overview",
       "inventoryTracking": "Inventory Tracking",
-      "categories": "Categories", 
+      "categories": "Categories",
+      "units": "Units of Measurement",
+      "invoices": "Invoices",
       "reports": "Reports"
     },
     "page": {
@@ -429,6 +615,10 @@
       "thisMonth": "This Month",
       "categoriesCount": "Categories", 
       "daysLeft": "Days Left",
+      "pendingInvoices": "Pending Invoices",
+      "recentInvoices": "Recent Invoices",
+      "noInvoices": "No invoices",
+      "noInvoicesDescription": "Start by adding your first invoice.",
       "lastExpenses": "Recent Expenses",
       "noExpensesTitle": "No expenses yet",
       "noExpensesDescription": "Start by adding your first expense record.",
@@ -437,6 +627,13 @@
       "addCategory": "Add Category",
       "viewReports": "View Reports",
       "monthSummary": "Month Summary",
+      "inventorySummary": "Inventory Summary",
+      "opening": "Opening",
+      "purchases": "Purchases",
+      "usage": "Usage",
+      "closing": "Closing",
+      "noCategories": "No categories",
+      "andMore": "and {{count}} more",
       "total": "Total",
       "categoryItems": {
         "coffee": "Coffee and Beans",
