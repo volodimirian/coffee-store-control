@@ -337,7 +337,39 @@ export interface InvoiceItemUpdate {
   notes?: string;
 }
 
+// ============ Inventory Balance Types ============
+
+export interface InventoryBalance {
+  id: number;
+  category_id: number;
+  month_period_id: number;
+  unit_id: number;
+  opening_balance: string;
+  purchases_total: string;
+  usage_total: string;
+  closing_balance: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LowStockCategory {
+  category_id: number;
+  category_name: string;
+  current_stock: string;
+  threshold: string;
+  unit_symbol: string;
+}
+
+export interface BalanceRecalculationResponse {
+  success: boolean;
+  category_id: number;
+  month_period_id: number;
+  new_balance: InventoryBalance | null;
+  message: string;
+}
+
 // ============ Generic API Response Wrappers ============
 
 export type AuthResponse = TokenResponse;
 export type UserResponse = User;
+

@@ -1,60 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon,
-  PlusIcon,
-  ArrowDownTrayIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { 
+  format, 
+  addMonths, 
+  subMonths, 
+  startOfMonth, 
+  endOfMonth, 
+  eachDayOfInterval,
+  isSameDay,
+  parseISO
+} from 'date-fns';
+import { ru, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
-import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
+import { 
+  expenseSectionsApi,
+  expenseCategoriesApi, 
+  monthPeriodsApi,
+  invoicesApi,
+  invoiceItemsApi,
+  unitsApi,
+} from '~/shared/api/expenses';
 import CategoryModal from '~/components/expenses/modals/CategoryModal';
-import { expenseSectionsApi, expenseCategoriesApi, monthPeriodsApi } from '~/shared/api/expenses';
-import type { MonthPeriod } from '~/shared/api/types';
+import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
+import type { 
+  ExpenseSection,
+  ExpenseCategory,
+} from '~/shared/api/types';
 
-// Interface for table data structure
+// Interface for table data structure by section
+interface TableSection {
+  section: ExpenseSection;
+  categories: TableCategory[];
+}
+
+// Interface for category with daily data
 interface TableCategory {
-  id: number;
-  name: string;
-  items: {
-    id: number;
-    name: string;
-  }[];
+  category: ExpenseCategory;
+  unitSymbol: string; // Unit symbol for display
+  dailyData: Map<string, DayData>; // key: YYYY-MM-DD
+}
+
+// Data for each day
+interface DayData {
+  purchasesQty: number; // quantity from InvoiceItems (including PENDING)
+  purchasesAmount: number; // money amount from InvoiceItems
+  usageQty: number; // quantity from ExpenseRecords - TODO
+  usageAmount: number; // money amount from ExpenseRecords - TODO
 }
 
 export default function InventoryTrackingTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentLocation } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
-  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-
-  // Handlers for modal success callbacks
-  const handleSectionAdded = () => {
-    setIsAddSectionModalOpen(false);
-    loadData(); // Reload data after adding section
-  };
-
-  const handleItemAdded = () => {
-    setIsAddItemModalOpen(false);
-    loadData(); // Reload data after adding item
-  };
+  const [tableSections, setTableSections] = useState<TableSection[]>([]);
+  const [monthDays, setMonthDays] = useState<Date[]>([]);
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
-  
-  // API data states
-  const [categories, setCategories] = useState<TableCategory[]>([]);
-  const [currentPeriod, setCurrentPeriod] = useState<MonthPeriod | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Calculate days of current month
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+
+  // Get locale for date-fns
+  const dateLocale = i18n.language === 'ru' ? ru : enUS;
+
+  // Helper function to format quantity (remove .00 for whole numbers)
+  const formatQty = (value: number): string => {
+    return value % 1 === 0 ? value.toFixed(0) : value.toFixed(2);
+  };
 
   const handlePrevMonth = () => {
     setCurrentDate(subMonths(currentDate, 1));
@@ -80,132 +100,190 @@ export default function InventoryTrackingTab() {
     });
   };
 
-  const collapseAllSections = () => {
-    setCollapsedSections(new Set(categories.map(cat => cat.id)));
+  const handleAddCategory = (sectionId: number) => {
+    setSelectedSectionId(sectionId);
+    setIsAddCategoryModalOpen(true);
   };
 
-  const expandAllSections = () => {
-    setCollapsedSections(new Set());
+  const handleSectionAdded = () => {
+    setIsAddSectionModalOpen(false);
+    loadData();
   };
 
-  // Check if all sections are collapsed or expanded
-  const allSectionsCollapsed = categories.length > 0 && categories.every(category => collapsedSections.has(category.id));
-  const allSectionsExpanded = collapsedSections.size === 0;
-
-  const toggleAllSections = () => {
-    if (allSectionsCollapsed || (!allSectionsCollapsed && !allSectionsExpanded)) {
-      expandAllSections();
-    } else {
-      collapseAllSections();
-    }
+  const handleCategoryAdded = () => {
+    setIsAddCategoryModalOpen(false);
+    setSelectedSectionId(null);
+    loadData();
   };
 
-  // Load data functions
-  const loadData = async () => {
+  // Load all data for the current month
+  const loadData = useCallback(async () => {
     if (!currentLocation) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
 
-      // 1. Find current month period
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Calculate days of current month inside callback
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+      
+      // Store monthDays for rendering
+      setMonthDays(monthDays);
+
+      // 1. Get or create period for current month
       const year = currentDate.getFullYear();
-      const month = currentDate.getMonth() + 1; // JS months are 0-indexed
+      const month = currentDate.getMonth() + 1;
       
       const periodsResponse = await monthPeriodsApi.list({
         business_id: currentLocation.id,
-        status: 'active'
+        limit: 1000,
       });
       
-      let period = periodsResponse.periods.find(p => p.year === year && p.month === month);
+      let period = periodsResponse.periods.find(
+        p => p.year === year && p.month === month
+      );
       
-      // Create period if it doesn't exist
       if (!period) {
+        // Create new period
         period = await monthPeriodsApi.create({
-          name: format(currentDate, 'LLLL yyyy', { locale: ru }),
+          business_id: currentLocation.id,
+          name: format(currentDate, 'LLLL yyyy', { locale: dateLocale }),
           year,
           month,
-          business_id: currentLocation.id,
-          status: 'active'
+          status: 'active',
         });
       }
-      
-      setCurrentPeriod(period);
+      // Period created or found - we don't need to store it
 
-      // 2. Load sections for this business
+      // 2. Load units to get symbols
+      const unitsResponse = await unitsApi.list({
+        business_id: currentLocation.id,
+        limit: 1000,
+      });
+      const unitsMap = new Map(unitsResponse.units.map(unit => [unit.id, unit.symbol]));
+
+      // 3. Load sections with categories
       const sectionsResponse = await expenseSectionsApi.list({
         business_id: currentLocation.id,
-        include_categories: true
+        include_categories: true,
       });
 
-      // 3. Load categories for each section and build table structure
-      const tableData: TableCategory[] = [];
-      
+      // 3. Load invoices for the month (including PENDING and PAID)
+      const invoicesResponse = await invoicesApi.list({
+        business_id: currentLocation.id,
+        skip: 0,
+        limit: 1000,
+      });
+
+      // Filter invoices for current month and include PENDING status
+      const monthInvoices = invoicesResponse.invoices.filter(inv => {
+        const invDate = parseISO(inv.invoice_date);
+        return invDate >= monthStart && invDate <= monthEnd && 
+               (inv.paid_status === 'pending' || inv.paid_status === 'paid');
+      });
+
+      // 4. Build table structure with daily data
+      const sections: TableSection[] = [];
+
       for (const section of sectionsResponse.sections) {
         const categoriesResponse = await expenseCategoriesApi.listBySection(section.id, {
-          include_relations: true
+          include_relations: true,
         });
-        
-        const sectionData: TableCategory = {
-          id: section.id,
-          name: section.name,
-          items: categoriesResponse.categories.map(category => ({
-            id: category.id,
-            name: category.name
-          }))
-        };
-        
-        tableData.push(sectionData);
+
+        const tableCategories: TableCategory[] = [];
+
+        for (const category of categoriesResponse.categories) {
+          const dailyData = new Map<string, DayData>();
+
+          // Initialize all days with zeros
+          monthDays.forEach(day => {
+            const dateKey = format(day, 'yyyy-MM-dd');
+            dailyData.set(dateKey, { 
+              purchasesQty: 0, 
+              purchasesAmount: 0, 
+              usageQty: 0, 
+              usageAmount: 0 
+            });
+          });
+
+          // Add purchases from invoice items
+          for (const invoice of monthInvoices) {
+            const invDate = format(parseISO(invoice.invoice_date), 'yyyy-MM-dd');
+            
+            // Get items for this invoice
+            const items = await invoiceItemsApi.list(invoice.id);
+            
+            // Sum up quantities and amounts for this category
+            const categoryItems = items.filter(item => item.category_id === category.id);
+            categoryItems.forEach(item => {
+              const dayData = dailyData.get(invDate);
+              if (dayData) {
+                dayData.purchasesQty += parseFloat(item.quantity);
+                dayData.purchasesAmount += parseFloat(item.quantity) * parseFloat(item.unit_price);
+              }
+            });
+          }
+
+          // TODO: Add usage from expense records when API is available
+          // For now, usage stays at 0
+
+          const unitSymbol = unitsMap.get(category.default_unit_id) || '';
+          
+          tableCategories.push({
+            category,
+            unitSymbol,
+            dailyData,
+          });
+        }
+
+        sections.push({
+          section,
+          categories: tableCategories,
+        });
       }
-      
-      setCategories(tableData);
-      
+
+      setTableSections(sections);
     } catch (err) {
-      console.error('Error loading data:', err);
-      setError('Ошибка загрузки данных');
+      console.error('Failed to load inventory tracking data:', err);
+      setError(t('expenses.inventoryTracking.loadingError'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentLocation, currentDate, dateLocale, t]);
 
-  // Load data when component mounts or date changes
   useEffect(() => {
-    if (currentLocation) {
-      console.log('Loading data for business:', currentLocation.id, currentLocation.name);
-      loadData();
-    }
-  }, [currentDate, currentLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+    loadData();
+  }, [loadData]);
 
-  // Loading state
-  if (loading) {
+  if (!currentLocation) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-lg text-gray-600">{t('common.loading')}</div>
+      <div className="text-center py-12">
+        <p className="text-gray-500">{t('expenses.inventoryTracking.selectLocation')}</p>
       </div>
     );
   }
 
-  // Error state
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div className="text-red-800 font-medium mb-2">Ошибка</div>
+        <div className="text-red-800 font-medium mb-2">{t('common.error')}</div>
         <div className="text-red-600">{error}</div>
         <button
           onClick={loadData}
           className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
         >
-          Повторить попытку
+          {t('common.retry')}
         </button>
-      </div>
-    );
-  }
-
-  // Show loading or message if no business selected
-  if (!currentLocation) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">{t('expenses.inventoryTracking.selectBusiness')}</p>
       </div>
     );
   }
@@ -220,17 +298,19 @@ export default function InventoryTrackingTab() {
             <button
               onClick={handlePrevMonth}
               className="p-2 hover:bg-gray-100 rounded-md"
+              aria-label={t('common.previous')}
             >
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
             
             <div className="text-lg font-semibold min-w-[200px] text-center">
-              {format(currentDate, 'LLLL yyyy', { locale: ru })}
+              {format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
             </div>
             
             <button
               onClick={handleNextMonth}
               className="p-2 hover:bg-gray-100 rounded-md"
+              aria-label={t('common.next')}
             >
               <ChevronRightIcon className="h-5 w-5" />
             </button>
@@ -240,152 +320,303 @@ export default function InventoryTrackingTab() {
             onClick={handleToday}
             className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
           >
-            {t('expenses.inventoryTracking.todayButton')}
+            {t('common.today')}
           </button>
         </div>
 
         <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1">
-            <button 
-              onClick={() => setIsAddItemModalOpen(true)}
-              className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500"
-            >
-              <PlusIcon className="h-4 w-4 mr-1" />
-              {t('expenses.inventoryTracking.addItemButton')}
-            </button>
-            <button 
-              onClick={() => setIsAddSectionModalOpen(true)}
-              className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500"
-            >
-              {t('expenses.inventoryTracking.addSectionButton')}
-            </button>
-          </div>
-          
           <button 
-            onClick={() => alert(t('expenses.inventoryTracking.exportAlert'))}
-            className="flex items-center px-3 py-2 text-sm bg-yellow-400 text-yellow-900 rounded-md hover:bg-yellow-500"
+            onClick={() => setIsAddSectionModalOpen(true)}
+            className="flex items-center px-3 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
-            <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-            {t('expenses.inventoryTracking.exportButton')}
+            <PlusIcon className="h-4 w-4 mr-1" />
+            {t('expenses.sections.add')}
           </button>
         </div>
       </div>
 
       {/* Main Table */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r z-10">
-                  <div className="flex items-center justify-between">
-                    <span>{t('expenses.inventoryTracking.tableHeader')}</span>
-                    <button
-                      onClick={toggleAllSections}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors"
-                      title={allSectionsCollapsed ? t('expenses.inventoryTracking.expandAll') : t('expenses.inventoryTracking.collapseAll')}
-                    >
-                      {allSectionsCollapsed ? (
-                        <ChevronDownIcon className="w-4 h-4 text-gray-600" />
-                      ) : (
-                        <ChevronUpIcon className="w-4 h-4 text-gray-600" />
-                      )}
-                    </button>
-                  </div>
-                </th>
-                {monthDays.map((day) => (
-                  <th
-                    key={day.toISOString()}
-                    className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r min-w-[80px]"
+      {tableSections.length === 0 ? (
+        <div className="bg-white rounded-lg shadow border p-12 text-center">
+          <p className="text-gray-500 text-lg">{t('expenses.inventoryTracking.noCategories')}</p>
+          <p className="text-gray-400 text-sm mt-2">{t('expenses.inventoryTracking.noCategoriesDescription')}</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th 
+                    rowSpan={2}
+                    className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r z-10 min-w-[250px]"
                   >
-                    <div>{format(day, 'd')}</div>
-                    <div className="text-[10px] text-gray-400">
-                      {format(day, 'MMM', { locale: ru })}
-                    </div>
+                    {t('expenses.inventoryTracking.table.category')}
                   </th>
-                ))}
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.inventoryTracking.totalColumn')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {categories.map((category, categoryIndex) => {
-                const isCollapsed = collapsedSections.has(category.id);
-                return (
-                  <React.Fragment key={`category-${category.id}`}>
-                    {/* Add spacing between categories */}
-                    {categoryIndex > 0 && (
-                      <tr className="bg-gray-100">
-                        <td colSpan={monthDays.length + 2} className="h-2"></td>
-                      </tr>
-                    )}
-                    
-                    {/* Category Header - Clickable */}
-                    <tr className="bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors" onClick={() => toggleSectionCollapse(category.id)}>
-                      <td className="sticky left-0 bg-blue-50 hover:bg-blue-100 px-4 py-3 font-medium text-blue-900 border-r z-10 min-w-[250px]">
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-semibold">{category.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-blue-600">({t('expenses.inventoryTracking.itemsCount', { count: category.items.length })})</span>
-                            {isCollapsed ? (
-                              <ChevronDownIcon className="h-4 w-4 text-blue-600" />
-                            ) : (
-                              <ChevronUpIcon className="h-4 w-4 text-blue-600" />
-                            )}
-                          </div>
+                  {monthDays.map((day) => {
+                    const isToday = isSameDay(day, new Date());
+                    return (
+                      <th
+                        key={day.toISOString()}
+                        colSpan={2}
+                        className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-r ${
+                          isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
+                        }`}
+                      >
+                        <div className="font-semibold">{format(day, 'd')}</div>
+                        <div className="text-[10px] opacity-75">
+                          {format(day, 'EEE', { locale: dateLocale })}
                         </div>
-                      </td>
-                      {monthDays.map((day) => (
-                        <td key={day.toISOString()} className="px-3 py-3 border-r bg-blue-50 hover:bg-blue-100"></td>
-                      ))}
-                      <td className="px-4 py-3 text-center font-medium bg-blue-50 hover:bg-blue-100"></td>
-                    </tr>
-                    
-                    {/* Category Items - Show/Hide based on collapse state */}
-                    {!isCollapsed && category.items.map((item) => (
-                      <tr key={`item-${item.id}`} className="hover:bg-gray-50 border-b border-gray-100">
-                        <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
-                          {item.name}
+                      </th>
+                    );
+                  })}
+                  <th 
+                    colSpan={2}
+                    className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b"
+                  >
+                    {t('expenses.inventoryTracking.table.total')}
+                  </th>
+                </tr>
+                <tr>
+                  {monthDays.map((day) => {
+                    const isToday = isSameDay(day, new Date());
+                    return (
+                      <React.Fragment key={`${day.toISOString()}-sub`}>
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-r ${
+                          isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
+                        }`}>
+                          {t('expenses.inventoryTracking.table.qty')}
+                        </th>
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-r ${
+                          isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
+                        }`}>
+                          {t('expenses.inventoryTracking.table.amount')}
+                        </th>
+                      </React.Fragment>
+                    );
+                  })}
+                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-r">
+                    {t('expenses.inventoryTracking.table.qty')}
+                  </th>
+                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400">
+                    {t('expenses.inventoryTracking.table.amount')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                {tableSections.map((tableSection, sectionIndex) => {
+                  const isCollapsed = collapsedSections.has(tableSection.section.id);
+                  
+                  // Calculate section totals
+                  const sectionDailyTotals = new Map<string, { purchasesAmount: number; usageAmount: number }>();
+                  let sectionGrandTotal = 0;
+                  
+                  tableSection.categories.forEach(tableCategory => {
+                    monthDays.forEach(day => {
+                      const dateKey = format(day, 'yyyy-MM-dd');
+                      const dayData = tableCategory.dailyData.get(dateKey);
+                      if (dayData) {
+                        if (!sectionDailyTotals.has(dateKey)) {
+                          sectionDailyTotals.set(dateKey, { purchasesAmount: 0, usageAmount: 0 });
+                        }
+                        const totals = sectionDailyTotals.get(dateKey)!;
+                        totals.purchasesAmount += dayData.purchasesAmount;
+                        totals.usageAmount += dayData.usageAmount;
+                        sectionGrandTotal += dayData.purchasesAmount - dayData.usageAmount;
+                      }
+                    });
+                  });
+                  
+                  return (
+                    <React.Fragment key={`section-${tableSection.section.id}`}>
+                      {/* Spacing between sections */}
+                      {sectionIndex > 0 && (
+                        <tr className="bg-gray-100">
+                          <td colSpan={monthDays.length * 2 + 2} className="h-2"></td>
+                        </tr>
+                      )}
+                      
+                      {/* Section Header with Totals */}
+                      <tr className="bg-blue-50 hover:bg-blue-100">
+                        <td 
+                          className="sticky left-0 bg-blue-50 hover:bg-blue-100 px-4 py-3 font-medium text-blue-900 border-r z-10 cursor-pointer"
+                          onClick={() => toggleSectionCollapse(tableSection.section.id)}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-semibold">{tableSection.section.name}</span>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddCategory(tableSection.section.id);
+                                }}
+                                className="p-1 hover:bg-blue-200 rounded transition-colors"
+                                title={t('expenses.categories.add')}
+                              >
+                                <PlusIcon className="h-4 w-4 text-blue-600" />
+                              </button>
+                              <span className="text-xs text-blue-600">
+                                ({tableSection.categories.length})
+                              </span>
+                              {isCollapsed ? (
+                                <ChevronDownIcon className="h-4 w-4 text-blue-600" />
+                              ) : (
+                                <ChevronUpIcon className="h-4 w-4 text-blue-600" />
+                              )}
+                            </div>
+                          </div>
                         </td>
-                        {monthDays.map((day) => (
-                          <td key={day.toISOString()} className="px-3 py-2 border-r">
-                            <input
-                              type="number"
-                              className="w-full p-1 text-center text-sm border-0 focus:ring-1 focus:ring-blue-500 rounded"
-                              placeholder="0"
-                            />
-                          </td>
-                        ))}
-                        <td className="px-4 py-2 text-center text-sm font-medium">
-                          0
+                        {monthDays.map((day) => {
+                          const dateKey = format(day, 'yyyy-MM-dd');
+                          const dayTotals = sectionDailyTotals.get(dateKey);
+                          const isToday = isSameDay(day, new Date());
+                          
+                          return (
+                            <React.Fragment key={`${day.toISOString()}-section`}>
+                              {/* Skip Quantity Column for section header */}
+                              <td className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                                <div className="text-blue-600 text-[10px]">—</div>
+                              </td>
+                              
+                              {/* Amount Column - show section totals */}
+                              <td className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                                {dayTotals && (dayTotals.purchasesAmount !== 0 || dayTotals.usageAmount !== 0) ? (
+                                  <div className="space-y-0.5">
+                                    {dayTotals.purchasesAmount !== 0 && (
+                                      <div className="text-green-600 font-semibold text-[10px]">
+                                        ₽{dayTotals.purchasesAmount.toFixed(0)}
+                                      </div>
+                                    )}
+                                    {dayTotals.usageAmount !== 0 && (
+                                      <div className="text-red-600 font-semibold text-[10px]">
+                                        ₽{dayTotals.usageAmount.toFixed(0)}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-blue-600 text-[10px]">₽0</div>
+                                )}
+                              </td>
+                            </React.Fragment>
+                          );
+                        })}
+                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 border-r">
+                          <div className="text-blue-600 text-[10px]">—</div>
+                        </td>
+                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100">
+                          <div className="font-bold text-blue-900">
+                            ₽{sectionGrandTotal.toFixed(0)}
+                          </div>
                         </td>
                       </tr>
-                    ))}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      
+                      {/* Category Rows */}
+                      {!isCollapsed && tableSection.categories.map((tableCategory) => {
+                        // Calculate totals
+                        let totalPurchasesAmount = 0;
+                        let totalUsageAmount = 0;
+                        let totalPurchasesQty = 0;
+                        let totalUsageQty = 0;
+                        
+                        monthDays.forEach(day => {
+                          const dateKey = format(day, 'yyyy-MM-dd');
+                          const dayData = tableCategory.dailyData.get(dateKey);
+                          if (dayData) {
+                            totalPurchasesAmount += dayData.purchasesAmount;
+                            totalUsageAmount += dayData.usageAmount;
+                            totalPurchasesQty += dayData.purchasesQty;
+                            totalUsageQty += dayData.usageQty;
+                          }
+                        });
 
-      {/* Current Day Highlight and Add Form */}
-      <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-medium text-yellow-800">
-              {t('expenses.inventoryTracking.currentDayTitle')}
-            </h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              {t('expenses.inventoryTracking.currentDayDescription')}
-            </p>
-          </div>
-          <div className="text-sm text-yellow-700">
-            {t('expenses.inventoryTracking.todayLabel')}: {format(new Date(), 'd MMMM yyyy', { locale: ru })}
+                        const totalAmount = totalPurchasesAmount - totalUsageAmount;
+                        const totalQty = totalPurchasesQty - totalUsageQty;
+
+                        return (
+                          <tr key={`category-${tableCategory.category.id}`} className="hover:bg-gray-50 border-b border-gray-100">
+                            <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
+                              {tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}
+                            </td>
+                            {monthDays.map((day) => {
+                              const dateKey = format(day, 'yyyy-MM-dd');
+                              const dayData = tableCategory.dailyData.get(dateKey);
+                              const isToday = isSameDay(day, new Date());
+                              
+                              return (
+                                <React.Fragment key={`${day.toISOString()}-cat`}>
+                                  {/* Quantity Column */}
+                                  <td 
+                                    className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-50' : ''}`}
+                                  >
+                                    {dayData ? (
+                                      <div className="space-y-0.5">
+                                        {dayData.purchasesQty !== 0 && (
+                                          <div className="text-green-600">
+                                            {formatQty(dayData.purchasesQty)}
+                                          </div>
+                                        )}
+                                        {dayData.usageQty !== 0 && (
+                                          <div className="text-red-600">
+                                            {formatQty(dayData.usageQty)}
+                                          </div>
+                                        )}
+                                        {dayData.purchasesQty === 0 && dayData.usageQty === 0 && (
+                                          <div className="text-gray-400">0</div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="text-gray-400">0</div>
+                                    )}
+                                  </td>
+                                  
+                                  {/* Amount Column */}
+                                  <td 
+                                    className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-50' : ''}`}
+                                  >
+                                    {dayData ? (
+                                      <div className="space-y-0.5">
+                                        {dayData.purchasesAmount !== 0 && (
+                                          <div className="text-green-600 font-semibold">
+                                            ₽{dayData.purchasesAmount.toFixed(0)}
+                                          </div>
+                                        )}
+                                        {dayData.usageAmount !== 0 && (
+                                          <div className="text-red-600 font-semibold">
+                                            ₽{dayData.usageAmount.toFixed(0)}
+                                          </div>
+                                        )}
+                                        {dayData.purchasesAmount === 0 && dayData.usageAmount === 0 && (
+                                          <div className="text-gray-400">₽0</div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="text-gray-400">₽0</div>
+                                    )}
+                                  </td>
+                                </React.Fragment>
+                              );
+                            })}
+                            <td className="px-2 py-2 text-center text-xs border-r">
+                              <div className={totalQty > 0 ? 'text-green-600' : totalQty < 0 ? 'text-red-600' : 'text-gray-900'}>
+                                {formatQty(totalQty)}
+                              </div>
+                            </td>
+                            <td className="px-2 py-2 text-center text-xs">
+                              <div className={totalAmount > 0 ? 'text-green-600 font-bold' : totalAmount < 0 ? 'text-red-600 font-bold' : 'text-gray-900 font-bold'}>
+                                ₽{totalAmount.toFixed(0)}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Modals */}
       <AddSectionModal
@@ -394,13 +625,18 @@ export default function InventoryTrackingTab() {
         onSectionAdded={handleSectionAdded}
       />
 
-      <CategoryModal
-        isOpen={isAddItemModalOpen}
-        onClose={() => setIsAddItemModalOpen(false)}
-        mode="create"
-        sectionId={categories.length > 0 ? categories[0].id : 1}
-        onCategoryAdded={handleItemAdded}
-      />
+      {selectedSectionId && (
+        <CategoryModal
+          isOpen={isAddCategoryModalOpen}
+          onClose={() => {
+            setIsAddCategoryModalOpen(false);
+            setSelectedSectionId(null);
+          }}
+          mode="create"
+          sectionId={selectedSectionId}
+          onCategoryAdded={handleCategoryAdded}
+        />
+      )}
     </div>
   );
 }

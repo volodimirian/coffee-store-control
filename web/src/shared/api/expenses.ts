@@ -32,6 +32,9 @@ import type {
   InvoiceItemCreate,
   InvoiceItemUpdate,
   InvoiceStatus,
+  InventoryBalance,
+  LowStockCategory,
+  BalanceRecalculationResponse,
 } from './types';
 
 // ============ Units API ============
@@ -579,5 +582,91 @@ export const invoiceItemsApi = {
    */
   delete: async (itemId: number): Promise<void> => {
     await api.delete(`/expenses/invoices/items/${itemId}`);
+  },
+};
+
+// ============ Inventory Balance API ============
+
+export const inventoryBalanceApi = {
+  /**
+   * Get inventory balance for category and period
+   */
+  getBalance: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<InventoryBalance | null> => {
+    const response = await api.get<InventoryBalance | null>(
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get purchases total for category in period
+   */
+  getPurchases: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<string> => {
+    const response = await api.get<string>(
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/purchases`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get usage total for category in period
+   */
+  getUsage: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<string> => {
+    const response = await api.get<string>(
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/usage`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get opening balance for category
+   */
+  getOpeningBalance: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<string> => {
+    const response = await api.get<string>(
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/opening-balance`
+    );
+    return response.data;
+  },
+
+  /**
+   * Recalculate balance for category and period
+   */
+  recalculateBalance: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<BalanceRecalculationResponse> => {
+    const response = await api.post<BalanceRecalculationResponse>(
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/recalculate`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get low stock categories
+   */
+  getLowStock: async (businessId: number, monthPeriodId: number, threshold?: string): Promise<LowStockCategory[]> => {
+    const response = await api.get<LowStockCategory[]>(
+      `/expenses/inventory-balance/${businessId}/period/${monthPeriodId}/low-stock`,
+      { params: { threshold } }
+    );
+    return response.data;
+  },
+
+  /**
+   * Transfer closing balances to next month
+   */
+  transferBalances: async (businessId: number, currentPeriodId: number, nextPeriodId: number): Promise<{ success: boolean; message: string; transferred_count: number }> => {
+    const response = await api.post<{ success: boolean; message: string; transferred_count: number }>(
+      `/expenses/inventory-balance/${businessId}/period/${currentPeriodId}/transfer-balances/${nextPeriodId}`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get average monthly usage for category
+   */
+  getAverageUsage: async (businessId: number, categoryId: number, monthsBack: number = 6): Promise<string> => {
+    const response = await api.get<string>(
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/average-usage`,
+      { params: { months_back: monthsBack } }
+    );
+    return response.data;
   },
 };

@@ -519,6 +519,14 @@
         "status": "Статус",
         "actions": "Действия"
       },
+      "number": "№ Накладной",
+      "date": "Дата",
+      "amount": "Сумма",
+      "statuses": {
+        "pending": "Ожидает оплаты",
+        "paid": "Оплачен",
+        "cancelled": "Отменен"
+      },
       "actions": {
         "edit": "Редактировать",
         "delete": "Удалить",
@@ -557,18 +565,18 @@
       }
     },
     "inventoryTracking": {
-      "todayButton": "Сегодня",
-      "addItemButton": "Товар",
-      "addSectionButton": "Раздел",
-      "exportButton": "Скачать в excel, ПДФ",
-      "exportAlert": "Функция экспорта будет реализована позже",
-      "tableHeader": "Раздел/Товар",
-      "totalColumn": "Итого",
-      "itemsCount": "{{count}} товаров",
-      "selectBusiness": "Выберите бизнес для просмотра инвентаризации",
-      "currentDayTitle": "Выделение текущего дня недели",
-      "currentDayDescription": "При добавлении «Раздела» в таблице добавляется новый раздел без ничего",
-      "todayLabel": "Сегодня"
+      "title": "Учет инвентаря",
+      "selectLocation": "Выберите локацию для просмотра учета",
+      "loadingError": "Ошибка загрузки данных инвентаря",
+      "noCategories": "Категории не найдены",
+      "noCategoriesDescription": "Создайте категории расходов для начала учета",
+      "table": {
+        "category": "Категория",
+        "qty": "Кол-во",
+        "amount": "Сумма",
+        "total": "Итого",
+        "sectionTotal": "Итого по секции"
+      }
     },
     "reports": {
       "title": "Отчеты в разработке",
@@ -648,6 +656,10 @@
       "thisMonth": "Этот месяц", 
       "categoriesCount": "Категории",
       "daysLeft": "Дней осталось",
+      "pendingInvoices": "Неоплаченные накладные",
+      "recentInvoices": "Последние накладные",
+      "noInvoices": "Нет накладных",
+      "noInvoicesDescription": "Начните с добавления первой накладной.",
       "lastExpenses": "Последние расходы",
       "noExpensesTitle": "Пока нет расходов",
       "noExpensesDescription": "Начните с добавления первой записи о расходах.",
@@ -656,6 +668,13 @@
       "addCategory": "Добавить категорию",
       "viewReports": "Посмотреть отчеты",
       "monthSummary": "Сводка за месяц",
+      "inventorySummary": "Остатки по категориям",
+      "opening": "Начало",
+      "purchases": "Покупки",
+      "usage": "Использование",
+      "closing": "Остаток",
+      "noCategories": "Нет категорий",
+      "andMore": "и еще {{count}}",
       "total": "Всего",
       "categoryItems": {
         "coffee": "Кофе и зерна",
