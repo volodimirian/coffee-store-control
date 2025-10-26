@@ -430,17 +430,36 @@ export default function CategoriesTab() {
         const section = inactiveSections.find(s => s.id === sectionId);
         if (section) {
           setInactiveSections(prev => prev.filter(s => s.id !== sectionId));
-          // When activating a section, need to properly distribute categories
-          const allSectionCategories = [...section.categories, ...section.inactiveCategories];
-          const updatedSection = {
-            ...section,
-            is_active: true,
-            // Active categories: only those that are actually active
-            categories: sortCategories(allSectionCategories.filter(cat => cat.is_active)),
-            // Inactive categories: only those that are actually inactive
-            inactiveCategories: sortCategories(allSectionCategories.filter(cat => !cat.is_active)),
-          };
-          setActiveSections(prev => sortSections([...prev, updatedSection]));
+          
+          // ВАЖНО: При активации секции нужно получить актуальное состояние категорий с сервера,
+          // так как на бэкенде категории могли остаться деактивированными
+          try {
+            const categoriesResponse = await expenseCategoriesApi.listBySection(sectionId, {
+              is_active: undefined, // Получаем все категории
+            });
+            const allCategories = categoriesResponse.categories;
+            
+            const updatedSection = {
+              ...section,
+              is_active: true,
+              // Active categories: только те, которые действительно активны на бэкенде
+              categories: sortCategories(allCategories.filter(cat => cat.is_active)),
+              // Inactive categories: только те, которые действительно неактивны на бэкенде
+              inactiveCategories: sortCategories(allCategories.filter(cat => !cat.is_active)),
+            };
+            setActiveSections(prev => sortSections([...prev, updatedSection]));
+          } catch (err) {
+            console.error('Error reloading categories after section activation:', err);
+            // Fallback: если не удалось загрузить категории, показываем все как неактивные
+            const allSectionCategories = [...section.categories, ...section.inactiveCategories];
+            const updatedSection = {
+              ...section,
+              is_active: true,
+              categories: [],
+              inactiveCategories: sortCategories(allSectionCategories.map(cat => ({ ...cat, is_active: false }))),
+            };
+            setActiveSections(prev => sortSections([...prev, updatedSection]));
+          }
         }
       }
     } catch (error) {
