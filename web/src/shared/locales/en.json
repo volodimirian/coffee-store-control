@@ -24,7 +24,8 @@
     "showing": "Showing",
     "to": "to",
     "of": "of",
-    "results": "results"
+    "results": "results",
+    "today": "Today"
   },
   "navigation": {
     "home": "Home",
@@ -248,6 +249,9 @@
       "inactiveSections": "Inactive sections",
       "activateSection": "Activate section",
       "deactivateSection": "Deactivate section"
+    },
+    "sections": {
+      "add": "Add Section"
     },
     "modals": {
       "addSection": {

@@ -24,7 +24,8 @@
     "showing": "Показано",
     "to": "до",
     "of": "из",
-    "results": "результатов"
+    "results": "результатов",
+    "today": "Сегодня"
   },
   "navigation": {
     "home": "Главная",
@@ -293,6 +294,9 @@
       "inactiveSections": "Неактивные разделы",
       "activateSection": "Активировать раздел",
       "deactivateSection": "Деактивировать раздел"
+    },
+    "sections": {
+      "add": "Добавить раздел"
     },
     "modals": {
       "addSection": {
