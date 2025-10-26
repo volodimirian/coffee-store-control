@@ -204,6 +204,27 @@ class MonthPeriodService:
         return True
 
     @staticmethod
+    async def archive_period(
+        session: AsyncSession,
+        period_id: int,
+    ) -> bool:
+        """Archive a closed period (change status to ARCHIVED). Can only be done by owner/admin."""
+        period = await MonthPeriodService.get_period_by_id(session, period_id)
+        if not period:
+            return False
+
+        current_status = getattr(period, 'status')
+        
+        # Can only archive closed periods
+        if str(current_status) != str(MonthPeriodStatus.CLOSED):
+            return False
+
+        # Set status to archived
+        setattr(period, 'status', MonthPeriodStatus.ARCHIVED)
+        await session.flush()
+        return True
+
+    @staticmethod
     async def delete_period(
         session: AsyncSession,
         period_id: int,

@@ -95,12 +95,36 @@ class ExpenseCategoryService:
         session: AsyncSession,
         business_id: int,
         is_active: Optional[bool] = None,
+        month_period_id: Optional[int] = None,
         include_relations: bool = False,
         skip: int = 0,
         limit: int = 200,
     ) -> List[ExpenseCategory]:
-        """Get all categories for a business through sections."""
-        from app.expenses.models import ExpenseSection
+        """
+        Get all categories for a business through sections.
+        
+        Filtering logic based on period status:
+        - ACTIVE period: only return is_active=True categories
+        - CLOSED/ARCHIVED period: return all categories (active and inactive)
+        - No period specified: use is_active parameter as provided
+        """
+        from app.expenses.models import ExpenseSection, MonthPeriod, MonthPeriodStatus
+        
+        # If period specified, determine filtering based on period status
+        if month_period_id is not None:
+            period_result = await session.execute(
+                select(MonthPeriod).where(MonthPeriod.id == month_period_id)
+            )
+            period = period_result.scalar_one_or_none()
+            
+            if period:
+                period_status = getattr(period, 'status')
+                # For active periods, only show active categories
+                if str(period_status) == str(MonthPeriodStatus.ACTIVE):
+                    is_active = True
+                # For closed/archived periods, show all categories
+                else:
+                    is_active = None
         
         query = select(ExpenseCategory).join(ExpenseSection).where(
             and_(

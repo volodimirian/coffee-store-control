@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { unitsApi, type Unit } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
-import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers';
+import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers/storageHelpers';
 import UnitModal from '~/components/expenses/modals/UnitModal';
 import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
 

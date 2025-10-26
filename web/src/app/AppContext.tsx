@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AppContext, type AppContextType } from "~/shared/context/AppContext";
 import { locationsApi } from "~/shared/api/locations";
 import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~/shared/types/locations";
-import { hasToken, logout as helperLogout } from "~/shared/lib/helpers";
+import { hasToken, logout as helperLogout } from "~/shared/lib/helpers/storageHelpers";
 import { setLogoutHandler } from "~/shared/api/client";
 
 export function AppProvider({ children }: { children: ReactNode }) {

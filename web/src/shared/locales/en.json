@@ -8,13 +8,24 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "deleting": "Deleting...",
+    "create": "Create",
+    "update": "Update",
     "yes": "Yes",
     "no": "No",
     "continue": "Continue",
     "back": "Back",
     "brandName": "Business Control",
     "actionCannotBeUndone": "This action cannot be undone.",
-    "order": "Order"
+    "order": "Order",
+    "filters": "Filters",
+    "clearFilters": "Clear Filters",
+    "previous": "Previous",
+    "next": "Next",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results",
+    "today": "Today"
   },
   "navigation": {
     "home": "Home",
@@ -239,6 +250,9 @@
       "activateSection": "Activate section",
       "deactivateSection": "Deactivate section"
     },
+    "sections": {
+      "add": "Add Section"
+    },
     "modals": {
       "addSection": {
         "title": "Add Expense Section",
@@ -344,6 +358,11 @@
           "message": "Are you sure you want to delete the unit \"{{name}}\"? This action cannot be undone.",
           "confirmButton": "Delete Unit",
           "withDerived": "⚠️ This will also delete {{count}} derived units"
+        },
+        "invoice": {
+          "title": "Delete Invoice",
+          "message": "Are you sure you want to delete invoice \"{{name}}\"? This action cannot be undone.",
+          "confirmButton": "Delete Invoice"
         }
       }
     },
@@ -422,19 +441,101 @@
         "selectBusinessFirst": "Please select a business first"
       }
     },
+    "invoices": {
+      "title": "Supplier Invoices",
+      "description": "Manage supplier invoices and track inventory purchases",
+      "addInvoice": "Add Invoice",
+      "createFirstInvoice": "Create First Invoice",
+      "noInvoices": "No invoices created",
+      "noInvoicesDescription": "Start by adding your first supplier invoice",
+      "loadingData": "Loading data...",
+      "loadingError": "Error loading invoices",
+      "errorDeleteInvoice": "Error deleting invoice",
+      "errorMarkAsPaid": "Error marking invoice as paid",
+      "errorMarkAsCancelled": "Error cancelling invoice",
+      "filters": {
+        "status": "Status",
+        "supplier": "Supplier",
+        "allSuppliers": "All Suppliers",
+        "dateFrom": "Date From",
+        "dateTo": "Date To",
+        "searchPlaceholder": "Search by invoice number...",
+        "all": "All Invoices",
+        "pending": "Pending",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "status": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "table": {
+        "invoiceNumber": "Invoice #",
+        "supplier": "Supplier",
+        "date": "Date",
+        "totalAmount": "Total Amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "number": "Invoice #",
+      "date": "Date",
+      "amount": "Amount",
+      "statuses": {
+        "pending": "Pending Payment",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "markAsPaid": "Mark as Paid",
+        "markAsCancelled": "Cancel"
+      },
+      "modal": {
+        "createTitle": "Create Invoice",
+        "editTitle": "Edit Invoice",
+        "supplier": "Supplier",
+        "selectSupplier": "Select supplier...",
+        "supplierRequired": "Supplier is required",
+        "invoiceNumber": "Invoice Number",
+        "invoiceNumberPlaceholder": "Optional",
+        "invoiceDate": "Invoice Date",
+        "dateRequired": "Invoice date is required",
+        "lineItems": "Line Items",
+        "itemsRequired": "At least one line item is required",
+        "addItem": "Add Item",
+        "removeItem": "Remove",
+        "category": "Category",
+        "selectCategory": "Select category...",
+        "categoryRequired": "Category is required for line {{line}}",
+        "quantity": "Quantity",
+        "quantityRequired": "Quantity is required for line {{line}}",
+        "unit": "Unit",
+        "selectUnit": "Select unit...",
+        "unitRequired": "Unit is required for line {{line}}",
+        "unitPrice": "Unit Price",
+        "priceRequired": "Unit price is required for line {{line}}",
+        "totalPrice": "Total Price",
+        "totalAmount": "Total Amount",
+        "loadDataError": "Error loading data",
+        "createError": "Error creating invoice",
+        "updateError": "Error updating invoice"
+      }
+    },
     "inventoryTracking": {
-      "todayButton": "Today",
-      "addItemButton": "Item",
-      "addSectionButton": "Section",
-      "exportButton": "Download to Excel, PDF",
-      "exportAlert": "Export function will be implemented later",
-      "tableHeader": "Section/Item",
-      "totalColumn": "Total",
-      "itemsCount": "{{count}} items",
-      "selectBusiness": "Please select a business to view inventory tracking",
-      "currentDayTitle": "Current Day Highlighting",
-      "currentDayDescription": "When adding a \"Section\", a new empty section is added to the table",
-      "todayLabel": "Today"
+      "title": "Inventory Tracking",
+      "selectLocation": "Please select a location to view inventory tracking",
+      "loadingError": "Failed to load inventory data",
+      "noCategories": "No categories found",
+      "noCategoriesDescription": "Create expense categories to start tracking inventory",
+      "table": {
+        "category": "Category",
+        "qty": "Qty",
+        "amount": "Amount",
+        "total": "Total",
+        "sectionTotal": "Section Total"
+      }
     },
     "reports": {
       "title": "Reports in Development",
@@ -501,6 +602,7 @@
       "inventoryTracking": "Inventory Tracking",
       "categories": "Categories",
       "units": "Units of Measurement",
+      "invoices": "Invoices",
       "reports": "Reports"
     },
     "page": {
@@ -513,6 +615,10 @@
       "thisMonth": "This Month",
       "categoriesCount": "Categories", 
       "daysLeft": "Days Left",
+      "pendingInvoices": "Pending Invoices",
+      "recentInvoices": "Recent Invoices",
+      "noInvoices": "No invoices",
+      "noInvoicesDescription": "Start by adding your first invoice.",
       "lastExpenses": "Recent Expenses",
       "noExpensesTitle": "No expenses yet",
       "noExpensesDescription": "Start by adding your first expense record.",
@@ -521,6 +627,13 @@
       "addCategory": "Add Category",
       "viewReports": "View Reports",
       "monthSummary": "Month Summary",
+      "inventorySummary": "Inventory Summary",
+      "opening": "Opening",
+      "purchases": "Purchases",
+      "usage": "Usage",
+      "closing": "Closing",
+      "noCategories": "No categories",
+      "andMore": "and {{count}} more",
       "total": "Total",
       "categoryItems": {
         "coffee": "Coffee and Beans",

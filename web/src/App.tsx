@@ -14,6 +14,7 @@ import Overview from "~/pages/expenses/Overview";
 import InventoryTracking from "~/pages/expenses/InventoryTracking";
 import Categories from "~/pages/expenses/Categories";
 import Units from "~/pages/expenses/Units";
+import Invoices from "~/pages/expenses/Invoices";
 import Reports from "~/pages/expenses/Reports";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
@@ -21,7 +22,7 @@ import Register from "~/pages/Register";
 import { useAppContext } from "~/shared/context/AppContext";
 import { useEffect, useRef } from "react";
 import { fetchMe } from "~/shared/api/authentication";
-import { hasToken } from "~/shared/lib/helpers";
+import { hasToken } from "~/shared/lib/helpers/storageHelpers";
 
 export default function App() {
   const { setUser, setIsInitialized } = useAppContext();
@@ -73,6 +74,7 @@ export default function App() {
               <Route path="inventory-tracking" element={<InventoryTracking />} />
               <Route path="categories" element={<Categories />} />
               <Route path="units" element={<Units />} />
+              <Route path="invoices" element={<Invoices />} />
               <Route path="reports" element={<Reports />} />
             </Route>
           </Route>

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchMe, login } from "~/shared/api/authentication"
 import type { AuthResponse, UserResponse } from "~/shared/api/types"
 import { useAppContext } from "~/shared/context/AppContext";
-import { saveToken } from "~/shared/lib/helpers";
+import { saveToken } from "~/shared/lib/helpers/storageHelpers";
 
 type FieldErrors = {
   email?: string;

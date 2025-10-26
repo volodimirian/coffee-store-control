@@ -8,13 +8,24 @@
     "cancel": "Отмена",
     "delete": "Удалить",
     "deleting": "Удаление...",
+    "create": "Создать",
+    "update": "Обновить",
     "yes": "Да",
     "no": "Нет",
     "continue": "Продолжить",
     "back": "Назад",
     "brandName": "Business Control",
     "actionCannotBeUndone": "Это действие нельзя отменить.",
-    "order": "Порядок"
+    "order": "Порядок",
+    "filters": "Фильтры",
+    "clearFilters": "Очистить фильтры",
+    "previous": "Предыдущая",
+    "next": "Следующая",
+    "showing": "Показано",
+    "to": "до",
+    "of": "из",
+    "results": "результатов",
+    "today": "Сегодня"
   },
   "navigation": {
     "home": "Главная",
@@ -284,6 +295,9 @@
       "activateSection": "Активировать раздел",
       "deactivateSection": "Деактивировать раздел"
     },
+    "sections": {
+      "add": "Добавить раздел"
+    },
     "modals": {
       "addSection": {
         "title": "Добавить раздел расходов",
@@ -389,6 +403,11 @@
           "message": "Вы уверены, что хотите удалить единицу измерения \"{{name}}\"? Это действие нельзя отменить.",
           "confirmButton": "Удалить единицу",
           "withDerived": "⚠️ Также будет удалено {{count}} производных единиц измерения"
+        },
+        "invoice": {
+          "title": "Удалить счет",
+          "message": "Вы уверены, что хотите удалить счет \"{{name}}\"? Это действие нельзя отменить.",
+          "confirmButton": "Удалить счет"
         }
       }
     },
@@ -467,19 +486,101 @@
         "selectBusinessFirst": "Сначала выберите бизнес"
       }
     },
+    "invoices": {
+      "title": "Счета от поставщиков",
+      "description": "Управление счетами от поставщиков и учет закупок",
+      "addInvoice": "Добавить счет",
+      "createFirstInvoice": "Создать первый счет",
+      "noInvoices": "Счета не созданы",
+      "noInvoicesDescription": "Начните с добавления первого счета от поставщика",
+      "loadingData": "Загрузка данных...",
+      "loadingError": "Ошибка загрузки счетов",
+      "errorDeleteInvoice": "Ошибка удаления счета",
+      "errorMarkAsPaid": "Ошибка при пометке счета как оплаченного",
+      "errorMarkAsCancelled": "Ошибка при отмене счета",
+      "filters": {
+        "status": "Статус",
+        "supplier": "Поставщик",
+        "allSuppliers": "Все поставщики",
+        "dateFrom": "Дата от",
+        "dateTo": "Дата до",
+        "searchPlaceholder": "Поиск по номеру счета...",
+        "all": "Все счета",
+        "pending": "Ожидают оплаты",
+        "paid": "Оплачены",
+        "cancelled": "Отменены"
+      },
+      "status": {
+        "pending": "Ожидает",
+        "paid": "Оплачен",
+        "cancelled": "Отменен"
+      },
+      "table": {
+        "invoiceNumber": "№ счета",
+        "supplier": "Поставщик",
+        "date": "Дата",
+        "totalAmount": "Сумма",
+        "status": "Статус",
+        "actions": "Действия"
+      },
+      "number": "№ Накладной",
+      "date": "Дата",
+      "amount": "Сумма",
+      "statuses": {
+        "pending": "Ожидает оплаты",
+        "paid": "Оплачен",
+        "cancelled": "Отменен"
+      },
+      "actions": {
+        "edit": "Редактировать",
+        "delete": "Удалить",
+        "markAsPaid": "Отметить оплаченным",
+        "markAsCancelled": "Отменить"
+      },
+      "modal": {
+        "createTitle": "Создать счет",
+        "editTitle": "Редактировать счет",
+        "supplier": "Поставщик",
+        "selectSupplier": "Выберите поставщика...",
+        "supplierRequired": "Поставщик обязателен",
+        "invoiceNumber": "Номер счета",
+        "invoiceNumberPlaceholder": "Необязательно",
+        "invoiceDate": "Дата счета",
+        "dateRequired": "Дата счета обязательна",
+        "lineItems": "Позиции",
+        "itemsRequired": "Требуется хотя бы одна позиция",
+        "addItem": "Добавить позицию",
+        "removeItem": "Удалить",
+        "category": "Категория",
+        "selectCategory": "Выберите категорию...",
+        "categoryRequired": "Категория обязательна для строки {{line}}",
+        "quantity": "Количество",
+        "quantityRequired": "Количество обязательно для строки {{line}}",
+        "unit": "Единица",
+        "selectUnit": "Выберите единицу...",
+        "unitRequired": "Единица измерения обязательна для строки {{line}}",
+        "unitPrice": "Цена за единицу",
+        "priceRequired": "Цена обязательна для строки {{line}}",
+        "totalPrice": "Итого",
+        "totalAmount": "Общая сумма",
+        "loadDataError": "Ошибка загрузки данных",
+        "createError": "Ошибка создания счета",
+        "updateError": "Ошибка обновления счета"
+      }
+    },
     "inventoryTracking": {
-      "todayButton": "Сегодня",
-      "addItemButton": "Товар",
-      "addSectionButton": "Раздел",
-      "exportButton": "Скачать в excel, ПДФ",
-      "exportAlert": "Функция экспорта будет реализована позже",
-      "tableHeader": "Раздел/Товар",
-      "totalColumn": "Итого",
-      "itemsCount": "{{count}} товаров",
-      "selectBusiness": "Выберите бизнес для просмотра инвентаризации",
-      "currentDayTitle": "Выделение текущего дня недели",
-      "currentDayDescription": "При добавлении «Раздела» в таблице добавляется новый раздел без ничего",
-      "todayLabel": "Сегодня"
+      "title": "Учет инвентаря",
+      "selectLocation": "Выберите локацию для просмотра учета",
+      "loadingError": "Ошибка загрузки данных инвентаря",
+      "noCategories": "Категории не найдены",
+      "noCategoriesDescription": "Создайте категории расходов для начала учета",
+      "table": {
+        "category": "Категория",
+        "qty": "Кол-во",
+        "amount": "Сумма",
+        "total": "Итого",
+        "sectionTotal": "Итого по секции"
+      }
     },
     "reports": {
       "title": "Отчеты в разработке",
@@ -546,6 +647,7 @@
       "inventoryTracking": "Учет расходов", 
       "categories": "Категории",
       "units": "Единицы измерения",
+      "invoices": "Счета",
       "reports": "Отчеты"
     },
     "page": {
@@ -558,6 +660,10 @@
       "thisMonth": "Этот месяц", 
       "categoriesCount": "Категории",
       "daysLeft": "Дней осталось",
+      "pendingInvoices": "Неоплаченные накладные",
+      "recentInvoices": "Последние накладные",
+      "noInvoices": "Нет накладных",
+      "noInvoicesDescription": "Начните с добавления первой накладной.",
       "lastExpenses": "Последние расходы",
       "noExpensesTitle": "Пока нет расходов",
       "noExpensesDescription": "Начните с добавления первой записи о расходах.",
@@ -566,6 +672,13 @@
       "addCategory": "Добавить категорию",
       "viewReports": "Посмотреть отчеты",
       "monthSummary": "Сводка за месяц",
+      "inventorySummary": "Остатки по категориям",
+      "opening": "Начало",
+      "purchases": "Покупки",
+      "usage": "Использование",
+      "closing": "Остаток",
+      "noCategories": "Нет категорий",
+      "andMore": "и еще {{count}}",
       "total": "Всего",
       "categoryItems": {
         "coffee": "Кофе и зерна",

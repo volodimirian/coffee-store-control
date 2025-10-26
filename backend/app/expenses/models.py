@@ -197,7 +197,7 @@ class ExpenseRecord(Base):
     date = Column(DateTime, nullable=False)  # Date of usage
     quantity_used = Column(Numeric(10, 3), nullable=False)
     unit_id = Column(Integer, ForeignKey("units.id"), nullable=False)
-    invoice_item_id = Column(Integer, ForeignKey("invoice_items.id"), nullable=True)  # Source of the item
+    invoice_item_id = Column(Integer, ForeignKey("invoice_items.id"), nullable=True)  # Source of the item (from which batch)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

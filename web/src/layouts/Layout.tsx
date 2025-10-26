@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useAppContext } from "~/shared/context/AppContext";
-import { hasToken } from "~/shared/lib/helpers";
+import { hasToken } from "~/shared/lib/helpers/storageHelpers";
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from "~/shared/ui/LanguageSelector";
 import Sidebar from "~/components/Sidebar";

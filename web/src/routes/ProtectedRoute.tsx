@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { hasToken } from "~/shared/lib/helpers";
+import { hasToken } from "~/shared/lib/helpers/storageHelpers";
 
 export default function ProtectedRoute() {
   const location = useLocation();
