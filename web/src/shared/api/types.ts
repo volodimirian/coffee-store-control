@@ -318,6 +318,13 @@ export interface InvoiceItem {
   updated_at: string;
 }
 
+export interface InvoiceItemWithConversion extends InvoiceItem {
+  converted_quantity?: string; // Decimal as string
+  original_unit_id?: number;
+  original_quantity?: string; // Decimal as string
+  invoice_number?: string;
+}
+
 export interface InvoiceItemCreate {
   invoice_id: number;
   category_id: number;

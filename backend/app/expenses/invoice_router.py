@@ -15,6 +15,7 @@ from app.expenses.schemas import (
     InvoiceListOut,
     InvoiceItemCreate,
     InvoiceItemOut,
+    InvoiceItemOutWithConversion,
     InvoiceItemUpdate,
 )
 from app.expenses.models import InvoiceStatus
@@ -356,13 +357,20 @@ async def create_invoice_item(
     return item
 
 
-@router.get("/{invoice_id}/items", response_model=List[InvoiceItemOut])
+@router.get("/{invoice_id}/items", response_model=List[InvoiceItemOutWithConversion])
 async def get_invoice_items(
     invoice_id: int,
+    convert_to_category_unit: bool = False,
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all items for an invoice."""
+    """
+    Get all items for an invoice.
+    
+    Args:
+        invoice_id: ID of the invoice
+        convert_to_category_unit: If True, convert quantities to category's default unit
+    """
     # Get invoice first to check access
     invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
     if not invoice:
@@ -387,7 +395,59 @@ async def get_invoice_items(
         session=session,
         invoice_id=invoice_id,
     )
-    return items
+    
+    # If conversion requested, convert quantities to category default units
+    if convert_to_category_unit:
+        from app.expenses.inventory_balance_service import InventoryBalanceService
+        from app.expenses.models import ExpenseCategory
+        from sqlalchemy import select
+        
+        converted_items = []
+        for item in items:
+            # Get category to know default unit
+            category_result = await session.execute(
+                select(ExpenseCategory).where(ExpenseCategory.id == item.category_id)
+            )
+            category = category_result.scalars().first()
+            
+            if not category:
+                # If category not found, return item as-is
+                converted_items.append(InvoiceItemOutWithConversion(**item.__dict__))
+                continue
+            
+            default_unit_id = getattr(category, 'default_unit_id')
+            item_unit_id = getattr(item, 'unit_id')
+            item_quantity = getattr(item, 'quantity')
+            
+            # Convert if units are different
+            if item_unit_id != default_unit_id:
+                converted_quantity = await InventoryBalanceService._convert_quantity_to_target_unit(
+                    session=session,
+                    quantity=item_quantity,
+                    from_unit_id=item_unit_id,
+                    to_unit_id=default_unit_id,
+                )
+                
+                # Create extended item with conversion info
+                item_dict = {**item.__dict__}
+                item_dict['converted_quantity'] = converted_quantity
+                item_dict['original_unit_id'] = item_unit_id
+                item_dict['original_quantity'] = item_quantity
+                item_dict['invoice_number'] = getattr(invoice, 'invoice_number', None)
+                converted_items.append(InvoiceItemOutWithConversion(**item_dict))
+            else:
+                # Same unit, no conversion needed
+                item_dict = {**item.__dict__}
+                item_dict['converted_quantity'] = item_quantity
+                item_dict['original_unit_id'] = None
+                item_dict['original_quantity'] = None
+                item_dict['invoice_number'] = getattr(invoice, 'invoice_number', None)
+                converted_items.append(InvoiceItemOutWithConversion(**item_dict))
+        
+        return converted_items
+    
+    # No conversion, return as InvoiceItemOutWithConversion but without conversion fields
+    return [InvoiceItemOutWithConversion(**item.__dict__, invoice_number=getattr(invoice, 'invoice_number', None)) for item in items]
 
 
 @router.put("/items/{item_id}", response_model=InvoiceItemOut)

@@ -47,12 +47,23 @@ interface TableCategory {
   dailyData: Map<string, DayData>; // key: YYYY-MM-DD
 }
 
+// Purchase detail for tooltip
+interface PurchaseDetail {
+  invoiceNumber: string;
+  originalQuantity: number;
+  originalUnitId?: number;
+  originalUnitSymbol?: string;
+  convertedQuantity?: number;
+  wasConverted: boolean;
+}
+
 // Data for each day
 interface DayData {
   purchasesQty: number; // quantity from InvoiceItems (including PENDING)
   purchasesAmount: number; // money amount from InvoiceItems
   usageQty: number; // quantity from ExpenseRecords - TODO
   usageAmount: number; // money amount from ExpenseRecords - TODO
+  purchaseDetails: PurchaseDetail[]; // details for tooltip
 }
 
 export default function InventoryTrackingTab() {
@@ -204,7 +215,8 @@ export default function InventoryTrackingTab() {
               purchasesQty: 0, 
               purchasesAmount: 0, 
               usageQty: 0, 
-              usageAmount: 0 
+              usageAmount: 0,
+              purchaseDetails: []
             });
           });
 
@@ -212,16 +224,36 @@ export default function InventoryTrackingTab() {
           for (const invoice of monthInvoices) {
             const invDate = format(parseISO(invoice.invoice_date), 'yyyy-MM-dd');
             
-            // Get items for this invoice
-            const items = await invoiceItemsApi.list(invoice.id);
+            // Get items for this invoice WITH CONVERSION to category default unit
+            const items = await invoiceItemsApi.list(invoice.id, true); // true = convert to category unit
             
             // Sum up quantities and amounts for this category
             const categoryItems = items.filter(item => item.category_id === category.id);
             categoryItems.forEach(item => {
               const dayData = dailyData.get(invDate);
               if (dayData) {
-                dayData.purchasesQty += parseFloat(item.quantity);
+                // Use converted_quantity if available, otherwise use original quantity
+                const quantity = item.converted_quantity 
+                  ? parseFloat(item.converted_quantity) 
+                  : parseFloat(item.quantity);
+                  
+                dayData.purchasesQty += quantity;
                 dayData.purchasesAmount += parseFloat(item.quantity) * parseFloat(item.unit_price);
+                
+                // Save details for tooltip
+                const wasConverted = !!item.converted_quantity && item.original_unit_id !== undefined;
+                const originalUnitSymbol = wasConverted && item.original_unit_id 
+                  ? unitsMap.get(item.original_unit_id) 
+                  : undefined;
+                
+                dayData.purchaseDetails.push({
+                  invoiceNumber: item.invoice_number || `#${invoice.id}`,
+                  originalQuantity: item.original_quantity ? parseFloat(item.original_quantity) : parseFloat(item.quantity),
+                  originalUnitId: item.original_unit_id,
+                  originalUnitSymbol,
+                  convertedQuantity: item.converted_quantity ? parseFloat(item.converted_quantity) : undefined,
+                  wasConverted,
+                });
               }
             });
           }
@@ -547,11 +579,19 @@ export default function InventoryTrackingTab() {
                                   {/* Quantity Column */}
                                   <td 
                                     className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-50' : ''}`}
+                                    title={dayData && dayData.purchaseDetails.length > 0 ? 
+                                      dayData.purchaseDetails.map(detail => 
+                                        detail.wasConverted 
+                                          ? `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.original')}: ${formatQty(detail.originalQuantity)} ${detail.originalUnitSymbol || ''}\n${t('common.converted')}: ${formatQty(detail.convertedQuantity || 0)} ${tableCategory.unitSymbol}`
+                                          : `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.quantity')}: ${formatQty(detail.originalQuantity)} ${tableCategory.unitSymbol}`
+                                      ).join('\n---\n')
+                                      : undefined
+                                    }
                                   >
                                     {dayData ? (
                                       <div className="space-y-0.5">
                                         {dayData.purchasesQty !== 0 && (
-                                          <div className="text-green-600">
+                                          <div className="text-green-600 cursor-help">
                                             {formatQty(dayData.purchasesQty)}
                                           </div>
                                         )}

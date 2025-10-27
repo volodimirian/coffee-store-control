@@ -283,6 +283,17 @@ class InvoiceItemOut(InvoiceItemBase):
         from_attributes = True
 
 
+class InvoiceItemOutWithConversion(InvoiceItemOut):
+    """Extended invoice item with unit conversion info for display."""
+    converted_quantity: Optional[Decimal] = None
+    original_unit_id: Optional[int] = None
+    original_quantity: Optional[Decimal] = None
+    invoice_number: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 # Expense Record schemas (РАСХОД товара из партии)
 class ExpenseRecordBase(BaseModel):
     category_id: int

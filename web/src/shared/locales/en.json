@@ -25,7 +25,10 @@
     "to": "to",
     "of": "of",
     "results": "results",
-    "today": "Today"
+    "today": "Today",
+    "original": "Originally",
+    "converted": "Converted to",
+    "quantity": "Quantity"
   },
   "navigation": {
     "home": "Home",

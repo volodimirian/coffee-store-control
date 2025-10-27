@@ -321,6 +321,26 @@
 - [ ] если категорию делать не активной то основная таблица не загружается
 - [ ] если деактивировать подкатегорию то она продолжает отображаться в таблице.
 
+**🔄 Unit Conversion in Inventory Tracking (In Progress)**
+
+- [ ] **Backend**: Extend invoice_items endpoint to support unit conversion to category default unit
+  - Add `convert_to_category_unit` query parameter to `/api/expenses/invoices/{invoice_id}/items`
+  - Return additional fields: `converted_quantity`, `original_unit_id`, `original_quantity`
+  - Reuse existing `_convert_quantity_to_target_unit` from InventoryBalanceService
+  - All conversions happen on backend, return ready-to-display values
+- [ ] **Frontend**: Update InventoryTrackingTab to use converted quantities
+  - Call API with `convert_to_category_unit=true` parameter
+  - Display `converted_quantity` in table cells
+  - Add tooltip showing original quantity, unit, and invoice number
+  - Format: "Originally: 5000 г (Invoice #1234)" → "Converted: 5 кг"
+- [ ] **Future Optimization**: Create batch endpoint for better performance
+
+  - Create `/api/expenses/inventory-tracking/monthly-data` endpoint
+  - Accept: business_id, year, month
+  - Return: pre-calculated and converted data for all categories/days
+  - Reduces N+1 queries and improves performance for 100+ invoices
+  - Use Decimal.js on frontend for precise calculations if needed
+
 - [x] **Backend**: Создать таблицу `month_periods` (id, name, business_id, year, month, status, is_active, created_at, updated_at) ✅ COMPLETED
 
   - `status` - enum: active, closed, archived

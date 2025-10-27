@@ -29,6 +29,7 @@ import type {
   InvoiceUpdate,
   InvoiceListResponse,
   InvoiceItem,
+  InvoiceItemWithConversion,
   InvoiceItemCreate,
   InvoiceItemUpdate,
   InvoiceStatus,
@@ -556,8 +557,12 @@ export const invoiceItemsApi = {
   /**
    * Get all items for an invoice
    */
-  list: async (invoiceId: number): Promise<InvoiceItem[]> => {
-    const response = await api.get<InvoiceItem[]>(`/expenses/invoices/${invoiceId}/items`);
+  list: async (invoiceId: number, convertToCategoryUnit: boolean = false): Promise<InvoiceItemWithConversion[]> => {
+    const params = convertToCategoryUnit ? { convert_to_category_unit: true } : {};
+    const response = await api.get<InvoiceItemWithConversion[]>(
+      `/expenses/invoices/${invoiceId}/items`,
+      { params }
+    );
     return response.data;
   },
 
