@@ -40,6 +40,14 @@ class ErrorCode(str, Enum):
     
     # Business & Employees
     BUSINESS_NOT_FOUND = "BUSINESS_NOT_FOUND"  # "Business not found"
+    BUSINESS_ACCESS_DENIED = "BUSINESS_ACCESS_DENIED"  # "Access denied to this business"
+    BUSINESS_ID_MISMATCH = "BUSINESS_ID_MISMATCH"  # "Business ID in URL and request body must match"
+    USER_ALREADY_BUSINESS_MEMBER = "USER_ALREADY_BUSINESS_MEMBER"  # "User is already a member of this business"
+    CANNOT_REMOVE_BUSINESS_OWNER = "CANNOT_REMOVE_BUSINESS_OWNER"  # "Cannot remove business owner from business"
+    ONLY_OWNER_CAN_DELETE = "ONLY_OWNER_CAN_DELETE"  # "Only business owner can delete business"
+    ONLY_OWNER_CAN_RESTORE = "ONLY_OWNER_CAN_RESTORE"  # "Only business owner can restore business"
+    BUSINESS_OPERATION_FAILED = "BUSINESS_OPERATION_FAILED"  # "Business operation failed"
+    EMPLOYEE_CREATION_FAILED = "EMPLOYEE_CREATION_FAILED"  # "Failed to retrieve created employee"
     EMPLOYEE_ROLE_NOT_FOUND = "EMPLOYEE_ROLE_NOT_FOUND"  # "Employee role not found in system"
     PERMISSION_NOT_FOUND = "PERMISSION_NOT_FOUND"  # "Permission not found"
     USER_NOT_BUSINESS_MEMBER = "USER_NOT_BUSINESS_MEMBER"  # "User is not a member of this business"
@@ -93,6 +101,14 @@ class ErrorMessages:
     
     # Business & Employees
     BUSINESS_NOT_FOUND = "Business not found"
+    BUSINESS_ACCESS_DENIED = "Access denied to this business"
+    BUSINESS_ID_MISMATCH = "Business ID in URL and request body must match"
+    USER_ALREADY_BUSINESS_MEMBER = "User is already a member of this business"
+    CANNOT_REMOVE_BUSINESS_OWNER = "Cannot remove business owner from business"
+    ONLY_OWNER_CAN_DELETE = "Only business owner can delete business"
+    ONLY_OWNER_CAN_RESTORE = "Only business owner can restore business"
+    BUSINESS_OPERATION_FAILED = "Business operation failed"
+    EMPLOYEE_CREATION_FAILED = "Failed to retrieve created employee"
     EMPLOYEE_ROLE_NOT_FOUND = "Employee role not found in system"
     PERMISSION_NOT_FOUND = "Permission not found"
     USER_NOT_BUSINESS_MEMBER = "User is not a member of this business"

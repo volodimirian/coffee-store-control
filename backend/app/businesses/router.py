@@ -90,14 +90,14 @@ async def get_business(
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
+            detail=create_error_response(ErrorCode.BUSINESS_ACCESS_DENIED),
         )
 
     business = await BusinessService.get_business_by_id(session, business_id)
     if not business:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found",
+            detail=create_error_response(ErrorCode.BUSINESS_NOT_FOUND),
         )
 
     return business
@@ -120,7 +120,7 @@ async def update_business(
     if not can_manage:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
+            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
         )
 
     business = await BusinessService.update_business(
@@ -131,7 +131,7 @@ async def update_business(
     if not business:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found",
+            detail=create_error_response(ErrorCode.BUSINESS_NOT_FOUND),
         )
 
     return business
@@ -148,21 +148,21 @@ async def restore_business(
     if not business:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found",
+            detail=create_error_response(ErrorCode.BUSINESS_NOT_FOUND),
         )
 
     # Only owner can restore business
     if business.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only business owner can restore business",
+            detail=create_error_response(ErrorCode.ONLY_OWNER_CAN_RESTORE),
         )
 
     success = await BusinessService.restore_business(session, business_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to restore business",
+            detail=create_error_response(ErrorCode.BUSINESS_OPERATION_FAILED),
         )
 
     # Return updated business
@@ -181,21 +181,21 @@ async def delete_business(
     if not business:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found",
+            detail=create_error_response(ErrorCode.BUSINESS_NOT_FOUND),
         )
 
     # Only owner can delete business
     if business.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only business owner can delete business",
+            detail=create_error_response(ErrorCode.ONLY_OWNER_CAN_DELETE),
         )
 
     success = await BusinessService.delete_business(session, business_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete business",
+            detail=create_error_response(ErrorCode.BUSINESS_OPERATION_FAILED),
         )
 
 
@@ -216,7 +216,7 @@ async def get_business_members(
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
+            detail=create_error_response(ErrorCode.BUSINESS_ACCESS_DENIED),
         )
 
     members = await BusinessService.get_business_members(
@@ -244,14 +244,14 @@ async def add_member_to_business(
     if not can_manage:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
+            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
         )
 
     # Ensure business_id matches URL parameter
     if member_data.business_id != business_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Business ID in URL and request body must match",
+            detail=create_error_response(ErrorCode.BUSINESS_ID_MISMATCH),
         )
 
     user_business = await BusinessService.add_user_to_business(
@@ -261,7 +261,7 @@ async def add_member_to_business(
     if not user_business:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="User is already a member of this business",
+            detail=create_error_response(ErrorCode.USER_ALREADY_BUSINESS_MEMBER),
         )
 
     return {"message": "User successfully added to business"}
@@ -285,7 +285,7 @@ async def update_member_role(
     if not can_manage:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
+            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
         )
 
     user_business = await BusinessService.update_user_business_role(
@@ -297,7 +297,7 @@ async def update_member_role(
     if not user_business:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User is not a member of this business",
+            detail=create_error_response(ErrorCode.USER_NOT_BUSINESS_MEMBER),
         )
 
     return {"message": "User role updated successfully"}
@@ -320,7 +320,7 @@ async def remove_member_from_business(
     if not can_manage:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
+            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
         )
 
     # Don't allow removing business owner
@@ -328,7 +328,7 @@ async def remove_member_from_business(
     if business and business.owner_id == user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot remove business owner from business",
+            detail=create_error_response(ErrorCode.CANNOT_REMOVE_BUSINESS_OWNER),
         )
 
     success = await BusinessService.remove_user_from_business(
@@ -339,7 +339,7 @@ async def remove_member_from_business(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User is not a member of this business",
+            detail=create_error_response(ErrorCode.USER_NOT_BUSINESS_MEMBER),
         )
 
 
@@ -355,7 +355,7 @@ async def create_employee(
     if employee_data.business_id != business_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Business ID in URL and request body must match",
+            detail=create_error_response(ErrorCode.BUSINESS_ID_MISMATCH),
         )
     
     # Create employee (service checks ownership)
@@ -387,7 +387,7 @@ async def create_employee(
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve created employee",
+            detail=create_error_response(ErrorCode.EMPLOYEE_CREATION_FAILED),
         )
     return employee
 
@@ -422,7 +422,7 @@ async def get_business_employees(
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
+            detail=create_error_response(ErrorCode.BUSINESS_ACCESS_DENIED),
         )
     
     # Get all members (we'll filter employees)
