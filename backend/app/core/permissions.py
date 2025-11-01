@@ -4,24 +4,25 @@ from fastapi import HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core_models import User, Role, Permission, RolePermission, UserPermission
+from app.core_models import Permission, UserPermission
 from app.deps import get_current_user_id, get_db_dep
 
 
 async def check_user_permission(
-    user_id: int, 
-    permission_name: str, 
+    user_id: int,
+    permission_name: str,
     db: AsyncSession,
     business_id: int | None = None
 ) -> bool:
-    """Check if user has specific permission.
+    """Check if user has permission either directly or through their role.
     
-    Priority order:
-    1. Individual user permissions (highest priority)
-    2. Role permissions (lower priority)
+    Priority:
+    1. Explicit denial (UserPermission with is_active=False) - HIGHEST PRIORITY
+    2. Direct user permission (UserPermission with is_active=True)
+    3. Role-based permission (RolePermission)
     
     Args:
-        user_id: ID of the user to check
+        user_id: ID of the user
         permission_name: Name of the permission to check
         db: Database session
         business_id: Optional business ID for business-specific permissions
@@ -29,14 +30,31 @@ async def check_user_permission(
     Returns:
         True if user has permission, False otherwise
     """
-    # PRIORITY 1: Check individual user permissions first (highest priority)
+    # First, check for explicit denial (is_active=False)
+    # This takes precedence over role permissions
+    denial_query = select(UserPermission).join(Permission).where(
+        UserPermission.user_id == user_id,
+        ~UserPermission.is_active,
+        Permission.name == permission_name
+    )
+    
+    if business_id is not None:
+        denial_query = denial_query.where(
+            (UserPermission.business_id == business_id) | (UserPermission.business_id.is_(None))
+        )
+    
+    denial = await db.scalar(denial_query)
+    if denial:
+        # Explicit denial - user does NOT have permission
+        return False
+    
+    # Check for direct user permission (is_active=True)
     user_permission_query = select(UserPermission).join(Permission).where(
         UserPermission.user_id == user_id,
         UserPermission.is_active,
         Permission.name == permission_name
     )
     
-    # Add business_id filter if specified
     if business_id is not None:
         user_permission_query = user_permission_query.where(
             (UserPermission.business_id == business_id) | (UserPermission.business_id.is_(None))
@@ -46,7 +64,8 @@ async def check_user_permission(
     if user_permission:
         return True
     
-    # PRIORITY 2: Check role permissions (lower priority)
+    # Check for role-based permission (lowest priority)
+    from app.core_models import Role, RolePermission, User
     role_permission = await db.scalar(
         select(RolePermission)
         .join(Permission)
@@ -120,6 +139,9 @@ async def revoke_user_permission(
 ) -> bool:
     """Revoke individual permission from a user.
     
+    This function creates or updates a UserPermission record with is_active=False
+    to explicitly deny the permission, even if the user has it through their role.
+    
     Args:
         user_id: ID of the user to revoke permission from
         permission_name: Name of the permission to revoke
@@ -136,7 +158,7 @@ async def revoke_user_permission(
     if not permission:
         return False
     
-    # Find user permission
+    # Find existing user permission
     user_permission = await db.scalar(
         select(UserPermission).where(
             UserPermission.user_id == user_id,
@@ -146,12 +168,21 @@ async def revoke_user_permission(
     )
     
     if user_permission:
-        # Deactivate permission instead of deleting
+        # Deactivate existing permission
         user_permission.is_active = False
-        await db.commit()
-        return True
+    else:
+        # Create new user permission with is_active=False to explicitly deny
+        # This is needed when user has permission through role but we want to revoke it
+        user_permission = UserPermission(
+            user_id=user_id,
+            permission_id=permission.id,
+            business_id=business_id,
+            is_active=False
+        )
+        db.add(user_permission)
     
-    return False
+    await db.commit()
+    return True
 
 
 class PermissionChecker:
