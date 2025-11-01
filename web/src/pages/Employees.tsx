@@ -9,9 +9,9 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
-import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
-import { EmployeeModal } from '../components/EmployeeModal';
-import { PermissionModal } from '../components/PermissionModal';
+import { ConfirmDeleteModal } from '~/components/ConfirmDeleteModal';
+import { EmployeeModal } from '~/components/EmployeeModal';
+import { PermissionModal } from '~/components/PermissionModal';
 import { employeesApi } from '~/shared/api/employees';
 import type { Employee } from '~/shared/types/locations';
 import { useApiError } from '~/shared/lib/useApiError';
