@@ -324,26 +324,21 @@
     "selectAll": "Выбрать все",
     "deselectAll": "Снять все",
     "selectedCount": "Выбрано {{count}} из {{total}} прав",
+    "modificationsCount": "{{count}} прав(а) будет изменено",
     "savePermissions": "Сохранить права",
-    "permissionsSaved": "Права успешно сохранены",
-    "failedToSave": "Не удалось сохранить права",
+    "badge": {
+      "modified": "Изменено",
+      "fromRole": "От роли",
+      "explicitlyGranted": "Явно предоставлено",
+      "explicitlyRevoked": "Явно отозвано"
+    },
     "resource": {
       "expenses": "Расходы",
       "categories": "Категории",
       "inventory": "Остатки",
       "reports": "Отчеты",
       "invoices": "Накладные"
-    },
-    "view_expenses": "Просмотр расходов",
-    "create_expenses": "Создание расходов",
-    "edit_expenses": "Редактирование расходов",
-    "delete_expenses": "Удаление расходов",
-    "view_categories": "Просмотр категорий",
-    "manage_categories": "Управление категориями",
-    "view_inventory": "Просмотр остатков",
-    "manage_inventory": "Управление остатками",
-    "view_reports": "Просмотр отчетов",
-    "manage_invoices": "Управление накладными"
+    }
   },
   "expenses": {
     "categories": {

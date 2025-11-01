@@ -132,4 +132,34 @@ class PermissionBatchRequest(BaseModel):
     user_ids: list[int]  # Multiple users
     permission_names: list[str]  # Multiple permissions
     business_id: Optional[int] = None
+
+
+class PermissionOut(BaseModel):
+    """Schema for permission output."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    name: str
+    description: Optional[str] = None
+    resource: str
+    action: str
+    is_active: bool
+
+
+class UserPermissionDetailOut(BaseModel):
+    """Schema for detailed user permission information."""
+    permission_name: str
+    has_permission: bool
+    source: str  # "role" or "user" or "both"
+    is_explicitly_granted: bool  # True if granted via UserPermission
+    is_explicitly_revoked: bool  # True if revoked via UserPermission (is_active=False)
+    business_id: Optional[int] = None
+
+
+class UserPermissionsDetailOut(BaseModel):
+    """Schema for user's complete permission details."""
+    user_id: int
+    business_id: Optional[int] = None
+    permissions: list[UserPermissionDetailOut]
+    
     

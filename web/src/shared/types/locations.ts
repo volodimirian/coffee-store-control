@@ -105,6 +105,30 @@ export interface PermissionBatchResponse {
   results: PermissionBatchResult[];
 }
 
+export interface Permission {
+  id: number;
+  name: string;
+  description: string | null;
+  resource: string; // e.g., 'expenses', 'categories', 'inventory'
+  action: string; // e.g., 'view', 'create', 'edit', 'delete'
+  is_active: boolean;
+}
+
+export interface UserPermissionDetail {
+  permission_name: string;
+  has_permission: boolean;
+  source: 'role' | 'user' | 'both' | 'none'; // Source of permission
+  is_explicitly_granted: boolean; // True if granted via UserPermission
+  is_explicitly_revoked: boolean; // True if revoked via UserPermission (is_active=False)
+  business_id: number | null;
+}
+
+export interface UserPermissionsDetail {
+  user_id: number;
+  business_id: number | null;
+  permissions: UserPermissionDetail[];
+}
+
 // Context for managing active location
 export interface LocationContextType {
   currentLocation: Location | null;

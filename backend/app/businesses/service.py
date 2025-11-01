@@ -1,7 +1,7 @@
 """Business service layer for managing coffee shops and business operations."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Sequence
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -500,4 +500,124 @@ class BusinessService:
             ))
         
         return employee_list
+    
+    @staticmethod
+    async def get_all_permissions(
+        session: AsyncSession,
+        is_active_only: bool = True,
+    ) -> Sequence:
+        """Get all available permissions in the system."""
+        query = select(Permission)
+        if is_active_only:
+            query = query.where(Permission.is_active)
+        query = query.order_by(Permission.resource, Permission.action)
+        
+        result = await session.execute(query)
+        return result.scalars().all()
+    
+    @staticmethod
+    async def get_user_permissions_detail(
+        session: AsyncSession,
+        user_id: int,
+        business_id: Optional[int] = None,
+    ) -> dict:
+        """
+        Get detailed permission information for a user.
+        Shows which permissions come from role vs user grants.
+        Priority: explicit user permissions > role permissions
+        """
+        from app.core_models import RolePermission
+        
+        # Get user's role
+        user = await session.get(User, user_id)
+        if not user:
+            return {"permissions": []}
+        
+        # Get all active permissions
+        all_permissions_result = await session.execute(
+            select(Permission)
+            .where(Permission.is_active)
+            .order_by(Permission.resource, Permission.action)
+        )
+        all_permissions = all_permissions_result.scalars().all()
+        
+        # Get permissions from user's role
+        role_permissions_result = await session.execute(
+            select(Permission.name)
+            .select_from(RolePermission)
+            .join(Permission, RolePermission.permission_id == Permission.id)
+            .where(
+                and_(
+                    RolePermission.role_id == user.role_id,
+                    RolePermission.is_active,
+                    Permission.is_active,
+                )
+            )
+        )
+        role_permission_names = set(perm for perm, in role_permissions_result.all())
+        
+        # Get explicit user permissions (both granted and revoked)
+        user_permissions_query = select(UserPermission, Permission.name).join(
+            Permission, UserPermission.permission_id == Permission.id
+        ).where(
+            UserPermission.user_id == user_id,
+        )
+        
+        if business_id is not None:
+            user_permissions_query = user_permissions_query.where(
+                (UserPermission.business_id == business_id) | (UserPermission.business_id.is_(None))
+            )
+        
+        user_permissions_result = await session.execute(user_permissions_query)
+        user_permissions_data = user_permissions_result.all()
+        
+        # Build map of user permissions: {permission_name: is_active}
+        explicit_permissions = {}
+        for user_perm, perm_name in user_permissions_data:
+            if perm_name not in explicit_permissions:
+                explicit_permissions[perm_name] = user_perm.is_active
+            # If there are multiple, take the most recent or prioritize business-specific
+            elif user_perm.business_id is not None:
+                explicit_permissions[perm_name] = user_perm.is_active
+        
+        # Build detailed permission list
+        detailed_permissions = []
+        for permission in all_permissions:
+            perm_name = permission.name
+            
+            # Check if explicitly granted/revoked
+            is_explicitly_granted = explicit_permissions.get(perm_name) is True
+            is_explicitly_revoked = explicit_permissions.get(perm_name) is False
+            
+            # Check if from role
+            from_role = perm_name in role_permission_names
+            
+            # Determine final permission status (priority: explicit user > role)
+            if is_explicitly_revoked:
+                has_permission = False
+                source = "user" if not from_role else "both"
+            elif is_explicitly_granted:
+                has_permission = True
+                source = "user" if not from_role else "both"
+            elif from_role:
+                has_permission = True
+                source = "role"
+            else:
+                has_permission = False
+                source = "none"
+            
+            detailed_permissions.append({
+                "permission_name": perm_name,
+                "has_permission": has_permission,
+                "source": source,
+                "is_explicitly_granted": is_explicitly_granted,
+                "is_explicitly_revoked": is_explicitly_revoked,
+                "business_id": business_id,
+            })
+        
+        return {
+            "user_id": user_id,
+            "business_id": business_id,
+            "permissions": detailed_permissions,
+        }
     

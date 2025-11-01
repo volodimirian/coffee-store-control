@@ -7,6 +7,8 @@ import type {
   PermissionRevokeRequest,
   PermissionBatchRequest,
   PermissionBatchResponse,
+  Permission,
+  UserPermissionsDetail,
 } from '~/shared/types/locations';
 
 export const employeesApi = {
@@ -96,5 +98,25 @@ export const employeesApi = {
   // Remove employee from business
   removeEmployee: async (businessId: number, userId: number): Promise<void> => {
     await api.delete(`/businesses/${businessId}/members/${userId}`);
+  },
+};
+
+// Permissions API
+export const permissionsApi = {
+  // Get all available permissions in the system
+  getAllPermissions: async (isActiveOnly: boolean = true): Promise<Permission[]> => {
+    const response = await api.get('/businesses/permissions', {
+      params: { is_active_only: isActiveOnly }
+    });
+    return response.data;
+  },
+
+  // Get detailed permission information for a user
+  getUserPermissionsDetail: async (
+    businessId: number,
+    userId: number
+  ): Promise<UserPermissionsDetail> => {
+    const response = await api.get(`/businesses/${businessId}/members/${userId}/permissions/detail`);
+    return response.data;
   },
 };

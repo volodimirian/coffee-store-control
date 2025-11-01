@@ -748,25 +748,20 @@
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "selectedCount": "{{count}} of {{total}} permissions selected",
+    "modificationsCount": "{{count}} permission(s) will be modified",
     "savePermissions": "Save Permissions",
-    "permissionsSaved": "Permissions saved successfully",
-    "failedToSave": "Failed to save permissions",
+    "badge": {
+      "modified": "Modified",
+      "fromRole": "From Role",
+      "explicitlyGranted": "Explicitly Granted",
+      "explicitlyRevoked": "Explicitly Revoked"
+    },
     "resource": {
       "expenses": "Expenses",
       "categories": "Categories",
       "inventory": "Inventory",
       "reports": "Reports",
       "invoices": "Invoices"
-    },
-    "view_expenses": "View Expenses",
-    "create_expenses": "Create Expenses",
-    "edit_expenses": "Edit Expenses",
-    "delete_expenses": "Delete Expenses",
-    "view_categories": "View Categories",
-    "manage_categories": "Manage Categories",
-    "view_inventory": "View Inventory",
-    "manage_inventory": "Manage Inventory",
-    "view_reports": "View Reports",
-    "manage_invoices": "Manage Invoices"
+    }
   }
 }

@@ -23,6 +23,8 @@ from app.businesses.schemas import (
     PermissionGrantRequest,
     PermissionRevokeRequest,
     PermissionBatchRequest,
+    PermissionOut,
+    UserPermissionsDetailOut,
 )
 from app.businesses.service import BusinessService
 
@@ -675,3 +677,58 @@ async def revoke_permissions_batch(
         "message": f"Revoked permissions from {len(batch_data.user_ids)} users: {successful}/{len(results)} operations successful",
         "results": results
     }
+
+
+@router.get("/permissions", response_model=list[PermissionOut])
+async def get_all_permissions(
+    is_active_only: bool = True,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get all available permissions in the system.
+    
+    Query Parameters:
+    - is_active_only: Filter only active permissions (default: True)
+    
+    Returns list of all permissions with their details (name, resource, action).
+    Useful for building permission selection UI.
+    """
+    permissions = await BusinessService.get_all_permissions(session, is_active_only)
+    return [PermissionOut.model_validate(perm) for perm in permissions]
+
+
+@router.get("/{business_id}/members/{user_id}/permissions/detail", response_model=UserPermissionsDetailOut)
+async def get_user_permissions_detail(
+    business_id: int,
+    user_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get detailed permission information for a user in a business context.
+    
+    Shows:
+    - All available permissions
+    - Which permissions the user has (from role or explicit grant)
+    - Source of each permission (role, user, both, or none)
+    - Whether permission was explicitly granted/revoked
+    
+    Priority: explicit user permissions > role permissions
+    
+    This endpoint is useful for displaying a permission management UI
+    where you can see which permissions are inherited from role vs
+    explicitly granted/revoked.
+    """
+    # Verify business ownership
+    business = await BusinessService.get_business_by_id(session, business_id)
+    if not business or business.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=create_error_response(ErrorCode.BUSINESS_ACCESS_DENIED),
+        )
+    
+    detail = await BusinessService.get_user_permissions_detail(
+        session, user_id, business_id
+    )
+    return UserPermissionsDetailOut(**detail)
