@@ -96,7 +96,9 @@
     "passwordMaxLength": "Пароль должен быть не более {{max}} символов",
     "emailMaxLength": "Email должен быть не более {{max}} символов",
     "required": "{{field}} обязательно",
-    "minLength": "{{field}} должно быть не менее {{min}} символов"
+    "minLength": "{{field}} должно быть не менее {{min}} символов",
+    "invalidEmail": "Пожалуйста, введите корректный email",
+    "passwordMismatch": "Пароли не совпадают"
   },
   "pages": {
     "about": {
@@ -315,6 +317,33 @@
     "failedToUpdate": "Не удалось обновить сотрудника",
     "failedToDeactivate": "Не удалось деактивировать сотрудника",
     "failedToReactivate": "Не удалось реактивировать сотрудника"
+  },
+  "permissions": {
+    "managePermissions": "Управление правами",
+    "managingFor": "Управление правами для {{name}}",
+    "selectAll": "Выбрать все",
+    "deselectAll": "Снять все",
+    "selectedCount": "Выбрано {{count}} из {{total}} прав",
+    "savePermissions": "Сохранить права",
+    "permissionsSaved": "Права успешно сохранены",
+    "failedToSave": "Не удалось сохранить права",
+    "resource": {
+      "expenses": "Расходы",
+      "categories": "Категории",
+      "inventory": "Остатки",
+      "reports": "Отчеты",
+      "invoices": "Накладные"
+    },
+    "view_expenses": "Просмотр расходов",
+    "create_expenses": "Создание расходов",
+    "edit_expenses": "Редактирование расходов",
+    "delete_expenses": "Удаление расходов",
+    "view_categories": "Просмотр категорий",
+    "manage_categories": "Управление категориями",
+    "view_inventory": "Просмотр остатков",
+    "manage_inventory": "Управление остатками",
+    "view_reports": "Просмотр отчетов",
+    "manage_invoices": "Управление накладными"
   },
   "expenses": {
     "categories": {

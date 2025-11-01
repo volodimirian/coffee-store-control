@@ -94,7 +94,9 @@
     "passwordMaxLength": "Password must be no more than {{max}} characters",
     "emailMaxLength": "Email must be no more than {{max}} characters",
     "required": "{{field}} is required",
-    "minLength": "{{field}} must be at least {{min}} characters"
+    "minLength": "{{field}} must be at least {{min}} characters",
+    "invalidEmail": "Please enter a valid email address",
+    "passwordMismatch": "Passwords do not match"
   },
   "pages": {
     "about": {
@@ -739,5 +741,32 @@
     "failedToUpdate": "Failed to update employee",
     "failedToDeactivate": "Failed to deactivate employee",
     "failedToReactivate": "Failed to reactivate employee"
+  },
+  "permissions": {
+    "managePermissions": "Manage Permissions",
+    "managingFor": "Managing permissions for {{name}}",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "selectedCount": "{{count}} of {{total}} permissions selected",
+    "savePermissions": "Save Permissions",
+    "permissionsSaved": "Permissions saved successfully",
+    "failedToSave": "Failed to save permissions",
+    "resource": {
+      "expenses": "Expenses",
+      "categories": "Categories",
+      "inventory": "Inventory",
+      "reports": "Reports",
+      "invoices": "Invoices"
+    },
+    "view_expenses": "View Expenses",
+    "create_expenses": "Create Expenses",
+    "edit_expenses": "Edit Expenses",
+    "delete_expenses": "Delete Expenses",
+    "view_categories": "View Categories",
+    "manage_categories": "Manage Categories",
+    "view_inventory": "View Inventory",
+    "manage_inventory": "Manage Inventory",
+    "view_reports": "View Reports",
+    "manage_invoices": "Manage Invoices"
   }
 }

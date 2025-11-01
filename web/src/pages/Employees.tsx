@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
-  // PencilIcon, 
+  PencilIcon, 
   TrashIcon, 
   UserIcon, 
-  // PlusIcon, 
+  PlusIcon, 
   ArrowUturnLeftIcon,
-  // ShieldCheckIcon
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
+import { EmployeeModal } from '../components/EmployeeModal';
+import { PermissionModal } from '../components/PermissionModal';
 import { employeesApi } from '~/shared/api/employees';
 import type { Employee } from '~/shared/types/locations';
 import { useApiError } from '~/shared/lib/useApiError';
@@ -22,11 +24,11 @@ export default function EmployeesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  // const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  // const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  // const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
-  // const [managingPermissionsEmployee, setManagingPermissionsEmployee] = useState<Employee | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+  const [managingPermissionsEmployee, setManagingPermissionsEmployee] = useState<Employee | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -67,15 +69,15 @@ export default function EmployeesPage() {
     fetchEmployees();
   }, [currentLocation, getErrorMessage]);
 
-  // const handleEdit = (employee: Employee) => {
-  //   setEditingEmployee(employee);
-  //   setIsEditModalOpen(true);
-  // };
+  const handleEdit = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setIsEditModalOpen(true);
+  };
 
-  // const handleManagePermissions = (employee: Employee) => {
-  //   setManagingPermissionsEmployee(employee);
-  //   setIsPermissionsModalOpen(true);
-  // };
+  const handleManagePermissions = (employee: Employee) => {
+    setManagingPermissionsEmployee(employee);
+    setIsPermissionsModalOpen(true);
+  };
 
   const handleDeactivate = (employee: Employee) => {
     setDeletingEmployee(employee);
@@ -125,20 +127,20 @@ export default function EmployeesPage() {
     }
   };
 
-  // const handleModalSuccess = async () => {
-  //   setIsAddModalOpen(false);
-  //   setIsEditModalOpen(false);
-  //   setIsPermissionsModalOpen(false);
-  //   setEditingEmployee(null);
-  //   setManagingPermissionsEmployee(null);
+  const handleModalSuccess = async () => {
+    setIsAddModalOpen(false);
+    setIsEditModalOpen(false);
+    // setIsPermissionsModalOpen(false);
+    setEditingEmployee(null);
+    // setManagingPermissionsEmployee(null);
 
-  //   // Refresh employees list
-  //   if (currentLocation) {
-  //     const active = await employeesApi.getBusinessEmployees(currentLocation.id, true);
-  //     const inactive = await employeesApi.getBusinessEmployees(currentLocation.id, false);
-  //     setAllEmployees([...active, ...inactive]);
-  //   }
-  // };
+    // Refresh employees list
+    if (currentLocation) {
+      const active = await employeesApi.getBusinessEmployees(currentLocation.id, true);
+      const inactive = await employeesApi.getBusinessEmployees(currentLocation.id, false);
+      setAllEmployees([...active, ...inactive]);
+    }
+  };
 
   if (!currentLocation) {
     return (
@@ -173,14 +175,13 @@ export default function EmployeesPage() {
               {t('employees.description', { location: currentLocation.name })}
             </p>
           </div>
-          {/* TODO: Uncomment when EmployeeModal is ready */}
-          {/* <button
+          <button
             onClick={() => setIsAddModalOpen(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             {t('employees.addEmployee')}
-          </button> */}
+          </button>
         </div>
       </div>
 
@@ -202,8 +203,7 @@ export default function EmployeesPage() {
           <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">{t('employees.noEmployees')}</h3>
           <p className="mt-1 text-sm text-gray-500">{t('employees.getStarted')}</p>
-          {/* TODO: Uncomment when EmployeeModal is ready */}
-          {/* <div className="mt-6">
+          <div className="mt-6">
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -211,7 +211,7 @@ export default function EmployeesPage() {
               <PlusIcon className="h-4 w-4 mr-2" />
               {t('employees.addEmployee')}
             </button>
-          </div> */}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -271,23 +271,21 @@ export default function EmployeesPage() {
 
               {/* Actions */}
               <div className="mt-6 flex items-center justify-between">
-                {/* TODO: Uncomment when PermissionModal is ready */}
-                {/* <button
+                <button
                   onClick={() => handleManagePermissions(employee)}
                   className="inline-flex items-center text-sm text-blue-600 hover:text-blue-500 font-medium"
                 >
                   <ShieldCheckIcon className="h-4 w-4 mr-1" />
                   {t('employees.permissions')}
-                </button> */}
-                <div className="flex items-center space-x-2 ml-auto">
-                  {/* TODO: Uncomment when EmployeeModal is ready */}
-                  {/* <button
+                </button>
+                <div className="flex items-center space-x-2">
+                  <button
                     onClick={() => handleEdit(employee)}
                     className="p-1 text-gray-400 hover:text-gray-600"
                     title={t('employees.editEmployee')}
                   >
                     <PencilIcon className="h-4 w-4" />
-                  </button> */}
+                  </button>
                   <button
                     onClick={() => handleDeactivate(employee)}
                     disabled={isDeleting}
@@ -346,31 +344,33 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* TODO: Add Employee Modal */}
-      {/* <EmployeeModal
+      {/* Add Employee Modal */}
+      <EmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleModalSuccess}
         businessId={currentLocation.id}
-      /> */}
+      />
 
-      {/* TODO: Edit Employee Modal */}
-      {/* <EmployeeModal
+      {/* Edit Employee Modal */}
+      <EmployeeModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSuccess={handleModalSuccess}
         businessId={currentLocation.id}
         employee={editingEmployee || undefined}
-      /> */}
+      />
 
-      {/* TODO: Permissions Modal */}
-      {/* <PermissionModal
-        isOpen={isPermissionsModalOpen}
-        onClose={() => setIsPermissionsModalOpen(false)}
-        onSuccess={handleModalSuccess}
-        businessId={currentLocation.id}
-        employee={managingPermissionsEmployee || undefined}
-      /> */}
+      {/* Permissions Modal */}
+      {managingPermissionsEmployee && (
+        <PermissionModal
+          isOpen={isPermissionsModalOpen}
+          onClose={() => setIsPermissionsModalOpen(false)}
+          onSuccess={handleModalSuccess}
+          businessId={currentLocation.id}
+          employee={managingPermissionsEmployee}
+        />
+      )}
 
       {/* Deactivate Confirmation Modal */}
       <ConfirmDeleteModal
