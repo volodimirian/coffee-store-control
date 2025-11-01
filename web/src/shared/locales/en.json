@@ -46,7 +46,9 @@
     "business": "Business",
     "personalAccount": "Personal Account",
     "expenses": "Expenses",
-    "expenseTracking": "Expense Tracking"
+    "expenseTracking": "Expense Tracking",
+    "locations": "Locations",
+    "employees": "Employees"
   },
   "auth": {
     "createAccount": "Create Account",
@@ -705,5 +707,37 @@
     "deletedLocationsDescription": "These locations have been deleted but can be restored",
     "restoreLocation": "Restore Location", 
     "restore": "Restore"
+  },
+  "employees": {
+    "title": "Employees",
+    "description": "Manage employees at {{location}}",
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee",
+    "deactivateEmployee": "Deactivate Employee",
+    "reactivateEmployee": "Reactivate Employee",
+    "noEmployees": "No employees yet",
+    "getStarted": "Get started by adding your first employee.",
+    "noLocationSelected": "No location selected",
+    "selectLocationFirst": "Please select a location to manage employees",
+    "permissions": "Permissions",
+    "role": {
+      "employee": "Employee",
+      "manager": "Manager",
+      "owner": "Owner"
+    },
+    "joinedAt": "Joined {{date}}",
+    "inactiveEmployees": "Inactive Employees",
+    "inactiveEmployeesDescription": "These employees have been deactivated but can be reactivated",
+    "reactivate": "Reactivate",
+    "confirmDeactivateMessage": "Are you sure you want to deactivate this employee? They will lose access to this location.",
+    "employeeCreated": "Employee created successfully",
+    "employeeUpdated": "Employee updated successfully",
+    "employeeDeactivated": "Employee deactivated successfully",
+    "employeeReactivated": "Employee reactivated successfully",
+    "failedToLoad": "Failed to load employees",
+    "failedToCreate": "Failed to create employee",
+    "failedToUpdate": "Failed to update employee",
+    "failedToDeactivate": "Failed to deactivate employee",
+    "failedToReactivate": "Failed to reactivate employee"
   }
 }

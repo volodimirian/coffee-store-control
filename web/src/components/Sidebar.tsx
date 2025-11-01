@@ -14,6 +14,8 @@ import {
   ChevronRightIcon,
   CurrencyDollarIcon,
   BuildingOfficeIcon,
+  MapPinIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -46,6 +48,18 @@ const menuSections: MenuSection[] = [
         path: '/dashboard',
         icon: HomeIcon,
         labelKey: 'navigation.dashboard',
+      },
+      {
+        id: 'locations',
+        path: '/locations',
+        icon: MapPinIcon,
+        labelKey: 'navigation.locations',
+      },
+      {
+        id: 'employees',
+        path: '/employees',
+        icon: UsersIcon,
+        labelKey: 'navigation.employees',
       },
       {
         id: 'expenses',

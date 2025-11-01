@@ -9,6 +9,7 @@ import Orders from "~/pages/Orders";
 import Analytics from "~/pages/Analytics";
 import Settings from "~/pages/Settings";
 import Locations from "~/pages/Locations";
+import Employees from "~/pages/Employees";
 import Expenses from "~/pages/Expenses";
 import Overview from "~/pages/expenses/Overview";
 import InventoryTracking from "~/pages/expenses/InventoryTracking";
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
             <Route path="locations" element={<Locations />} />
+            <Route path="employees" element={<Employees />} />
             
             {/* Expenses with nested routes */}
             <Route path="expenses" element={<Expenses />}>

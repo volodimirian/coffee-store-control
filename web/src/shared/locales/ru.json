@@ -48,7 +48,9 @@
     "business": "Бизнес",
     "personalAccount": "Личный кабинет",
     "expenses": "Расходы",
-    "expenseTracking": "Учет расходов"
+    "expenseTracking": "Учет расходов",
+    "locations": "Локации",
+    "employees": "Сотрудники"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
@@ -281,6 +283,38 @@
     "deletedLocationsDescription": "Эти локации были удалены, но могут быть восстановлены",
     "restoreLocation": "Восстановить локацию",
     "restore": "Восстановить"
+  },
+  "employees": {
+    "title": "Сотрудники",
+    "description": "Управление сотрудниками в {{location}}",
+    "addEmployee": "Добавить сотрудника",
+    "editEmployee": "Редактировать сотрудника",
+    "deactivateEmployee": "Деактивировать сотрудника",
+    "reactivateEmployee": "Реактивировать сотрудника",
+    "noEmployees": "Пока нет сотрудников",
+    "getStarted": "Начните с добавления вашего первого сотрудника.",
+    "noLocationSelected": "Локация не выбрана",
+    "selectLocationFirst": "Пожалуйста, выберите локацию для управления сотрудниками",
+    "permissions": "Права доступа",
+    "role": {
+      "employee": "Сотрудник",
+      "manager": "Менеджер",
+      "owner": "Владелец"
+    },
+    "joinedAt": "Присоединился {{date}}",
+    "inactiveEmployees": "Неактивные сотрудники",
+    "inactiveEmployeesDescription": "Эти сотрудники были деактивированы, но могут быть реактивированы",
+    "reactivate": "Реактивировать",
+    "confirmDeactivateMessage": "Вы уверены, что хотите деактивировать этого сотрудника? Он потеряет доступ к этой локации.",
+    "employeeCreated": "Сотрудник успешно создан",
+    "employeeUpdated": "Сотрудник успешно обновлен",
+    "employeeDeactivated": "Сотрудник успешно деактивирован",
+    "employeeReactivated": "Сотрудник успешно реактивирован",
+    "failedToLoad": "Не удалось загрузить сотрудников",
+    "failedToCreate": "Не удалось создать сотрудника",
+    "failedToUpdate": "Не удалось обновить сотрудника",
+    "failedToDeactivate": "Не удалось деактивировать сотрудника",
+    "failedToReactivate": "Не удалось реактивировать сотрудника"
   },
   "expenses": {
     "categories": {
