@@ -38,6 +38,15 @@ class ErrorCode(str, Enum):
     INVALID_PRICE = "INVALID_PRICE"  # "Invalid price format"
     INVALID_CATEGORY = "INVALID_CATEGORY"  # "Invalid category or subcategory"
     
+    # Business & Employees
+    BUSINESS_NOT_FOUND = "BUSINESS_NOT_FOUND"  # "Business not found"
+    EMPLOYEE_ROLE_NOT_FOUND = "EMPLOYEE_ROLE_NOT_FOUND"  # "Employee role not found in system"
+    PERMISSION_NOT_FOUND = "PERMISSION_NOT_FOUND"  # "Permission not found"
+    USER_NOT_BUSINESS_MEMBER = "USER_NOT_BUSINESS_MEMBER"  # "User is not a member of this business"
+    INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS"  # "Insufficient permissions to perform this action"
+    ONLY_OWNER_CAN_CREATE_EMPLOYEES = "ONLY_OWNER_CAN_CREATE_EMPLOYEES"  # "Only business owner can create employees"
+    ONLY_OWNER_CAN_MANAGE_PERMISSIONS = "ONLY_OWNER_CAN_MANAGE_PERMISSIONS"  # "Only business owner can manage permissions"
+    
     # Validation
     VALIDATION_ERROR = "VALIDATION_ERROR"  # "Validation failed"
     REQUIRED_FIELD = "REQUIRED_FIELD"  # "This field is required"
@@ -81,6 +90,15 @@ class ErrorMessages:
     PRODUCT_NOT_OWNED = "You can only modify your own products"
     INVALID_PRICE = "Invalid price format"
     INVALID_CATEGORY = "Invalid category or subcategory"
+    
+    # Business & Employees
+    BUSINESS_NOT_FOUND = "Business not found"
+    EMPLOYEE_ROLE_NOT_FOUND = "Employee role not found in system"
+    PERMISSION_NOT_FOUND = "Permission not found"
+    USER_NOT_BUSINESS_MEMBER = "User is not a member of this business"
+    INSUFFICIENT_PERMISSIONS = "Insufficient permissions to perform this action"
+    ONLY_OWNER_CAN_CREATE_EMPLOYEES = "Only business owner can create employees"
+    ONLY_OWNER_CAN_MANAGE_PERMISSIONS = "Only business owner can manage permissions"
     
     # Validation
     VALIDATION_ERROR = "Validation failed"

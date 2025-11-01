@@ -6,13 +6,17 @@ from typing import Optional
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core_models import Business, User, UserBusiness
+from app.core_models import Business, User, UserBusiness, Role, Permission, UserPermission
+from app.core.security import hash_password
+from app.core.error_codes import ErrorCode
 from app.businesses.schemas import (
     BusinessCreate,
     BusinessUpdate,
     UserBusinessCreate,
     UserBusinessUpdate,
     BusinessMemberOut,
+    EmployeeCreateRequest,
+    EmployeeOut,
 )
 
 
@@ -331,4 +335,169 @@ class BusinessService:
             )
         )
         return result.scalars().first() is not None
+
+    @staticmethod
+    async def create_employee(
+        session: AsyncSession,
+        employee_data: EmployeeCreateRequest,
+        owner_id: int,
+    ) -> tuple[Optional[User], Optional[ErrorCode]]:
+        """Create a new employee user and add to business.
+        
+        Returns:
+            Tuple of (created_user, error_code). If successful, error_code is None.
+        """
+        # Check if email already exists
+        existing_email = await session.scalar(select(User).where(User.email == employee_data.email))
+        if existing_email:
+            return None, ErrorCode.EMAIL_ALREADY_EXISTS
+        
+        # Check if username already exists
+        existing_username = await session.scalar(select(User).where(User.username == employee_data.username))
+        if existing_username:
+            return None, ErrorCode.USERNAME_ALREADY_EXISTS
+        
+        # Verify business exists and user is owner
+        business = await BusinessService.get_business_by_id(session, employee_data.business_id)
+        if not business:
+            return None, ErrorCode.BUSINESS_NOT_FOUND
+        
+        if business.owner_id != owner_id:
+            return None, ErrorCode.ONLY_OWNER_CAN_CREATE_EMPLOYEES
+        
+        # Get EMPLOYEE role
+        employee_role = await session.scalar(select(Role).where(Role.name == "EMPLOYEE"))
+        if not employee_role:
+            return None, ErrorCode.EMPLOYEE_ROLE_NOT_FOUND
+        
+        # Create user
+        new_user = User(
+            email=employee_data.email,
+            username=employee_data.username,
+            password_hash=hash_password(employee_data.password),
+            role_id=employee_role.id,
+            created_at=datetime.utcnow(),
+        )
+        session.add(new_user)
+        await session.flush()  # Get user ID
+        await session.refresh(new_user)
+        
+        # Add user to business
+        user_business = UserBusiness(
+            user_id=new_user.id,
+            business_id=employee_data.business_id,
+            role_in_business=employee_data.role_in_business,
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        session.add(user_business)
+        await session.commit()
+        
+        return new_user, None
+
+    @staticmethod
+    async def get_employee_with_permissions(
+        session: AsyncSession,
+        user_id: int,
+        business_id: int,
+    ) -> Optional[EmployeeOut]:
+        """Get employee details with their permissions."""
+        result = await session.execute(
+            select(UserBusiness, User)
+            .join(User, UserBusiness.user_id == User.id)
+            .where(
+                and_(
+                    UserBusiness.user_id == user_id,
+                    UserBusiness.business_id == business_id,
+                )
+            )
+        )
+        row = result.first()
+        if not row:
+            return None
+        
+        user_business, user = row
+        
+        # Get user's permissions for this business
+        permissions_result = await session.execute(
+            select(Permission.name)
+            .select_from(UserPermission)
+            .join(Permission, UserPermission.permission_id == Permission.id)
+            .where(
+                and_(
+                    UserPermission.user_id == user_id,
+                    UserPermission.is_active,
+                    (UserPermission.business_id == business_id) | (UserPermission.business_id.is_(None))
+                )
+            )
+        )
+        permissions = [perm for perm, in permissions_result.all()]
+        
+        return EmployeeOut(
+            user_id=user.id,
+            username=user.username,
+            email=user.email,
+            role_in_business=user_business.role_in_business,
+            is_active=user_business.is_active,
+            joined_at=user_business.created_at,
+            permissions=permissions,
+        )
+
+    @staticmethod
+    async def get_owner_employees(
+        session: AsyncSession,
+        owner_id: int,
+    ) -> list[EmployeeOut]:
+        """Get all employees across all businesses owned by user."""
+        # Get all businesses owned by user
+        businesses = await BusinessService.get_businesses_by_owner(session, owner_id, is_active=True)
+        business_ids = [b.id for b in businesses]
+        
+        if not business_ids:
+            return []
+        
+        # Get all employees from these businesses
+        result = await session.execute(
+            select(UserBusiness, User)
+            .join(User, UserBusiness.user_id == User.id)
+            .where(
+                and_(
+                    UserBusiness.business_id.in_(business_ids),
+                    UserBusiness.role_in_business.in_(["employee", "manager"]),  # Not owners
+                    UserBusiness.is_active,
+                )
+            )
+            .order_by(User.username)
+        )
+        rows = result.all()
+        
+        # Get permissions for all these users
+        employee_list = []
+        for user_business, user in rows:
+            permissions_result = await session.execute(
+                select(Permission.name)
+                .select_from(UserPermission)
+                .join(Permission, UserPermission.permission_id == Permission.id)
+                .where(
+                    and_(
+                        UserPermission.user_id == user.id,
+                        UserPermission.is_active,
+                        (UserPermission.business_id == user_business.business_id) | (UserPermission.business_id.is_(None))
+                    )
+                )
+            )
+            permissions = [perm for perm, in permissions_result.all()]
+            
+            employee_list.append(EmployeeOut(
+                user_id=user.id,
+                username=user.username,
+                email=user.email,
+                role_in_business=user_business.role_in_business,
+                is_active=user_business.is_active,
+                joined_at=user_business.created_at,
+                permissions=permissions,
+            ))
+        
+        return employee_list
     

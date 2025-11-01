@@ -93,4 +93,43 @@ class BusinessMembersOut(BaseModel):
     """Schema for business members list."""
     members: list[BusinessMemberOut]
     total: int
+
+
+class EmployeeCreateRequest(BaseModel):
+    """Schema for creating new employee and adding to business."""
+    email: str
+    username: str
+    password: str
+    business_id: int
+    role_in_business: str = "employee"
+
+
+class EmployeeOut(BusinessMemberOut):
+    """Schema for employee information with permissions."""
+    permissions: list[str] = []  # List of permission names
+
+
+class OwnerEmployeesOut(BaseModel):
+    """Schema for listing all employees created by owner."""
+    employees: list[EmployeeOut]
+    total: int
+
+
+class PermissionGrantRequest(BaseModel):
+    """Schema for granting permissions to a single user."""
+    permission_names: list[str]  # Can grant multiple permissions at once
+    business_id: Optional[int] = None  # None for global permissions
+
+
+class PermissionRevokeRequest(BaseModel):
+    """Schema for revoking permissions from a single user."""
+    permission_names: list[str]  # Can revoke multiple permissions at once
+    business_id: Optional[int] = None
+
+
+class PermissionBatchRequest(BaseModel):
+    """Schema for batch permission operations on multiple users."""
+    user_ids: list[int]  # Multiple users
+    permission_names: list[str]  # Multiple permissions
+    business_id: Optional[int] = None
     
