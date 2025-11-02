@@ -12,9 +12,13 @@ import { useAppContext } from '~/shared/context/AppContext';
 import { ConfirmDeleteModal } from '~/components/ConfirmDeleteModal';
 import { EmployeeModal } from '~/components/EmployeeModal';
 import { PermissionModal } from '~/components/PermissionModal';
-import { employeesApi } from '~/shared/api/employees';
-import type { Employee } from '~/shared/types/locations';
+import { employeesApi, permissionsApi } from '~/shared/api/employees';
+import type { Employee, UserPermissionsDetail } from '~/shared/types/locations';
 import { useApiError } from '~/shared/lib/useApiError';
+
+type EmployeeWithPermissions = Employee & {
+  allPermissions?: UserPermissionsDetail;
+};
 
 export default function EmployeesPage() {
   const { t } = useTranslation();
@@ -26,15 +30,15 @@ export default function EmployeesPage() {
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeWithPermissions | null>(null);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
-  const [managingPermissionsEmployee, setManagingPermissionsEmployee] = useState<Employee | null>(null);
+  const [managingPermissionsEmployee, setManagingPermissionsEmployee] = useState<EmployeeWithPermissions | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
+  const [deletingEmployee, setDeletingEmployee] = useState<EmployeeWithPermissions | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
   // State for all employees (including inactive ones)
-  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+  const [allEmployees, setAllEmployees] = useState<EmployeeWithPermissions[]>([]);
 
   // Split employees into active and inactive
   const activeEmployees = allEmployees.filter(emp => emp.is_active);
@@ -57,7 +61,27 @@ export default function EmployeesPage() {
         // Fetch inactive employees
         const inactive = await employeesApi.getBusinessEmployees(currentLocation.id, false);
         
-        setAllEmployees([...active, ...inactive]);
+        // Fetch detailed permissions for each employee
+        const allEmployeesData = [...active, ...inactive];
+        const employeesWithPermissions = await Promise.all(
+          allEmployeesData.map(async (employee) => {
+            try {
+              const permissionsDetail = await permissionsApi.getUserPermissionsDetail(
+                currentLocation.id,
+                employee.user_id
+              );
+              return {
+                ...employee,
+                allPermissions: permissionsDetail,
+              };
+            } catch (err) {
+              console.error(`Failed to fetch permissions for user ${employee.user_id}:`, err);
+              return employee;
+            }
+          })
+        );
+        
+        setAllEmployees(employeesWithPermissions);
       } catch (err) {
         console.error('Failed to fetch employees:', err);
         setError(getErrorMessage(err));
@@ -91,11 +115,30 @@ export default function EmployeesPage() {
     try {
       await employeesApi.deactivateEmployee(currentLocation.id, deletingEmployee.user_id);
       
-      // Refresh employees list
+      // Refresh employees list with permissions
       const active = await employeesApi.getBusinessEmployees(currentLocation.id, true);
       const inactive = await employeesApi.getBusinessEmployees(currentLocation.id, false);
-      setAllEmployees([...active, ...inactive]);
+      const allEmployeesData = [...active, ...inactive];
       
+      const employeesWithPermissions = await Promise.all(
+        allEmployeesData.map(async (employee) => {
+          try {
+            const permissionsDetail = await permissionsApi.getUserPermissionsDetail(
+              currentLocation.id,
+              employee.user_id
+            );
+            return {
+              ...employee,
+              allPermissions: permissionsDetail,
+            };
+          } catch (err) {
+            console.error(`Failed to fetch permissions for user ${employee.user_id}:`, err);
+            return employee;
+          }
+        })
+      );
+      
+      setAllEmployees(employeesWithPermissions);
       setIsDeleteModalOpen(false);
       setDeletingEmployee(null);
     } catch (err) {
@@ -111,16 +154,36 @@ export default function EmployeesPage() {
     setDeletingEmployee(null);
   };
 
-  const handleReactivate = async (employee: Employee) => {
+  const handleReactivate = async (employee: EmployeeWithPermissions) => {
     if (!currentLocation) return;
 
     try {
       await employeesApi.reactivateEmployee(currentLocation.id, employee.user_id);
       
-      // Refresh employees list
+      // Refresh employees list with permissions
       const active = await employeesApi.getBusinessEmployees(currentLocation.id, true);
       const inactive = await employeesApi.getBusinessEmployees(currentLocation.id, false);
-      setAllEmployees([...active, ...inactive]);
+      const allEmployeesData = [...active, ...inactive];
+      
+      const employeesWithPermissions = await Promise.all(
+        allEmployeesData.map(async (emp) => {
+          try {
+            const permissionsDetail = await permissionsApi.getUserPermissionsDetail(
+              currentLocation.id,
+              emp.user_id
+            );
+            return {
+              ...emp,
+              allPermissions: permissionsDetail,
+            };
+          } catch (err) {
+            console.error(`Failed to fetch permissions for user ${emp.user_id}:`, err);
+            return emp;
+          }
+        })
+      );
+      
+      setAllEmployees(employeesWithPermissions);
     } catch (err) {
       console.error('Failed to reactivate employee:', err);
       setError(getErrorMessage(err));
@@ -134,11 +197,31 @@ export default function EmployeesPage() {
     setEditingEmployee(null);
     // setManagingPermissionsEmployee(null);
 
-    // Refresh employees list
+    // Refresh employees list with permissions
     if (currentLocation) {
       const active = await employeesApi.getBusinessEmployees(currentLocation.id, true);
       const inactive = await employeesApi.getBusinessEmployees(currentLocation.id, false);
-      setAllEmployees([...active, ...inactive]);
+      const allEmployeesData = [...active, ...inactive];
+      
+      const employeesWithPermissions = await Promise.all(
+        allEmployeesData.map(async (employee) => {
+          try {
+            const permissionsDetail = await permissionsApi.getUserPermissionsDetail(
+              currentLocation.id,
+              employee.user_id
+            );
+            return {
+              ...employee,
+              allPermissions: permissionsDetail,
+            };
+          } catch (err) {
+            console.error(`Failed to fetch permissions for user ${employee.user_id}:`, err);
+            return employee;
+          }
+        })
+      );
+      
+      setAllEmployees(employeesWithPermissions);
     }
   };
 
@@ -215,89 +298,107 @@ export default function EmployeesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {activeEmployees.map((employee) => (
-            <div
-              key={employee.user_id}
-              className="relative rounded-lg border border-gray-300 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
-            >
-              {/* Role Badge */}
-              <div className="absolute top-3 right-3">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  employee.role_in_business === 'manager' 
-                    ? 'bg-purple-100 text-purple-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {t(`employees.role.${employee.role_in_business}`)}
-                </span>
-              </div>
-
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <UserIcon className="h-6 w-6 text-gray-400" />
+          {activeEmployees.map((employee) => {
+            // Get all permissions with has_permission=true
+            const activePermissions = employee.allPermissions?.permissions.filter(p => p.has_permission) || [];
+            
+            return (
+              <div
+                key={employee.user_id}
+                className="relative rounded-lg border border-gray-300 bg-white p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col h-[380px]"
+              >
+                {/* Role Badge */}
+                <div className="absolute top-3 right-3">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    employee.role_in_business === 'manager' 
+                      ? 'bg-purple-100 text-purple-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {t(`employees.role.${employee.role_in_business}`)}
+                  </span>
                 </div>
-                <div className="ml-3 flex-1 min-w-0">
-                  <h3 className="text-lg font-medium text-gray-900 truncate">
-                    {employee.username}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1 truncate">{employee.email}</p>
-                  
-                  {/* Permissions Badges */}
-                  {employee.permissions && employee.permissions.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {employee.permissions.slice(0, 3).map((permission) => (
+
+                {/* Header - fixed */}
+                <div className="flex items-start flex-shrink-0">
+                  <div className="flex-shrink-0">
+                    <UserIcon className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <div className="ml-3 flex-1 min-w-0">
+                    <h3 className="text-lg font-medium text-gray-900 truncate">
+                      {employee.username}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1 truncate">{employee.email}</p>
+                  </div>
+                </div>
+
+                {/* Permissions - scrollable area */}
+                <div className="mt-3 flex-1 overflow-y-auto min-h-0">
+                  {activePermissions.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {activePermissions.map((permission) => (
                         <span
-                          key={permission}
-                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                          key={permission.permission_name}
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            permission.source === 'role' 
+                              ? 'bg-purple-100 text-purple-800'
+                              : permission.source === 'user'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-blue-100 text-blue-800' // both
+                          }`}
+                          title={
+                            permission.source === 'role' 
+                              ? t('permissions.badge.fromRole')
+                              : permission.source === 'user'
+                              ? t('permissions.badge.explicitlyGranted')
+                              : t('permissions.badge.fromRole') + ' + ' + t('permissions.badge.explicitlyGranted')
+                          }
                         >
-                          {permission}
+                          {permission.permission_name}
                         </span>
                       ))}
-                      {employee.permissions.length > 3 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                          +{employee.permissions.length - 3}
-                        </span>
-                      )}
                     </div>
+                  ) : (
+                    <p className="text-xs text-gray-400">{t('permissions.noPermissions')}</p>
                   )}
+                </div>
 
-                  {/* Joined Date */}
-                  <p className="text-xs text-gray-400 mt-2">
-                    {t('employees.joinedAt', { 
-                      date: new Date(employee.joined_at).toLocaleDateString() 
-                    })}
-                  </p>
+                {/* Joined Date - fixed */}
+                <p className="text-xs text-gray-400 mt-2 flex-shrink-0">
+                  {t('employees.joinedAt', { 
+                    date: new Date(employee.joined_at).toLocaleDateString() 
+                  })}
+                </p>
+
+                {/* Actions - fixed at bottom */}
+                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
+                  <button
+                    onClick={() => handleManagePermissions(employee)}
+                    className="inline-flex items-center text-sm text-blue-600 hover:text-blue-500 font-medium"
+                  >
+                    <ShieldCheckIcon className="h-4 w-4 mr-1" />
+                    {t('employees.permissions')}
+                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleEdit(employee)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title={t('employees.editEmployee')}
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeactivate(employee)}
+                      disabled={isDeleting}
+                      className="p-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
+                      title={t('employees.deactivateEmployee')}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Actions */}
-              <div className="mt-6 flex items-center justify-between">
-                <button
-                  onClick={() => handleManagePermissions(employee)}
-                  className="inline-flex items-center text-sm text-blue-600 hover:text-blue-500 font-medium"
-                >
-                  <ShieldCheckIcon className="h-4 w-4 mr-1" />
-                  {t('employees.permissions')}
-                </button>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleEdit(employee)}
-                    className="p-1 text-gray-400 hover:text-gray-600"
-                    title={t('employees.editEmployee')}
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeactivate(employee)}
-                    disabled={isDeleting}
-                    className="p-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
-                    title={t('employees.deactivateEmployee')}
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

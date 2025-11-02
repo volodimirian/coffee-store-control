@@ -750,6 +750,7 @@
     "selectedCount": "{{count}} of {{total}} permissions selected",
     "modificationsCount": "{{count}} permission(s) will be modified",
     "savePermissions": "Save Permissions",
+    "noPermissions": "No permissions",
     "badge": {
       "modified": "Modified",
       "fromRole": "From Role",

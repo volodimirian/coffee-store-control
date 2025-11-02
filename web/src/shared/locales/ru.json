@@ -326,6 +326,7 @@
     "selectedCount": "Выбрано {{count}} из {{total}} прав",
     "modificationsCount": "{{count}} прав(а) будет изменено",
     "savePermissions": "Сохранить права",
+    "noPermissions": "Нет прав",
     "badge": {
       "modified": "Изменено",
       "fromRole": "От роли",
