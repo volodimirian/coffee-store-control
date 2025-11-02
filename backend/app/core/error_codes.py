@@ -54,6 +54,8 @@ class ErrorCode(str, Enum):
     INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS"  # "Insufficient permissions to perform this action"
     ONLY_OWNER_CAN_CREATE_EMPLOYEES = "ONLY_OWNER_CAN_CREATE_EMPLOYEES"  # "Only business owner can create employees"
     ONLY_OWNER_CAN_MANAGE_PERMISSIONS = "ONLY_OWNER_CAN_MANAGE_PERMISSIONS"  # "Only business owner can manage permissions"
+    ONLY_OWNERS_CAN_SEARCH_USERS = "ONLY_OWNERS_CAN_SEARCH_USERS"  # "Only business owners can search for users"
+    CANNOT_ASSIGN_BUSINESS_OWNER_ROLE = "CANNOT_ASSIGN_BUSINESS_OWNER_ROLE"  # "Cannot assign business owner role to employees"
     
     # Validation
     VALIDATION_ERROR = "VALIDATION_ERROR"  # "Validation failed"
@@ -115,6 +117,8 @@ class ErrorMessages:
     INSUFFICIENT_PERMISSIONS = "Insufficient permissions to perform this action"
     ONLY_OWNER_CAN_CREATE_EMPLOYEES = "Only business owner can create employees"
     ONLY_OWNER_CAN_MANAGE_PERMISSIONS = "Only business owner can manage permissions"
+    ONLY_OWNERS_CAN_SEARCH_USERS = "Only business owners can search for users"
+    CANNOT_ASSIGN_BUSINESS_OWNER_ROLE = "Cannot assign business owner role to employees"
     
     # Validation
     VALIDATION_ERROR = "Validation failed"

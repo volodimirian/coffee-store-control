@@ -147,8 +147,9 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       onSuccess?.();
       onClose();
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to ${isEditMode ? 'update' : 'create'} employee:`, error);
+      
       setErrors({ 
         submit: getErrorMessage(error)
       });

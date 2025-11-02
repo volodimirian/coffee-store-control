@@ -99,6 +99,27 @@ export const employeesApi = {
   removeEmployee: async (businessId: number, userId: number): Promise<void> => {
     await api.delete(`/businesses/${businessId}/members/${userId}`);
   },
+
+  // Search for user by email
+  searchUserByEmail: async (email: string): Promise<{
+    user_id: number;
+    username: string;
+    email: string;
+    role: string | null;
+  }> => {
+    const response = await api.get('/businesses/users/search', {
+      params: { email }
+    });
+    return response.data;
+  },
+
+  // Assign existing user to business
+  assignEmployeeToBusiness: async (
+    businessId: number,
+    data: { user_id: number; business_id: number; role_in_business: string }
+  ): Promise<void> => {
+    await api.post(`/businesses/${businessId}/members`, data);
+  },
 };
 
 // Permissions API

@@ -6,11 +6,13 @@ import {
   UserIcon, 
   PlusIcon, 
   ArrowUturnLeftIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
 import { ConfirmDeleteModal } from '~/components/ConfirmDeleteModal';
 import { EmployeeModal } from '~/components/EmployeeModal';
+import { AssignEmployeeModal } from '~/components/AssignEmployeeModal';
 import { PermissionModal } from '~/components/PermissionModal';
 import { employeesApi, permissionsApi } from '~/shared/api/employees';
 import type { Employee, UserPermissionsDetail } from '~/shared/types/locations';
@@ -29,7 +31,9 @@ export default function EmployeesPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeWithPermissions | null>(null);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
   const [managingPermissionsEmployee, setManagingPermissionsEmployee] = useState<EmployeeWithPermissions | null>(null);
@@ -192,6 +196,7 @@ export default function EmployeesPage() {
 
   const handleModalSuccess = async () => {
     setIsAddModalOpen(false);
+    setIsAssignModalOpen(false);
     setIsEditModalOpen(false);
     // setIsPermissionsModalOpen(false);
     setEditingEmployee(null);
@@ -258,13 +263,47 @@ export default function EmployeesPage() {
               {t('employees.description', { location: currentLocation.name })}
             </p>
           </div>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            {t('employees.addEmployee')}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsAddDropdownOpen(!isAddDropdownOpen)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              {t('employees.addEmployee')}
+              <ChevronDownIcon className="h-4 w-4 ml-2" />
+            </button>
+            
+            {isAddDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setIsAddDropdownOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-20 border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setIsAddModalOpen(true);
+                      setIsAddDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4 inline-block mr-2" />
+                    {t('employees.addEmployee')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsAssignModalOpen(true);
+                      setIsAddDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors border-t border-gray-100"
+                  >
+                    <UserIcon className="h-4 w-4 inline-block mr-2" />
+                    {t('employees.assignExisting')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -301,11 +340,14 @@ export default function EmployeesPage() {
           {activeEmployees.map((employee) => {
             // Get all permissions with has_permission=true
             const activePermissions = employee.allPermissions?.permissions.filter(p => p.has_permission) || [];
+            const maxVisiblePermissions = 4;
+            const visiblePermissions = activePermissions.slice(0, maxVisiblePermissions);
+            const remainingCount = activePermissions.length - maxVisiblePermissions;
             
             return (
               <div
                 key={employee.user_id}
-                className="relative rounded-lg border border-gray-300 bg-white p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col h-[380px]"
+                className="relative rounded-lg border border-gray-300 bg-white p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col"
               >
                 {/* Role Badge */}
                 <div className="absolute top-3 right-3">
@@ -318,8 +360,7 @@ export default function EmployeesPage() {
                   </span>
                 </div>
 
-                {/* Header - fixed */}
-                <div className="flex items-start flex-shrink-0">
+                <div className="flex items-start flex-1">
                   <div className="flex-shrink-0">
                     <UserIcon className="h-6 w-6 text-gray-400" />
                   </div>
@@ -328,49 +369,50 @@ export default function EmployeesPage() {
                       {employee.username}
                     </h3>
                     <p className="text-sm text-gray-500 mt-1 truncate">{employee.email}</p>
+                    
+                    {/* Permissions Badges - show max 4 */}
+                    {activePermissions.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {visiblePermissions.map((permission) => (
+                          <span
+                            key={permission.permission_name}
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              permission.source === 'role' 
+                                ? 'bg-purple-100 text-purple-800'
+                                : permission.source === 'user'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-blue-100 text-blue-800' // both
+                            }`}
+                            title={
+                              permission.source === 'role' 
+                                ? t('permissions.badge.fromRole')
+                                : permission.source === 'user'
+                                ? t('permissions.badge.explicitlyGranted')
+                                : t('permissions.badge.fromRole') + ' + ' + t('permissions.badge.explicitlyGranted')
+                            }
+                          >
+                            {permission.permission_name}
+                          </span>
+                        ))}
+                        {remainingCount > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                            +{remainingCount}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Joined Date */}
+                    <p className="text-xs text-gray-400 mt-2">
+                      {t('employees.joinedAt', { 
+                        date: new Date(employee.joined_at).toLocaleDateString() 
+                      })}
+                    </p>
                   </div>
                 </div>
 
-                {/* Permissions - scrollable area */}
-                <div className="mt-3 flex-1 overflow-y-auto min-h-0">
-                  {activePermissions.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {activePermissions.map((permission) => (
-                        <span
-                          key={permission.permission_name}
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            permission.source === 'role' 
-                              ? 'bg-purple-100 text-purple-800'
-                              : permission.source === 'user'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-blue-100 text-blue-800' // both
-                          }`}
-                          title={
-                            permission.source === 'role' 
-                              ? t('permissions.badge.fromRole')
-                              : permission.source === 'user'
-                              ? t('permissions.badge.explicitlyGranted')
-                              : t('permissions.badge.fromRole') + ' + ' + t('permissions.badge.explicitlyGranted')
-                          }
-                        >
-                          {permission.permission_name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400">{t('permissions.noPermissions')}</p>
-                  )}
-                </div>
-
-                {/* Joined Date - fixed */}
-                <p className="text-xs text-gray-400 mt-2 flex-shrink-0">
-                  {t('employees.joinedAt', { 
-                    date: new Date(employee.joined_at).toLocaleDateString() 
-                  })}
-                </p>
-
-                {/* Actions - fixed at bottom */}
-                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
+                {/* Actions - прижаты к низу */}
+                <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
                   <button
                     onClick={() => handleManagePermissions(employee)}
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-500 font-medium"
@@ -460,6 +502,14 @@ export default function EmployeesPage() {
         onSuccess={handleModalSuccess}
         businessId={currentLocation.id}
         employee={editingEmployee || undefined}
+      />
+
+      {/* Assign Employee Modal */}
+      <AssignEmployeeModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        onSuccess={handleModalSuccess}
+        businessId={currentLocation.id}
       />
 
       {/* Permissions Modal */}

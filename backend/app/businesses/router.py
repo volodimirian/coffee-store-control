@@ -256,14 +256,21 @@ async def add_member_to_business(
             detail=create_error_response(ErrorCode.BUSINESS_ID_MISMATCH),
         )
 
-    user_business = await BusinessService.add_user_to_business(
+    user_business, error = await BusinessService.add_user_to_business(
         session=session,
         user_business_data=member_data,
     )
-    if not user_business:
+    if error or not user_business:
+        # Map error codes to status codes
+        status_code_map = {
+            ErrorCode.USER_ALREADY_BUSINESS_MEMBER: status.HTTP_409_CONFLICT,
+            ErrorCode.CANNOT_ASSIGN_BUSINESS_OWNER_ROLE: status.HTTP_403_FORBIDDEN,
+        }
+        http_status = status_code_map.get(error, status.HTTP_400_BAD_REQUEST) if error else status.HTTP_400_BAD_REQUEST
+        
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=create_error_response(ErrorCode.USER_ALREADY_BUSINESS_MEMBER),
+            status_code=http_status,
+            detail=create_error_response(error or ErrorCode.INTERNAL_ERROR),
         )
 
     return {"message": "User successfully added to business"}
@@ -370,6 +377,7 @@ async def create_employee(
     if error or not new_user:
         # Return error code for frontend i18n
         status_code_map = {
+            ErrorCode.EMAIL_ALREADY_EXISTS: status.HTTP_409_CONFLICT,
             ErrorCode.ONLY_OWNER_CAN_CREATE_EMPLOYEES: status.HTTP_403_FORBIDDEN,
             ErrorCode.FORBIDDEN: status.HTTP_403_FORBIDDEN,
         }
@@ -405,6 +413,45 @@ async def get_owner_employees(
         owner_id=current_user.id,
     )
     return OwnerEmployeesOut(employees=employees, total=len(employees))
+
+
+@router.get("/users/search")
+async def search_user_by_email(
+    email: str,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Search for a user by email. Only business owners can search for users."""
+    # Check if current user owns at least one business
+    owner_businesses = await BusinessService.get_businesses_by_owner(
+        session=session,
+        owner_id=current_user.id,
+    )
+    
+    if not owner_businesses:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=create_error_response(ErrorCode.ONLY_OWNERS_CAN_SEARCH_USERS),
+        )
+    
+    user = await BusinessService.find_user_by_email(
+        session=session,
+        email=email,
+    )
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(ErrorCode.USER_NOT_FOUND),
+        )
+    
+    # Return basic user info (no password)
+    return {
+        "user_id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role.name if user.role else None,
+    }
 
 
 @router.get("/{business_id}/employees", response_model=list[EmployeeOut])

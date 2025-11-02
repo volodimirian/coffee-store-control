@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional, Sequence
 
 from sqlalchemy import and_, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_models import Business, User, UserBusiness, Role, Permission, UserPermission
@@ -150,8 +151,16 @@ class BusinessService:
     async def add_user_to_business(
         session: AsyncSession,
         user_business_data: UserBusinessCreate,
-    ) -> Optional[UserBusiness]:
-        """Add a user to business with specified role."""
+    ) -> tuple[Optional[UserBusiness], Optional[ErrorCode]]:
+        """Add a user to business with specified role.
+        
+        Returns:
+            Tuple of (UserBusiness, ErrorCode) where ErrorCode is None on success
+        """
+        # Cannot assign business owner role via this method
+        if user_business_data.role_in_business and user_business_data.role_in_business.lower() == 'business owner':
+            return None, ErrorCode.CANNOT_ASSIGN_BUSINESS_OWNER_ROLE
+        
         # Check if relationship already exists
         existing = await session.execute(
             select(UserBusiness).where(
@@ -162,7 +171,7 @@ class BusinessService:
             )
         )
         if existing.scalars().first():
-            return None  # Relationship already exists
+            return None, ErrorCode.USER_ALREADY_BUSINESS_MEMBER  # Relationship already exists
 
         user_business = UserBusiness(
             user_id=user_business_data.user_id,
@@ -175,7 +184,7 @@ class BusinessService:
         session.add(user_business)
         await session.commit()
         await session.refresh(user_business)
-        return user_business
+        return user_business, None
 
     @staticmethod
     async def update_user_business_role(
@@ -443,6 +452,16 @@ class BusinessService:
             joined_at=user_business.created_at,
             permissions=permissions,
         )
+
+    @staticmethod
+    async def find_user_by_email(session, email) -> Optional[User]:
+        """Find a user by email address."""
+        result = await session.execute(
+            select(User)
+            .options(selectinload(User.role))
+            .where(User.email == email)
+        )
+        return result.scalar_one_or_none()
 
     @staticmethod
     async def get_owner_employees(
