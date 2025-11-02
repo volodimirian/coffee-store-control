@@ -52,8 +52,14 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
     fetchPermissions();
   }, [isOpen, employee, businessId, getErrorMessage]);
 
-  const handleTogglePermission = (permissionName: string, currentHasPermission: boolean) => {
-    const newValue = !currentHasPermission;
+  const handleTogglePermission = (permissionName: string) => {
+    // Get the current effective permission (considering modifications)
+    const permission = permissionDetails.find(p => p.permission_name === permissionName);
+    if (!permission) return;
+    
+    const currentEffectiveValue = getEffectivePermission(permission);
+    const newValue = !currentEffectiveValue;
+    
     setModifiedPermissions(prev => {
       const newMap = new Map(prev);
       newMap.set(permissionName, newValue);
@@ -275,7 +281,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
-                                  onChange={() => handleTogglePermission(permission.permission_name, permission.has_permission)}
+                                  onChange={() => handleTogglePermission(permission.permission_name)}
                                   disabled={isSubmitting}
                                   className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
