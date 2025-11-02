@@ -1,50 +1,40 @@
 import { NavLink } from 'react-router-dom';
 import { 
-  ChartBarIcon, 
-  TableCellsIcon,
+  DocumentTextIcon,
   TagIcon,
-  ScaleIcon,
-  DocumentChartBarIcon
+  ScaleIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 
-export default function ExpensesNavigation() {
+export default function BillingNavigation() {
   const { t } = useTranslation();
   
   const tabs = [
     {
-      name: t('expenses.navigation.overview'),
-      icon: ChartBarIcon,
-      path: '/expenses',
+      name: t('billing.navigation.invoices'),
+      icon: DocumentTextIcon,
+      path: '/billing',
     },
     {
-      name: t('expenses.navigation.inventoryTracking'),
-      icon: TableCellsIcon,
-      path: '/expenses/inventory-tracking',
-    },
-    {
-      name: t('expenses.navigation.categories'),
+      name: t('billing.navigation.categories'),
       icon: TagIcon,
-      path: '/expenses/categories',
+      path: '/billing/categories',
     },
     {
-      name: t('expenses.navigation.units'),
+      name: t('billing.navigation.units'),
       icon: ScaleIcon,
-      path: '/expenses/units',
-    },
-    {
-      name: t('expenses.navigation.reports'),
-      icon: DocumentChartBarIcon,
-      path: '/expenses/reports',
+      path: '/billing/units',
     },
   ];
+
   return (
     <div className="border-b border-gray-200 pb-5 mb-6">
-      <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">{tabs.map((tab) => (
+      <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
+        {tabs.map((tab) => (
           <NavLink
             key={tab.name}
             to={tab.path}
-            end={tab.path === '/expenses'} // Only for the overview tab
+            end={tab.path === '/billing'} // Only for the invoices tab
             className={({ isActive }) =>
               `rounded-lg py-2.5 px-4 text-sm font-medium leading-5 transition-all duration-200 ${
                 isActive

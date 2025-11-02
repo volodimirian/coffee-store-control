@@ -13,6 +13,7 @@ import {
   XMarkIcon,
   ChevronRightIcon,
   CurrencyDollarIcon,
+  BanknotesIcon,
   BuildingOfficeIcon,
   MapPinIcon,
   UsersIcon,
@@ -66,6 +67,12 @@ const menuSections: MenuSection[] = [
         path: '/expenses',
         icon: CurrencyDollarIcon,
         labelKey: 'navigation.expenseTracking',
+      },
+      {
+        id: 'billing',
+        path: '/billing',
+        icon: BanknotesIcon,
+        labelKey: 'navigation.billing',
       },
       // {
       //   id: 'products',

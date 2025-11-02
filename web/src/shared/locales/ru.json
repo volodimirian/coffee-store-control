@@ -49,6 +49,7 @@
     "personalAccount": "Личный кабинет",
     "expenses": "Расходы",
     "expenseTracking": "Учет расходов",
+    "billing": "Оплата",
     "locations": "Локации",
     "employees": "Сотрудники"
   },
@@ -808,6 +809,17 @@
         "syrups": "Сиропы",
         "equipment": "Оборудование"
       }
+    }
+  },
+  "billing": {
+    "navigation": {
+      "invoices": "Счета",
+      "categories": "Категории",
+      "units": "Единицы измерения"
+    },
+    "page": {
+      "description": "Управление оплатами и финансовыми операциями для",
+      "defaultLocation": "вашей локации"
     }
   }
 }

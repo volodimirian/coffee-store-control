@@ -11,12 +11,16 @@ import Settings from "~/pages/Settings";
 import Locations from "~/pages/Locations";
 import Employees from "~/pages/Employees";
 import Expenses from "~/pages/Expenses";
+import Billing from "~/pages/Billing";
 import Overview from "~/pages/expenses/Overview";
 import InventoryTracking from "~/pages/expenses/InventoryTracking";
 import Categories from "~/pages/expenses/Categories";
 import Units from "~/pages/expenses/Units";
 import Invoices from "~/pages/expenses/Invoices";
 import Reports from "~/pages/expenses/Reports";
+import BillingInvoices from "~/pages/billing/Invoices";
+import BillingCategories from "~/pages/billing/Categories";
+import BillingUnits from "~/pages/billing/Units";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
 import Register from "~/pages/Register";
@@ -76,8 +80,15 @@ export default function App() {
               <Route path="inventory-tracking" element={<InventoryTracking />} />
               <Route path="categories" element={<Categories />} />
               <Route path="units" element={<Units />} />
-              <Route path="invoices" element={<Invoices />} />
               <Route path="reports" element={<Reports />} />
+            </Route>
+            
+            {/* Billing with nested routes */}
+            <Route path="billing" element={<Billing />}>
+              <Route index element={<BillingInvoices />} />
+              <Route path="invoices" element={<Invoices />} />
+              <Route path="categories" element={<BillingCategories />} />
+              <Route path="units" element={<BillingUnits />} />
             </Route>
           </Route>
 

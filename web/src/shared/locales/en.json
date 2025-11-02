@@ -47,6 +47,7 @@
     "personalAccount": "Personal Account",
     "expenses": "Expenses",
     "expenseTracking": "Expense Tracking",
+    "billing": "Billing",
     "locations": "Locations",
     "employees": "Employees"
   },
@@ -806,6 +807,17 @@
       "approve_invoice": "Approve Invoices",
       "reject_invoice": "Reject Invoices",
       "view_api_docs": "View API Documentation"
+    }
+  },
+  "billing": {
+    "navigation": {
+      "invoices": "Invoices",
+      "categories": "Categories",
+      "units": "Units"
+    },
+    "page": {
+      "description": "Manage billing and financial operations for",
+      "defaultLocation": "your location"
     }
   }
 }
