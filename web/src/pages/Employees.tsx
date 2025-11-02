@@ -391,7 +391,7 @@ export default function EmployeesPage() {
                                 : t('permissions.badge.fromRole') + ' + ' + t('permissions.badge.explicitlyGranted')
                             }
                           >
-                            {permission.permission_name}
+                            {t(`permissions.names.${permission.permission_name}`, permission.permission_name)}
                           </span>
                         ))}
                         {remainingCount > 0 && (
