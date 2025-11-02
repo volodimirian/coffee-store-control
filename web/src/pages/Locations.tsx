@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PencilIcon, TrashIcon, MapPinIcon, PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
 import { LocationModal } from '~/components/LocationModal';
-import { ConfirmDeleteModal } from '~/components/ConfirmDeleteModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 import { locationsApi } from '~/shared/api/locations';
 import type { Location } from '~/shared/types/locations';
 
@@ -306,7 +306,7 @@ export default function LocationsPage() {
         title={t('locations.deleteLocation')}
         message={t('locations.confirmDeleteMessage')}
         itemName={deletingLocation?.name}
-        isDeleting={isDeleting}
+        isLoading={isDeleting}
       />
     </div>
   );

@@ -28,7 +28,9 @@
     "today": "Today",
     "original": "Originally",
     "converted": "Converted to",
-    "quantity": "Quantity"
+    "quantity": "Quantity",
+    "confirmDeletion": "Confirm Deletion",
+    "confirmDeletionMessage": "Are you sure you want to delete this item? This action cannot be undone."
   },
   "navigation": {
     "home": "Home",
@@ -385,6 +387,16 @@
           "message": "Are you sure you want to delete the unit \"{{name}}\"? This action cannot be undone.",
           "confirmButton": "Delete Unit",
           "withDerived": "⚠️ This will also delete {{count}} derived units"
+        },
+        "employee": {
+          "title": "Deactivate Employee",
+          "message": "Are you sure you want to deactivate the employee \"{{name}}\"? They will lose access to the system.",
+          "confirmButton": "Deactivate"
+        },
+        "location": {
+          "title": "Delete Location",
+          "message": "Are you sure you want to delete the location \"{{name}}\"? This action cannot be undone.",
+          "confirmButton": "Delete Location"
         },
         "invoice": {
           "title": "Delete Invoice",

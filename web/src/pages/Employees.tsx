@@ -10,7 +10,7 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
-import { ConfirmDeleteModal } from '~/components/ConfirmDeleteModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 import { EmployeeModal } from '~/components/EmployeeModal';
 import { AssignEmployeeModal } from '~/components/AssignEmployeeModal';
 import { PermissionModal } from '~/components/PermissionModal';
@@ -531,7 +531,7 @@ export default function EmployeesPage() {
         title={t('employees.deactivateEmployee')}
         message={t('employees.confirmDeactivateMessage')}
         itemName={deletingEmployee?.username}
-        isDeleting={isDeleting}
+        isLoading={isDeleting}
       />
     </div>
   );
