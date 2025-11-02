@@ -319,7 +319,6 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 }`}
               >
                 <option value="employee">{t('employees.role.employee')}</option>
-                <option value="manager">{t('employees.role.manager')}</option>
               </select>
               {errors.role_in_business && (
                 <p className="mt-1 text-sm text-red-600">{errors.role_in_business}</p>

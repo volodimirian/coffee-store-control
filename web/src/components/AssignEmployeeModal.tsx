@@ -209,7 +209,6 @@ export const AssignEmployeeModal: React.FC<AssignEmployeeModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 >
                   <option value="employee">{t('employees.role.employee')}</option>
-                  <option value="manager">{t('employees.role.manager')}</option>
                 </select>
               </div>
             )}
