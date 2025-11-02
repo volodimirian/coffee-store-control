@@ -167,6 +167,83 @@ See `.env.example` for full configuration options and examples.
 - ✅ Tests for auth and core modules
 - ✅ Frontend with authentication
 
+## Maintenance & Automation
+
+### Automated Overdue Invoice Status Updates
+
+The system includes automatic detection of overdue invoices based on individual supplier payment terms. To ensure invoices are marked as overdue in a timely manner, you should set up a cron job to run the status update process.
+
+#### Setup Cron Job
+
+Add the following entry to your crontab to run the overdue status update daily at 6:00 AM:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line to run daily at 6:00 AM
+0 6 * * * cd /path/to/your/project/backend && /path/to/uv run python -c "
+import asyncio
+from app.core.db import async_session_maker
+from app.expenses.invoice_service import InvoiceService
+
+async def update_overdue():
+    async with async_session_maker() as session:
+        updated_count = await InvoiceService.update_overdue_statuses(session)
+        print(f'Updated {updated_count} invoices to overdue status')
+
+asyncio.run(update_overdue())
+"
+```
+
+#### Alternative: Run for Specific Business
+
+If you need to update invoices for a specific business only:
+
+```bash
+# Replace BUSINESS_ID with actual business ID
+0 6 * * * cd /path/to/your/project/backend && /path/to/uv run python -c "
+import asyncio
+from app.core.db import async_session_maker
+from app.expenses.invoice_service import InvoiceService
+
+async def update_overdue():
+    async with async_session_maker() as session:
+        service = InvoiceService()
+        updated_count = await service.update_overdue_statuses(session, business_id=BUSINESS_ID)
+        print(f'Updated {updated_count} invoices to overdue status for business {BUSINESS_ID}')
+
+asyncio.run(update_overdue())
+"
+```
+
+#### Manual Execution
+
+You can also run the overdue status update manually:
+
+```bash
+cd backend
+uv run python -c "
+import asyncio
+from app.core.db import async_session_maker
+from app.expenses.invoice_service import InvoiceService
+
+async def update_overdue():
+    async with async_session_maker() as session:
+        updated_count = await InvoiceService.update_overdue_statuses(session)
+        print(f'Updated {updated_count} invoices to overdue status')
+
+asyncio.run(update_overdue())
+"
+```
+
+#### How It Works
+
+- The system compares the current date with each invoice's due date (invoice_date + supplier.payment_terms_days)
+- Only invoices with status 'pending' are eligible for overdue status
+- Each supplier can have individual payment terms (default: 14 days)
+- The update process is atomic and safe to run multiple times
+
 ## What Can Be Added
 
 - Business logic for specific domain

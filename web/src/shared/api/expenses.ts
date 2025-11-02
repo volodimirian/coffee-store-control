@@ -549,6 +549,19 @@ export const invoicesApi = {
     );
     return response.data;
   },
+
+  /**
+   * Update overdue statuses for pending invoices
+   */
+  updateOverdueStatuses: async (businessId?: number): Promise<{ message: string; updated_count: number }> => {
+    const params = businessId ? { business_id: businessId } : {};
+    const response = await api.post<{ message: string; updated_count: number }>(
+      '/expenses/invoices/update-overdue-statuses',
+      {},
+      { params }
+    );
+    return response.data;
+  },
 };
 
 // ============ Invoice Items API ============

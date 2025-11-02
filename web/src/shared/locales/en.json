@@ -502,17 +502,20 @@
         "all": "All Invoices",
         "pending": "Pending",
         "paid": "Paid",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "overdue": "Overdue"
       },
       "status": {
         "pending": "Pending",
         "paid": "Paid",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "overdue": "Overdue"
       },
       "table": {
         "invoiceNumber": "Invoice #",
         "supplier": "Supplier",
-        "date": "Date",
+        "createdDate": "Created Date",
+        "paymentDate": "Payment Date",
         "totalAmount": "Total Amount",
         "status": "Status",
         "actions": "Actions"

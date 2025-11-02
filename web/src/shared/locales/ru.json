@@ -643,17 +643,20 @@
         "all": "Все счета",
         "pending": "Ожидают оплаты",
         "paid": "Оплачены",
-        "cancelled": "Отменены"
+        "cancelled": "Отменены",
+        "overdue": "Просрочены"
       },
       "status": {
         "pending": "Ожидает",
         "paid": "Оплачен",
-        "cancelled": "Отменен"
+        "cancelled": "Отменен",
+        "overdue": "Просрочен"
       },
       "table": {
         "invoiceNumber": "№ счета",
         "supplier": "Поставщик",
-        "date": "Дата",
+        "createdDate": "Дата создания",
+        "paymentDate": "Дата оплаты",
         "totalAmount": "Сумма",
         "status": "Статус",
         "actions": "Действия"

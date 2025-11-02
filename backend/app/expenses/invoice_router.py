@@ -545,3 +545,32 @@ async def delete_invoice_item(
     await InvoiceItemService.recalculate_invoice_total(session, item.invoice_id)  # type: ignore
     
     await session.commit()
+
+
+@router.post("/update-overdue-statuses")
+async def update_overdue_statuses(
+    business_id: Optional[int] = Query(None, description="Business ID to filter invoices"),
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Update overdue statuses for pending invoices based on supplier payment terms."""
+    
+    # If business_id is provided, check user access
+    if business_id:
+        has_access = await BusinessService.can_user_manage_business(
+            session=session,
+            user_id=current_user.id,
+            business_id=business_id,
+        )
+        if not has_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this business",
+            )
+    
+    updated_count = await InvoiceService.update_overdue_statuses(session, business_id)  # type: ignore
+    
+    return {
+        "message": f"Updated {updated_count} invoices to overdue status",
+        "updated_count": updated_count
+    }
