@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PencilIcon, TrashIcon, MapPinIcon, PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
-import { LocationModal } from '~/components/LocationModal';
+import { LocationModal } from '~/components/modals/LocationModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 import { locationsApi } from '~/shared/api/locations';
 import type { Location } from '~/shared/types/locations';

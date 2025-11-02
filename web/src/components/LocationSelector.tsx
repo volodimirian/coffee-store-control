@@ -3,7 +3,7 @@ import { ChevronDownIcon, PlusIcon, MapPinIcon, PencilIcon } from '@heroicons/re
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '~/shared/context/AppContext';
-import { LocationModal } from '~/components/LocationModal';
+import { LocationModal } from '~/components/modals/LocationModal';
 import { USER_ROLES } from '~/shared/api/authentication';
 import type { Location } from '~/shared/types/locations';
 

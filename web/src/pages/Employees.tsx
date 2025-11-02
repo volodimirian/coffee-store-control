@@ -11,9 +11,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
-import { EmployeeModal } from '~/components/EmployeeModal';
-import { AssignEmployeeModal } from '~/components/AssignEmployeeModal';
-import { PermissionModal } from '~/components/PermissionModal';
+import { EmployeeModal } from '~/components/modals/EmployeeModal';
+import { AssignEmployeeModal } from '~/components/modals/AssignEmployeeModal';
+import { PermissionModal } from '~/components/modals/PermissionModal';
 import { employeesApi, permissionsApi } from '~/shared/api/employees';
 import type { Employee, UserPermissionsDetail } from '~/shared/types/locations';
 import { useApiError } from '~/shared/lib/useApiError';
