@@ -5,8 +5,8 @@ import { USER_ROLES } from '~/shared/api/authentication';
 import {
   HomeIcon,
   UserIcon,
-  CubeIcon,
-  ShoppingCartIcon,
+  // CubeIcon,
+  // ShoppingCartIcon,
   ChartBarIcon,
   CogIcon,
   Bars3Icon,
@@ -14,6 +14,8 @@ import {
   ChevronRightIcon,
   CurrencyDollarIcon,
   BuildingOfficeIcon,
+  MapPinIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -48,23 +50,35 @@ const menuSections: MenuSection[] = [
         labelKey: 'navigation.dashboard',
       },
       {
+        id: 'locations',
+        path: '/locations',
+        icon: MapPinIcon,
+        labelKey: 'navigation.locations',
+      },
+      {
+        id: 'employees',
+        path: '/employees',
+        icon: UsersIcon,
+        labelKey: 'navigation.employees',
+      },
+      {
         id: 'expenses',
         path: '/expenses',
         icon: CurrencyDollarIcon,
         labelKey: 'navigation.expenseTracking',
       },
-      {
-        id: 'products',
-        path: '/products',
-        icon: CubeIcon,
-        labelKey: 'navigation.products',
-      },
-      {
-        id: 'orders',
-        path: '/orders',
-        icon: ShoppingCartIcon,
-        labelKey: 'navigation.orders',
-      },
+      // {
+      //   id: 'products',
+      //   path: '/products',
+      //   icon: CubeIcon,
+      //   labelKey: 'navigation.products',
+      // },
+      // {
+      //   id: 'orders',
+      //   path: '/orders',
+      //   icon: ShoppingCartIcon,
+      //   labelKey: 'navigation.orders',
+      // },
       {
         id: 'analytics',
         path: '/analytics',

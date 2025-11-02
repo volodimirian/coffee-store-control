@@ -53,6 +53,84 @@ export interface UserLocationUpdate {
   is_active?: boolean;
 }
 
+// ============ Employee Management Types ============
+
+export interface Employee {
+  user_id: number;
+  username: string;
+  email: string;
+  role_in_business: string;
+  is_active: boolean;
+  joined_at: string;
+  permissions: string[];
+}
+
+export interface EmployeeCreateRequest {
+  email: string;
+  username: string;
+  password: string;
+  business_id: number;
+  role_in_business?: string; // Defaults to "employee"
+}
+
+export interface OwnerEmployeesResponse {
+  employees: Employee[];
+  total: number;
+}
+
+export interface PermissionGrantRequest {
+  permission_names: string[]; // Can grant multiple permissions to one user
+  business_id?: number; // Optional for global permissions
+}
+
+export interface PermissionRevokeRequest {
+  permission_names: string[]; // Can revoke multiple permissions from one user
+  business_id?: number;
+}
+
+export interface PermissionBatchRequest {
+  user_ids: number[]; // Multiple users
+  permission_names: string[]; // Multiple permissions
+  business_id?: number;
+}
+
+export interface PermissionBatchResult {
+  user_id: number;
+  permission: string;
+  success: boolean;
+}
+
+export interface PermissionBatchResponse {
+  message: string;
+  results: PermissionBatchResult[];
+}
+
+export interface Permission {
+  id: number;
+  name: string;
+  description: string | null;
+  resource: string; // e.g., 'expenses', 'categories', 'inventory'
+  action: string; // e.g., 'view', 'create', 'edit', 'delete'
+  is_active: boolean;
+}
+
+export interface UserPermissionDetail {
+  permission_name: string;
+  resource: string; // Resource the permission applies to (users, business, categories, etc.)
+  action: string; // Action type (view, create, edit, delete, etc.)
+  has_permission: boolean;
+  source: 'role' | 'user' | 'both' | 'none'; // Source of permission
+  is_explicitly_granted: boolean; // True if granted via UserPermission
+  is_explicitly_revoked: boolean; // True if revoked via UserPermission (is_active=False)
+  business_id: number | null;
+}
+
+export interface UserPermissionsDetail {
+  user_id: number;
+  business_id: number | null;
+  permissions: UserPermissionDetail[];
+}
+
 // Context for managing active location
 export interface LocationContextType {
   currentLocation: Location | null;

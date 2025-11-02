@@ -1,6 +1,8 @@
 """FastAPI entrypoint.""" 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
 
 from app.auth.router import router as auth_router
 from app.businesses.router import router as businesses_router
@@ -31,6 +33,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Custom exception handler to flatten error response structure
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    Handle HTTPException to ensure consistent error response format.
+    
+    If detail is a dict with error_code and detail keys, return them at top level.
+    Otherwise, return detail as-is.
+    """
+    detail = exc.detail
+    
+    # If detail is a dict with our error format, flatten it
+    if isinstance(detail, dict) and "error_code" in detail:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error_code": detail.get("error_code"),
+                "detail": detail.get("detail", detail.get("error_code"))
+            }
+        )
+    
+    # Otherwise return as-is (for backward compatibility)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": detail}
+    )
 
 # Quick table creation (for dev). In prod use Alembic migrations.
 @app.on_event("startup")
