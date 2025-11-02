@@ -156,7 +156,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
 
   // Group permissions by resource
   const groupedPermissions = permissionDetails.reduce((acc, perm) => {
-    const resource = perm.permission_name.split('_')[perm.permission_name.split('_').length > 2 ? 1 : 0];
+    const resource = perm.resource;
     if (!acc[resource]) {
       acc[resource] = [];
     }
@@ -281,7 +281,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                                 />
                                 <div className="ml-3 flex-1">
                                   <span className="text-sm text-gray-700">
-                                    {t(`permissions.${permission.permission_name}`, permission.permission_name)}
+                                    {t(`permissions.names.${permission.permission_name}`, permission.permission_name)}
                                   </span>
                                   {badge && (
                                     <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${

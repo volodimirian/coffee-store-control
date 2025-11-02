@@ -104,9 +104,21 @@ class EmployeeCreateRequest(BaseModel):
     role_in_business: str = "employee"
 
 
+class PermissionOut(BaseModel):
+    """Schema for permission output."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    name: str
+    description: Optional[str] = None
+    resource: str
+    action: str
+    is_active: bool
+
+
 class EmployeeOut(BusinessMemberOut):
     """Schema for employee information with permissions."""
-    permissions: list[str] = []  # List of permission names
+    permissions: list[PermissionOut] = []  # List of permission objects with resource info
 
 
 class OwnerEmployeesOut(BaseModel):
@@ -134,21 +146,11 @@ class PermissionBatchRequest(BaseModel):
     business_id: Optional[int] = None
 
 
-class PermissionOut(BaseModel):
-    """Schema for permission output."""
-    model_config = ConfigDict(from_attributes=True)
-    
-    id: int
-    name: str
-    description: Optional[str] = None
-    resource: str
-    action: str
-    is_active: bool
-
-
 class UserPermissionDetailOut(BaseModel):
     """Schema for detailed user permission information."""
     permission_name: str
+    resource: str  # Resource the permission applies to (users, business, categories, etc.)
+    action: str  # Action type (view, create, edit, delete, etc.)
     has_permission: bool
     source: str  # "role" or "user" or "both"
     is_explicitly_granted: bool  # True if granted via UserPermission

@@ -116,6 +116,8 @@ export interface Permission {
 
 export interface UserPermissionDetail {
   permission_name: string;
+  resource: string; // Resource the permission applies to (users, business, categories, etc.)
+  action: string; // Action type (view, create, edit, delete, etc.)
   has_permission: boolean;
   source: 'role' | 'user' | 'both' | 'none'; // Source of permission
   is_explicitly_granted: boolean; // True if granted via UserPermission

@@ -428,9 +428,9 @@ class BusinessService:
         
         user_business, user = row
         
-        # Get user's permissions for this business
+        # Get user's permissions for this business (full Permission objects)
         permissions_result = await session.execute(
-            select(Permission.name)
+            select(Permission)
             .select_from(UserPermission)
             .join(Permission, UserPermission.permission_id == Permission.id)
             .where(
@@ -491,11 +491,11 @@ class BusinessService:
         )
         rows = result.all()
         
-        # Get permissions for all these users
+        # Get permissions for all these users (full Permission objects)
         employee_list = []
         for user_business, user in rows:
             permissions_result = await session.execute(
-                select(Permission.name)
+                select(Permission)
                 .select_from(UserPermission)
                 .join(Permission, UserPermission.permission_id == Permission.id)
                 .where(
@@ -627,6 +627,8 @@ class BusinessService:
             
             detailed_permissions.append({
                 "permission_name": perm_name,
+                "resource": permission.resource,
+                "action": permission.action,
                 "has_permission": has_permission,
                 "source": source,
                 "is_explicitly_granted": is_explicitly_granted,
