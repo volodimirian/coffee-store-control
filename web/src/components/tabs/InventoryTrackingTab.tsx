@@ -27,8 +27,8 @@ import {
   invoiceItemsApi,
   unitsApi,
 } from '~/shared/api/expenses';
-import CategoryModal from '~/components/expenses/modals/CategoryModal';
-import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
+import CategoryModal from '~/components/modals/CategoryModal';
+import AddSectionModal from '~/components/modals/AddSectionModal';
 import type { 
   ExpenseSection,
   ExpenseCategory,

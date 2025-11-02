@@ -4,8 +4,8 @@ import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, EyeSlashIcon } from '@heroico
 import { unitsApi, type Unit } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers/storageHelpers';
-import UnitModal from '~/components/expenses/modals/UnitModal';
-import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
+import UnitModal from '~/components/modals/UnitModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 
 interface BaseUnitGroup {
   baseUnit: Unit | null; // null for standalone units without base

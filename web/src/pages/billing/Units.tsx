@@ -1,4 +1,4 @@
-import UnitsTab from '~/components/expenses/tabs/UnitsTab';
+import UnitsTab from '~/components/tabs/UnitsTab';
 
 export default function BillingUnits() {
   return <UnitsTab />;

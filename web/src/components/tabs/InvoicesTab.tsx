@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
-import InvoiceModal from '~/components/expenses/modals/InvoiceModal';
-import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
+import InvoiceModal from '~/components/modals/InvoiceModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 
 export default function InvoicesTab() {
   const { t } = useTranslation();

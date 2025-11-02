@@ -1,4 +1,4 @@
-import InventoryTrackingTab from '~/components/expenses/tabs/InventoryTrackingTab';
+import InventoryTrackingTab from '~/components/tabs/InventoryTrackingTab';
 
 export default function ExpensesInventoryTracking() {
   return <InventoryTrackingTab />;

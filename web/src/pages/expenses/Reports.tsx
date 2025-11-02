@@ -1,4 +1,4 @@
-import ReportsTab from '~/components/expenses/tabs/ReportsTab';
+import ReportsTab from '~/components/tabs/ReportsTab';
 
 export default function ExpensesReports() {
   return <ReportsTab />;
