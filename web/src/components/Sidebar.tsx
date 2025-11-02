@@ -5,8 +5,8 @@ import { USER_ROLES } from '~/shared/api/authentication';
 import {
   HomeIcon,
   UserIcon,
-  CubeIcon,
-  ShoppingCartIcon,
+  // CubeIcon,
+  // ShoppingCartIcon,
   ChartBarIcon,
   CogIcon,
   Bars3Icon,
@@ -67,18 +67,18 @@ const menuSections: MenuSection[] = [
         icon: CurrencyDollarIcon,
         labelKey: 'navigation.expenseTracking',
       },
-      {
-        id: 'products',
-        path: '/products',
-        icon: CubeIcon,
-        labelKey: 'navigation.products',
-      },
-      {
-        id: 'orders',
-        path: '/orders',
-        icon: ShoppingCartIcon,
-        labelKey: 'navigation.orders',
-      },
+      // {
+      //   id: 'products',
+      //   path: '/products',
+      //   icon: CubeIcon,
+      //   labelKey: 'navigation.products',
+      // },
+      // {
+      //   id: 'orders',
+      //   path: '/orders',
+      //   icon: ShoppingCartIcon,
+      //   labelKey: 'navigation.orders',
+      // },
       {
         id: 'analytics',
         path: '/analytics',
