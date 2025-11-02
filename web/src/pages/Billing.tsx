@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Outlet } from 'react-router-dom';
-import BillingNavigation from '~/components/billing/BillingNavigation';
+import BillingNavigation from '~/components/BillingNavigation';
 
 export default function Billing() {
   const { t } = useTranslation();
