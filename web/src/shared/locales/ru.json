@@ -712,6 +712,27 @@
         "updateError": "Ошибка обновления счета"
       }
     },
+    "invoiceCalendar": {
+      "title": "Календарь счетов",
+      "description": "Просмотр и управление счетами по дням",
+      "selectLocation": "Выберите локацию для просмотра календаря счетов",
+      "loadingError": "Ошибка загрузки календаря счетов",
+      "noSuppliers": "Поставщики не найдены",
+      "noSuppliersDescription": "Добавьте поставщиков для начала работы со счетами",
+      "addInvoice": "Добавить счет",
+      "dueToday": "Срок сегодня",
+      "table": {
+        "supplier": "Поставщик",
+        "paymentTerms": "Отсрочка"
+      },
+      "statuses": {
+        "paid": "Оплачен",
+        "pending": "Ожидает оплаты",
+        "overdue": "Просрочен",
+        "dueToday": "Срок сегодня",
+        "cancelled": "Отменен"
+      }
+    },
     "inventoryTracking": {
       "title": "Учет инвентаря",
       "selectLocation": "Выберите локацию для просмотра учета",

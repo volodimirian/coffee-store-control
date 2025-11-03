@@ -571,6 +571,27 @@
         "updateError": "Error updating invoice"
       }
     },
+    "invoiceCalendar": {
+      "title": "Invoice Calendar",
+      "description": "View and manage invoices by day",
+      "selectLocation": "Please select a location to view invoice calendar",
+      "loadingError": "Failed to load invoice calendar",
+      "noSuppliers": "No suppliers found",
+      "noSuppliersDescription": "Add suppliers to start working with invoices",
+      "addInvoice": "Add Invoice",
+      "dueToday": "Due Today",
+      "table": {
+        "supplier": "Supplier",
+        "paymentTerms": "Payment Terms"
+      },
+      "statuses": {
+        "paid": "Paid",
+        "pending": "Pending",
+        "overdue": "Overdue",
+        "dueToday": "Due Today",
+        "cancelled": "Cancelled"
+      }
+    },
     "inventoryTracking": {
       "title": "Inventory Tracking",
       "selectLocation": "Please select a location to view inventory tracking",
