@@ -14,6 +14,7 @@ interface ConfirmDeleteModalProps {
   message?: string;
   itemName?: string;
   isLoading?: boolean;
+  isRevocable?: boolean;
   additionalInfo?: string; // Additional warning or info message
   confirmButtonText?: string; // Custom confirm button text
 }
@@ -27,6 +28,7 @@ export default function ConfirmDeleteModal({
   message,
   itemName,
   isLoading = false,
+  isRevocable = false,
   additionalInfo,
   confirmButtonText,
 }: ConfirmDeleteModalProps) {
@@ -112,9 +114,11 @@ export default function ConfirmDeleteModal({
                           {additionalInfo}
                         </p>
                       )}
-                      <p className="mt-2 text-xs text-red-600">
-                        {t('common.actionCannotBeUndone')}
-                      </p>
+                      {!isRevocable && (
+                        <p className="mt-2 text-xs text-red-600">
+                          {t('common.actionCannotBeUndone')}
+                        </p>
+                      )}
                     </div>
                     
                     {/* Buttons */}

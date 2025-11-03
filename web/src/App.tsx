@@ -87,10 +87,10 @@ export default function App() {
             {/* Billing with nested routes */}
             <Route path="billing" element={<Billing />}>
               <Route index element={<BillingInvoices />} />
-              <Route path="suppliers" element={<BillingSuppliers />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="categories" element={<BillingCategories />} />
               <Route path="units" element={<BillingUnits />} />
+              <Route path="suppliers" element={<BillingSuppliers />} />
             </Route>
           </Route>
 

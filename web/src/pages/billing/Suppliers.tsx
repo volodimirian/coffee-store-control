@@ -410,6 +410,7 @@ export default function Suppliers() {
             ? t('billing.suppliers.deleteWithInvoicesMessage', { count: supplierToDelete._invoiceCount })
             : t('billing.suppliers.deleteWithoutInvoicesMessage')
         }
+        isRevocable={supplierToDelete?._hasInvoices}
         itemName={supplierToDelete?.name}
         isLoading={isDeleting}
       />
