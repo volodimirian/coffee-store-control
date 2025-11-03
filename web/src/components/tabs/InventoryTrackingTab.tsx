@@ -388,23 +388,26 @@ export default function InventoryTrackingTab() {
                   {monthDays.map((day) => {
                     const isToday = isSameDay(day, new Date());
                     return (
-                      <th
-                        key={day.toISOString()}
-                        colSpan={2}
-                        className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-r ${
-                          isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
-                        }`}
-                      >
-                        <div className="font-semibold">{format(day, 'd')}</div>
-                        <div className="text-[10px] opacity-75">
-                          {format(day, 'EEE', { locale: dateLocale })}
-                        </div>
-                      </th>
+                      <React.Fragment key={day.toISOString()}>
+                        <th
+                          colSpan={2}
+                          className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-x ${
+                            isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
+                          }`}
+                        >
+                          <div className="font-semibold">{format(day, 'd')}</div>
+                          <div className="text-[10px] opacity-75">
+                            {format(day, 'EEE', { locale: dateLocale })}
+                          </div>
+                        </th>
+                        {/* Spacing column */}
+                        <th className="px-6 bg-gray-50"></th>
+                      </React.Fragment>
                     );
                   })}
                   <th 
                     colSpan={2}
-                    className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b"
+                    className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l"
                   >
                     {t('expenses.inventoryTracking.table.total')}
                   </th>
@@ -414,20 +417,22 @@ export default function InventoryTrackingTab() {
                     const isToday = isSameDay(day, new Date());
                     return (
                       <React.Fragment key={`${day.toISOString()}-sub`}>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-r ${
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x ${
                           isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
                         }`}>
                           {t('expenses.inventoryTracking.table.qty')}
                         </th>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-r ${
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x ${
                           isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
                         }`}>
                           {t('expenses.inventoryTracking.table.amount')}
                         </th>
+                        {/* Spacing column */}
+                        <th className="px-6 bg-gray-50"></th>
                       </React.Fragment>
                     );
                   })}
-                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-r">
+                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-x">
                     {t('expenses.inventoryTracking.table.qty')}
                   </th>
                   <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400">
@@ -464,7 +469,7 @@ export default function InventoryTrackingTab() {
                       {/* Spacing between sections */}
                       {sectionIndex > 0 && (
                         <tr className="bg-gray-100">
-                          <td colSpan={monthDays.length * 2 + 2} className="h-2"></td>
+                          <td colSpan={monthDays.length * 3 + 4} className="h-8"></td>
                         </tr>
                       )}
                       
@@ -506,12 +511,12 @@ export default function InventoryTrackingTab() {
                           return (
                             <React.Fragment key={`${day.toISOString()}-section`}>
                               {/* Skip Quantity Column for section header */}
-                              <td className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                              <td className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
                                 <div className="text-blue-600 text-[10px]">—</div>
                               </td>
                               
                               {/* Amount Column - show section totals */}
-                              <td className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                              <td className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
                                 {dayTotals && (dayTotals.purchasesAmount !== 0 || dayTotals.usageAmount !== 0) ? (
                                   <div className="space-y-0.5">
                                     {dayTotals.purchasesAmount !== 0 && (
@@ -529,10 +534,12 @@ export default function InventoryTrackingTab() {
                                   <div className="text-blue-600 text-[10px]">₽0</div>
                                 )}
                               </td>
+                              {/* Spacing column between days */}
+                              <td className={`px-6 bg-gray-50`}></td>
                             </React.Fragment>
                           );
                         })}
-                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 border-r">
+                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 border-x">
                           <div className="text-blue-600 text-[10px]">—</div>
                         </td>
                         <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100">
@@ -578,7 +585,7 @@ export default function InventoryTrackingTab() {
                                 <React.Fragment key={`${day.toISOString()}-cat`}>
                                   {/* Quantity Column */}
                                   <td 
-                                    className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-50' : ''}`}
+                                    className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-50' : ''}`}
                                     title={dayData && dayData.purchaseDetails.length > 0 ? 
                                       dayData.purchaseDetails.map(detail => 
                                         detail.wasConverted 
@@ -611,7 +618,7 @@ export default function InventoryTrackingTab() {
                                   
                                   {/* Amount Column */}
                                   <td 
-                                    className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-50' : ''}`}
+                                    className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-50' : ''}`}
                                   >
                                     {dayData ? (
                                       <div className="space-y-0.5">
@@ -633,10 +640,12 @@ export default function InventoryTrackingTab() {
                                       <div className="text-gray-400">₽0</div>
                                     )}
                                   </td>
+                                  {/* Spacing column between days */}
+                                  <td className={`px-6 bg-gray-50`}></td>
                                 </React.Fragment>
                               );
                             })}
-                            <td className="px-2 py-2 text-center text-xs border-r">
+                            <td className="px-2 py-2 text-center text-xs border-x">
                               <div className={totalQty > 0 ? 'text-green-600' : totalQty < 0 ? 'text-red-600' : 'text-gray-900'}>
                                 {formatQty(totalQty)}
                               </div>
