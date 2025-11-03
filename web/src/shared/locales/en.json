@@ -580,6 +580,11 @@
       "noSuppliersDescription": "Add suppliers to start working with invoices",
       "addInvoice": "Add Invoice",
       "dueToday": "Due Today",
+      "days": "days",
+      "copyTaxId": "Copy Tax ID",
+      "taxIdCopied": "Tax ID copied",
+      "invoiceNumber": "Invoice #",
+      "invoiceFrom": "from",
       "table": {
         "supplier": "Supplier",
         "paymentTerms": "Payment Terms"

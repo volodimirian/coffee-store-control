@@ -721,6 +721,11 @@
       "noSuppliersDescription": "Добавьте поставщиков для начала работы со счетами",
       "addInvoice": "Добавить счет",
       "dueToday": "Срок сегодня",
+      "days": "дней",
+      "copyTaxId": "Скопировать ИНН",
+      "taxIdCopied": "ИНН скопирован",
+      "invoiceNumber": "Счет №",
+      "invoiceFrom": "от",
       "table": {
         "supplier": "Поставщик",
         "paymentTerms": "Отсрочка"

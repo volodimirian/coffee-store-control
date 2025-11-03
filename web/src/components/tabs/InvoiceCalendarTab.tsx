@@ -3,6 +3,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
+  ClipboardDocumentIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import {
   format,
@@ -42,6 +44,7 @@ export default function InvoiceCalendarTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [copiedTaxId, setCopiedTaxId] = useState<number | null>(null);
 
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
 
@@ -60,6 +63,16 @@ export default function InvoiceCalendarTab() {
   const handleInvoiceAdded = () => {
     setIsInvoiceModalOpen(false);
     loadData();
+  };
+
+  const handleCopyTaxId = async (supplierId: number, taxId: string) => {
+    try {
+      await navigator.clipboard.writeText(taxId);
+      setCopiedTaxId(supplierId);
+      setTimeout(() => setCopiedTaxId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy tax ID:', err);
+    }
   };
 
   // Get invoice status based on dates and paid_status
@@ -117,11 +130,19 @@ export default function InvoiceCalendarTab() {
         limit: 1000,
       });
 
-      // Load all invoices for this business
+      // Calculate date range for invoice filtering
+      // We need to account for payment terms, so we fetch invoices from earlier
+      // For example, if max payment terms is 90 days, we need invoices from (month_start - 90 days)
+      const maxPaymentTermsDays = 90; // Conservative estimate for max payment terms
+      const fetchFromDate = addDays(monthStart, -maxPaymentTermsDays);
+      
+      // Load invoices for this period with date filtering
       const invoicesResponse = await invoicesApi.list({
         business_id: currentLocation.id,
+        date_from: format(fetchFromDate, 'yyyy-MM-dd'),
+        date_to: format(monthEnd, 'yyyy-MM-dd'),
         skip: 0,
-        limit: 10000,
+        limit: 1000,
       });
 
       // Build supplier rows with invoices mapped by due date
@@ -293,13 +314,35 @@ export default function InvoiceCalendarTab() {
               </thead>
               <tbody className="bg-white">
                 {supplierRows.map((row) => {
+                  const isCopied = copiedTaxId === row.supplier.id;
                   return (
                     <tr key={`supplier-${row.supplier.id}`} className="hover:bg-gray-50 border-b">
                       <td className="sticky left-0 bg-white hover:bg-gray-50 px-4 py-3 text-sm border-r z-10">
                         <div className="font-medium text-gray-900">{row.supplier.name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                          {row.supplier.tax_id && (
+                            <div className="flex items-center gap-1">
+                              <span>
+                                {t('expenses.suppliers.taxId')}: {row.supplier.tax_id}
+                                <button
+                                  onClick={() => handleCopyTaxId(row.supplier.id, row.supplier.tax_id!)}
+                                  className="p-0.5 hover:bg-gray-200 rounded transition-colors"
+                                  title={t('expenses.invoiceCalendar.copyTaxId')}
+                                >
+                                  {isCopied ? (
+                                    <CheckIcon className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <ClipboardDocumentIcon className="h-3 w-3 text-gray-600" />
+                                  )}
+                                </button>  
+                              </span>
+                              
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-red-600 mt-1">
                           {t('expenses.invoiceCalendar.table.paymentTerms')}:{' '}
-                          {row.supplier.payment_terms_days || 14} {t('expenses.suppliers.days')}
+                          {row.supplier.payment_terms_days || 14} {t('expenses.invoiceCalendar.days')}
                         </div>
                       </td>
                       {monthDays.map((day) => {
@@ -323,17 +366,17 @@ export default function InvoiceCalendarTab() {
                                     return (
                                       <div
                                         key={invoice.id}
-                                        className={`text-[10px] px-2 py-1 rounded border ${statusColor} cursor-pointer hover:opacity-80 transition-opacity`}
-                                        title={`${t('expenses.invoices.number')}: ${invoice.invoice_number || `#${invoice.id}`}\n${t('expenses.invoices.date')}: ${format(parseISO(invoice.invoice_date), 'dd.MM.yyyy')}\n${t('expenses.invoices.amount')}: ₽${parseFloat(invoice.total_amount).toFixed(2)}\n${t('expenses.invoices.status.pending')}: ${t(`expenses.invoiceCalendar.statuses.${status}`)}`}
+                                        className={`text-[10px] px-2 py-1 rounded border ${statusColor} cursor-pointer hover:opacity-80 transition-opacity text-center`}
+                                        title={`${t('expenses.invoices.number')}: ${invoice.invoice_number || `#${invoice.id}`}\n${t('expenses.invoices.date')}: ${format(parseISO(invoice.invoice_date), 'dd.MM.yyyy')}\n${t('expenses.invoices.amount')}: ${parseFloat(invoice.total_amount).toFixed(2)} ₽\n${t('expenses.invoices.status.title')}: ${t(`expenses.invoiceCalendar.statuses.${status}`)}`}
                                       >
-                                        <div className="font-semibold">
-                                          {invoice.invoice_number || `#${invoice.id}`}
+                                        <div className="font-semibold text-[11px]">
+                                          {t('expenses.invoiceCalendar.invoiceNumber')}{invoice.invoice_number || invoice.id}
                                         </div>
-                                        <div className="text-[9px]">
-                                          {format(parseISO(invoice.invoice_date), 'dd.MM')}
+                                        <div className="text-[10px] mt-0.5">
+                                          {t('expenses.invoiceCalendar.invoiceFrom')} {format(parseISO(invoice.invoice_date), 'dd.MM.yyyy')}
                                         </div>
-                                        <div className="font-bold">
-                                          ₽{parseFloat(invoice.total_amount).toFixed(0)}
+                                        <div className="font-bold text-[11px] mt-0.5">
+                                          {parseFloat(invoice.total_amount).toFixed(2)} ₽
                                         </div>
                                       </div>
                                     );
