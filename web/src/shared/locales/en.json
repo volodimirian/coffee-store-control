@@ -842,6 +842,8 @@
       "edit": "Edit",
       "delete": "Delete",
       "restore": "Restore",
+      "activate": "Activate supplier",
+      "deactivate": "Deactivate supplier",
       "search": "Search suppliers...",
       "loading": "Loading...",
       "loadingError": "Failed to load suppliers",

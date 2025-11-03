@@ -155,6 +155,22 @@ export default function Suppliers() {
     }
   };
 
+  const handleToggleSupplierStatus = async (supplier: Supplier) => {
+    try {
+      if (supplier.is_active) {
+        // Деактивировать поставщика (мягкое удаление)
+        await suppliersApi.delete(supplier.id, false);
+      } else {
+        // Активировать поставщика (восстановление)
+        await suppliersApi.restore(supplier.id);
+      }
+      await loadSuppliers();
+    } catch (err) {
+      console.error('Failed to toggle supplier status:', err);
+      setError(supplier.is_active ? t('billing.suppliers.deleteError') : t('billing.suppliers.restoreError'));
+    }
+  };
+
   const totalPages = Math.ceil(totalSuppliers / pageSize);
 
   return (
@@ -241,7 +257,16 @@ export default function Suppliers() {
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">
-            {suppliers.map((supplier) => (
+            {suppliers
+              .sort((a, b) => {
+                // Сначала активные поставщики, потом неактивные
+                if (a.is_active !== b.is_active) {
+                  return a.is_active ? -1 : 1;
+                }
+                // Внутри группы сортируем по имени
+                return a.name.localeCompare(b.name);
+              })
+              .map((supplier) => (
               <li key={supplier.id} className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -270,15 +295,17 @@ export default function Suppliers() {
                         </div>
                       </div>
                       <div className="flex-shrink-0 ml-4">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        <button
+                          onClick={() => handleToggleSupplierStatus(supplier)}
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-200 hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${
                             supplier.is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200 focus:ring-green-500'
+                              : 'bg-red-100 text-red-800 hover:bg-red-200 focus:ring-red-500'
                           }`}
+                          title={supplier.is_active ? t('billing.suppliers.deactivate') : t('billing.suppliers.activate')}
                         >
                           {supplier.is_active ? t('billing.suppliers.active') : t('billing.suppliers.inactive')}
-                        </span>
+                        </button>
                       </div>
                     </div>
                   </div>
