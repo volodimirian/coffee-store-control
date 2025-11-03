@@ -19,6 +19,20 @@ import {
 import { useAppContext } from '~/shared/context/AppContext';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
 
+// Функция для форматирования чисел - убирает лишние нули после запятой
+function formatNumber(value: string | number): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '0';
+  
+  // Если число целое, показываем без дробной части
+  if (num % 1 === 0) {
+    return num.toString();
+  }
+  
+  // Для дробных чисел убираем лишние нули в конце
+  return num.toFixed(4).replace(/\.?0+$/, '');
+}
+
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -463,7 +477,7 @@ export default function InvoiceModal({
                                     </option>
                                     {derived.map((derivedUnit) => (
                                       <option key={derivedUnit.id} value={derivedUnit.id}>
-                                        ↳ {derivedUnit.name} ({derivedUnit.symbol}) = {derivedUnit.conversion_factor} {baseUnit.symbol}
+                                        ↳ {derivedUnit.name} ({derivedUnit.symbol}) = {formatNumber(derivedUnit.conversion_factor)} {baseUnit.symbol}
                                       </option>
                                     ))}
                                   </optgroup>

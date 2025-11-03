@@ -431,7 +431,7 @@
       "baseUnit": "Base unit",
       "derivedUnit": "Derived unit",
       "conversionFactor": "Conversion factor",
-      "conversionInfo": "{{value}} {{fromSymbol}} = 1 {{toSymbol}}",
+      "conversionInfo": "1 {{fromSymbol}} = {{value}} {{toSymbol}}",
       "noBaseUnit": "No base unit",
       "selectBaseUnit": "Select base unit",
       "unitTypes": {

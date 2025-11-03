@@ -572,7 +572,7 @@
       "baseUnit": "Базовая единица",
       "derivedUnit": "Производная единица",
       "conversionFactor": "Коэффициент конвертации",
-      "conversionInfo": "{{value}} {{fromSymbol}} = 1 {{toSymbol}}",
+      "conversionInfo": "1 {{fromSymbol}} = {{value}} {{toSymbol}}",
       "noBaseUnit": "Нет базовой единицы",
       "selectBaseUnit": "Выберите базовую единицу",
       "unitTypes": {
