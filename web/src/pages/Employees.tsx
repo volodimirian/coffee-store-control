@@ -10,10 +10,10 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
-import { ConfirmDeleteModal } from '~/components/ConfirmDeleteModal';
-import { EmployeeModal } from '~/components/EmployeeModal';
-import { AssignEmployeeModal } from '~/components/AssignEmployeeModal';
-import { PermissionModal } from '~/components/PermissionModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
+import { EmployeeModal } from '~/components/modals/EmployeeModal';
+import { AssignEmployeeModal } from '~/components/modals/AssignEmployeeModal';
+import { PermissionModal } from '~/components/modals/PermissionModal';
 import { employeesApi, permissionsApi } from '~/shared/api/employees';
 import type { Employee, UserPermissionsDetail } from '~/shared/types/locations';
 import { useApiError } from '~/shared/lib/useApiError';
@@ -531,7 +531,7 @@ export default function EmployeesPage() {
         title={t('employees.deactivateEmployee')}
         message={t('employees.confirmDeactivateMessage')}
         itemName={deletingEmployee?.username}
-        isDeleting={isDeleting}
+        isLoading={isDeleting}
       />
     </div>
   );

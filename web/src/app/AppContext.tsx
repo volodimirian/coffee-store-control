@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AppContext, type AppContextType } from "~/shared/context/AppContext";
 import { locationsApi } from "~/shared/api/locations";
+import { invoicesApi } from "~/shared/api/expenses";
 import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~/shared/types/locations";
 import { hasToken, logout as helperLogout } from "~/shared/lib/helpers/storageHelpers";
 import { setLogoutHandler } from "~/shared/api/client";
@@ -22,6 +23,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentLocationState(location);
     localStorage.setItem('currentLocation', JSON.stringify(location));
   };
+
+  const updateOverdueStatuses = useCallback(async (businessId: number): Promise<void> => {
+    try {
+      await invoicesApi.updateOverdueStatuses(businessId);
+      console.log('Updated overdue statuses for business:', businessId);
+    } catch (err) {
+      console.error('Failed to update overdue statuses:', err);
+      // Silently fail - this is not critical for the user experience
+    }
+  }, []);
 
   const fetchLocations = useCallback(async (): Promise<void> => {
     if (!hasToken()) return;
@@ -89,6 +100,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
   }, []);
+
+  // Update overdue statuses when current location changes
+  useEffect(() => {
+    if (currentLocation && hasToken()) {
+      console.log('Current location changed, updating overdue statuses for business:', currentLocation.id);
+      updateOverdueStatuses(currentLocation.id);
+    }
+  }, [currentLocation, updateOverdueStatuses]);
 
   // Fetch locations when user is authenticated
   useEffect(() => {
@@ -168,6 +187,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     fetchLocations,
     fetchLocationMembers,
     setIsInitialized,
+    updateOverdueStatuses,
   };
 
   return (

@@ -11,9 +11,9 @@ import {
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers/storageHelpers';
-import SectionModal from '~/components/expenses/modals/SectionModal';
-import CategoryModal from '~/components/expenses/modals/CategoryModal';
-import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
+import SectionModal from '~/components/modals/SectionModal';
+import CategoryModal from '~/components/modals/CategoryModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 
 interface SectionWithCategories extends ExpenseSection {
   categories: ExpenseCategory[];

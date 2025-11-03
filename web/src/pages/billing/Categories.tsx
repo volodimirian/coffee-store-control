@@ -1,5 +1,5 @@
 import CategoriesTab from '~/components/tabs/CategoriesTab';
 
-export default function ExpensesCategories() {
+export default function BillingCategories() {
   return <CategoriesTab />;
 }

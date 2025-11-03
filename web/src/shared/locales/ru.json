@@ -16,6 +16,8 @@
     "back": "Назад",
     "brandName": "Business Control",
     "actionCannotBeUndone": "Это действие нельзя отменить.",
+    "confirmDeletion": "Подтвердите удаление",
+    "confirmDeletionMessage": "Вы уверены, что хотите удалить этот элемент?",
     "order": "Порядок",
     "filters": "Фильтры",
     "clearFilters": "Очистить фильтры",
@@ -49,6 +51,7 @@
     "personalAccount": "Личный кабинет",
     "expenses": "Расходы",
     "expenseTracking": "Учет расходов",
+    "billing": "Оплата",
     "locations": "Локации",
     "employees": "Сотрудники"
   },
@@ -530,6 +533,16 @@
           "title": "Удалить счет",
           "message": "Вы уверены, что хотите удалить счет \"{{name}}\"? Это действие нельзя отменить.",
           "confirmButton": "Удалить счет"
+        },
+        "employee": {
+          "title": "Деактивировать сотрудника",
+          "message": "Вы уверены, что хотите деактивировать сотрудника \"{{name}}\"?",
+          "confirmButton": "Деактивировать"
+        },
+        "location": {
+          "title": "Удалить локацию",
+          "message": "Вы уверены, что хотите удалить локацию \"{{name}}\"? Это действие нельзя отменить.",
+          "confirmButton": "Удалить локацию"
         }
       }
     },
@@ -559,7 +572,7 @@
       "baseUnit": "Базовая единица",
       "derivedUnit": "Производная единица",
       "conversionFactor": "Коэффициент конвертации",
-      "conversionInfo": "{{value}} {{fromSymbol}} = 1 {{toSymbol}}",
+      "conversionInfo": "1 {{fromSymbol}} = {{value}} {{toSymbol}}",
       "noBaseUnit": "Нет базовой единицы",
       "selectBaseUnit": "Выберите базовую единицу",
       "unitTypes": {
@@ -630,17 +643,20 @@
         "all": "Все счета",
         "pending": "Ожидают оплаты",
         "paid": "Оплачены",
-        "cancelled": "Отменены"
+        "cancelled": "Отменены",
+        "overdue": "Просрочены"
       },
       "status": {
         "pending": "Ожидает",
         "paid": "Оплачен",
-        "cancelled": "Отменен"
+        "cancelled": "Отменен",
+        "overdue": "Просрочен"
       },
       "table": {
         "invoiceNumber": "№ счета",
         "supplier": "Поставщик",
-        "date": "Дата",
+        "createdDate": "Дата создания",
+        "paymentDate": "Дата оплаты",
         "totalAmount": "Сумма",
         "status": "Статус",
         "actions": "Действия"
@@ -807,6 +823,82 @@
         "milk": "Молоко и молочные",
         "syrups": "Сиропы",
         "equipment": "Оборудование"
+      }
+    }
+  },
+  "billing": {
+    "navigation": {
+      "invoices": "Счета",
+      "suppliers": "Поставщики", 
+      "categories": "Категории",
+      "units": "Единицы измерения"
+    },
+    "page": {
+      "description": "Управление оплатами и финансовыми операциями для",
+      "defaultLocation": "вашей локации"
+    },
+    "suppliers": {
+      "title": "Поставщики",
+      "description": "Управление поставщиками и их контактной информацией",
+      "create": "Добавить поставщика",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "restore": "Восстановить",
+      "activate": "Активировать поставщика",
+      "deactivate": "Деактивировать поставщика",
+      "search": "Поиск поставщиков...",
+      "loading": "Загрузка...",
+      "loadingError": "Ошибка загрузки поставщиков",
+      "createError": "Ошибка создания поставщика",
+      "updateError": "Ошибка обновления поставщика",
+      "deleteError": "Ошибка удаления поставщика",
+      "restoreError": "Ошибка восстановления поставщика",
+      "empty": "Нет поставщиков",
+      "noResults": "Поставщики не найдены",
+      "active": "Активный",
+      "inactive": "Неактивный",
+      "filters": {
+        "all": "Все",
+        "active": "Активные",
+        "inactive": "Неактивные"
+      },
+      "name": "Название",
+      "namePlaceholder": "Введите название поставщика",
+      "taxId": "ИНН",
+      "taxIdPlaceholder": "1234567890123",
+      "paymentTerms": "Отсрочка платежа",
+      "days": "дней",
+      "phone": "Телефон",
+      "phonePlaceholder": "+7 (999) 123-45-67",
+      "email": "Email",
+      "emailPlaceholder": "email@example.com",
+      "website": "Веб-сайт",
+      "websitePlaceholder": "https://example.com",
+      "address": "Адрес",
+      "addressPlaceholder": "Введите адрес поставщика",
+      "notes": "Примечания",
+      "notesPlaceholder": "Дополнительная информация о поставщике",
+      "createTitle": "Добавить поставщика",
+      "editTitle": "Редактировать поставщика",
+      "deleteTitle": "Удалить поставщика",
+      "deleteMessage": "Вы уверены, что хотите удалить этого поставщика? Это действие можно будет отменить.",
+      "deleteHardTitle": "Полностью удалить поставщика",
+      "deleteHardMessage": "У этого поставщика нет счетов. Поставщик будет удален полностью без возможности восстановления.",
+      "deleteSoftMessage": "У этого поставщика есть {{count}} счетов. Поставщик будет деактивирован, но его можно будет восстановить.",
+      "deleteSoftTitle": "Деактивировать поставщика",
+      "deleteWithInvoicesTitle": "Деактивировать поставщика",
+      "deleteWithInvoicesMessage": "У этого поставщика есть {{count}} счетов. Поставщик будет деактивирован, но его можно будет восстановить.",
+      "deleteWithoutInvoicesTitle": "Полностью удалить поставщика",
+      "deleteWithoutInvoicesMessage": "У этого поставщика нет счетов. Поставщик будет удален полностью без возможности восстановления.",
+      "basicInfo": "Основная информация",
+      "contactInfo": "Контактная информация",
+      "isActive": "Активный поставщик",
+      "validation": {
+        "nameRequired": "Название поставщика обязательно",
+        "taxIdRequired": "ИНН обязателен",
+        "paymentTermsRange": "Условия оплаты должны быть от 1 до 365 дней",
+        "emailInvalid": "Неверный формат email",
+        "businessRequired": "Бизнес не выбран"
       }
     }
   }

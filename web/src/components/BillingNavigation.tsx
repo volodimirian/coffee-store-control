@@ -1,56 +1,46 @@
 import { NavLink } from 'react-router-dom';
 import { 
-  ChartBarIcon, 
-  TableCellsIcon,
+  DocumentTextIcon,
   TagIcon,
   ScaleIcon,
-  DocumentTextIcon,
-  DocumentChartBarIcon
+  BuildingOffice2Icon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 
-export default function ExpensesNavigation() {
+export default function BillingNavigation() {
   const { t } = useTranslation();
   
   const tabs = [
     {
-      name: t('expenses.navigation.overview'),
-      icon: ChartBarIcon,
-      path: '/expenses',
-    },
-    {
-      name: t('expenses.navigation.inventoryTracking'),
-      icon: TableCellsIcon,
-      path: '/expenses/inventory-tracking',
-    },
-    {
-      name: t('expenses.navigation.categories'),
-      icon: TagIcon,
-      path: '/expenses/categories',
-    },
-    {
-      name: t('expenses.navigation.units'),
-      icon: ScaleIcon,
-      path: '/expenses/units',
-    },
-    {
-      name: t('expenses.navigation.invoices'),
+      name: t('billing.navigation.invoices'),
       icon: DocumentTextIcon,
-      path: '/expenses/invoices',
+      path: '/billing',
     },
     {
-      name: t('expenses.navigation.reports'),
-      icon: DocumentChartBarIcon,
-      path: '/expenses/reports',
+      name: t('billing.navigation.categories'),
+      icon: TagIcon,
+      path: '/billing/categories',
+    },
+    {
+      name: t('billing.navigation.units'),
+      icon: ScaleIcon,
+      path: '/billing/units',
+    },
+    {
+      name: t('billing.navigation.suppliers'),
+      icon: BuildingOffice2Icon,
+      path: '/billing/suppliers',
     },
   ];
+
   return (
     <div className="border-b border-gray-200 pb-5 mb-6">
-      <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">{tabs.map((tab) => (
+      <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
+        {tabs.map((tab) => (
           <NavLink
             key={tab.name}
             to={tab.path}
-            end={tab.path === '/expenses'} // Only for the overview tab
+            end={tab.path === '/billing'} // Only for the invoices tab
             className={({ isActive }) =>
               `rounded-lg py-2.5 px-4 text-sm font-medium leading-5 transition-all duration-200 ${
                 isActive

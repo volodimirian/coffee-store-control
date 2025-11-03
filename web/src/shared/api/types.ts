@@ -251,9 +251,11 @@ export interface SupplierContactInfo {
 export interface Supplier {
   id: number;
   name: string;
+  tax_id: string; // Tax identification number (ИНН)
   business_id: number;
   created_by: number;
   contact_info?: SupplierContactInfo;
+  payment_terms_days: number; // Payment due days after invoice date
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -261,14 +263,18 @@ export interface Supplier {
 
 export interface SupplierCreate {
   name: string;
+  tax_id: string; // Required tax identification number
   business_id: number;
   contact_info?: SupplierContactInfo;
+  payment_terms_days?: number; // Default will be 14 days
   is_active?: boolean;
 }
 
 export interface SupplierUpdate {
   name?: string;
+  tax_id?: string;
   contact_info?: SupplierContactInfo;
+  payment_terms_days?: number;
   is_active?: boolean;
 }
 
@@ -279,7 +285,7 @@ export interface SupplierListResponse {
 
 // ============ Invoice & InvoiceItem Types ============
 
-export type InvoiceStatus = 'pending' | 'paid' | 'cancelled';
+export type InvoiceStatus = 'pending' | 'paid' | 'cancelled' | 'overdue';
 
 export interface Invoice {
   id: number;

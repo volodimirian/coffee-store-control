@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
-import InvoiceModal from '~/components/expenses/modals/InvoiceModal';
-import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
+import InvoiceModal from '~/components/modals/InvoiceModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 
 export default function InvoicesTab() {
   const { t } = useTranslation();
@@ -63,6 +63,23 @@ export default function InvoicesTab() {
     loadSuppliers();
   }, [currentLocation]);
 
+  // Helper to determine if invoice is overdue
+  const isOverdue = useCallback((invoice: Invoice): boolean => {
+    if (invoice.paid_status !== 'pending') return false;
+    
+    // Get supplier payment terms
+    const supplier = suppliers.find(s => s.id === invoice.supplier_id);
+    const paymentTerms = supplier?.payment_terms_days || 14; // Default to 14 days if supplier not found
+    
+    const invoiceDate = new Date(invoice.invoice_date);
+    const paymentDueDate = new Date(invoiceDate);
+    paymentDueDate.setDate(invoiceDate.getDate() + paymentTerms);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+    paymentDueDate.setHours(0, 0, 0, 0);
+    return today > paymentDueDate;
+  }, [suppliers]);
+
   // Load invoices
   const loadInvoices = useCallback(async () => {
     if (!currentLocation) {
@@ -90,15 +107,23 @@ export default function InvoicesTab() {
         // Use regular list API with filters
         const response = await invoicesApi.list({
           business_id: currentLocation.id,
-          paid_status: statusFilter === 'all' ? undefined : statusFilter,
+          paid_status: statusFilter === 'all' || statusFilter === 'overdue' ? undefined : statusFilter,
           supplier_id: supplierFilter === 'all' ? undefined : supplierFilter,
           date_from: dateFromFilter || undefined,
           date_to: dateToFilter || undefined,
           skip,
           limit: pageSize,
         });
-        setInvoices(response.invoices);
-        setTotalInvoices(response.total);
+        
+        let filteredInvoices = response.invoices;
+        
+        // Apply overdue filter on frontend
+        if (statusFilter === 'overdue') {
+          filteredInvoices = response.invoices.filter(invoice => isOverdue(invoice));
+        }
+        
+        setInvoices(filteredInvoices);
+        setTotalInvoices(statusFilter === 'overdue' ? filteredInvoices.length : response.total);
       }
     } catch (err) {
       console.error('Failed to load invoices:', err);
@@ -106,7 +131,7 @@ export default function InvoicesTab() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentLocation, statusFilter, supplierFilter, dateFromFilter, dateToFilter, debouncedSearchQuery, currentPage, pageSize, t]);
+  }, [currentLocation, statusFilter, supplierFilter, dateFromFilter, dateToFilter, debouncedSearchQuery, currentPage, pageSize, t, isOverdue]);
 
   useEffect(() => {
     loadInvoices();
@@ -116,6 +141,31 @@ export default function InvoicesTab() {
   const getSupplierName = (supplierId: number): string => {
     const supplier = suppliers.find(s => s.id === supplierId);
     return supplier ? supplier.name : `Supplier #${supplierId}`;
+  };
+
+  // Helper to get payment date
+  const getPaymentDate = (invoice: Invoice): string => {
+    if (invoice.paid_status === 'paid' && invoice.paid_date) {
+      return new Date(invoice.paid_date).toLocaleDateString();
+    }
+    
+    // Get supplier payment terms
+    const supplier = suppliers.find(s => s.id === invoice.supplier_id);
+    const paymentTerms = supplier?.payment_terms_days || 14; // Default to 14 days if supplier not found
+    
+    // For pending/cancelled/overdue, add payment terms to invoice_date
+    const invoiceDate = new Date(invoice.invoice_date);
+    const paymentDate = new Date(invoiceDate);
+    paymentDate.setDate(invoiceDate.getDate() + paymentTerms);
+    return paymentDate.toLocaleDateString();
+  };
+
+  // Helper to get display status
+  const getDisplayStatus = (invoice: Invoice): string => {
+    if (isOverdue(invoice)) {
+      return 'overdue';
+    }
+    return invoice.paid_status;
   };
 
   // Reset to first page when filters change
@@ -204,13 +254,14 @@ export default function InvoicesTab() {
     );
   }
 
-  const getStatusBadge = (status: InvoiceStatus) => {
+  const getStatusBadge = (status: string) => {
     const badges = {
       pending: 'bg-yellow-100 text-yellow-800',
       paid: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
+      overdue: 'bg-red-100 text-red-800',
     };
-    return badges[status] || 'bg-gray-100 text-gray-800';
+    return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -258,6 +309,7 @@ export default function InvoicesTab() {
                   <option value="pending">{t('expenses.invoices.filters.pending')}</option>
                   <option value="paid">{t('expenses.invoices.filters.paid')}</option>
                   <option value="cancelled">{t('expenses.invoices.filters.cancelled')}</option>
+                  <option value="overdue">{t('expenses.invoices.filters.overdue')}</option>
                 </select>
               </div>
 
@@ -371,13 +423,16 @@ export default function InvoicesTab() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.invoiceNumber')}
+                  {t('expenses.invoices.table.createdDate')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('expenses.invoices.table.paymentDate')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('expenses.invoices.table.supplier')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.date')}
+                  {t('expenses.invoices.table.invoiceNumber')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('expenses.invoices.table.totalAmount')}
@@ -393,21 +448,24 @@ export default function InvoicesTab() {
             <tbody className="bg-white divide-y divide-gray-200">
               {invoices.map((invoice) => (
                 <tr key={invoice.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {invoice.invoice_number || `#${invoice.id}`}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(invoice.invoice_date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {getPaymentDate(invoice)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getSupplierName(invoice.supplier_id)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(invoice.invoice_date).toLocaleDateString()}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {invoice.invoice_number || `#${invoice.id}`}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ₽{parseFloat(invoice.total_amount).toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(invoice.paid_status)}`}>
-                      {t(`expenses.invoices.status.${invoice.paid_status}`)}
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(getDisplayStatus(invoice))}`}>
+                      {t(`expenses.invoices.status.${getDisplayStatus(invoice)}`)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

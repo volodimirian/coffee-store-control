@@ -28,7 +28,9 @@
     "today": "Today",
     "original": "Originally",
     "converted": "Converted to",
-    "quantity": "Quantity"
+    "quantity": "Quantity",
+    "confirmDeletion": "Confirm Deletion",
+    "confirmDeletionMessage": "Are you sure you want to delete this item? This action cannot be undone."
   },
   "navigation": {
     "home": "Home",
@@ -47,6 +49,7 @@
     "personalAccount": "Personal Account",
     "expenses": "Expenses",
     "expenseTracking": "Expense Tracking",
+    "billing": "Billing",
     "locations": "Locations",
     "employees": "Employees"
   },
@@ -385,6 +388,16 @@
           "confirmButton": "Delete Unit",
           "withDerived": "⚠️ This will also delete {{count}} derived units"
         },
+        "employee": {
+          "title": "Deactivate Employee",
+          "message": "Are you sure you want to deactivate the employee \"{{name}}\"? They will lose access to the system.",
+          "confirmButton": "Deactivate"
+        },
+        "location": {
+          "title": "Delete Location",
+          "message": "Are you sure you want to delete the location \"{{name}}\"? This action cannot be undone.",
+          "confirmButton": "Delete Location"
+        },
         "invoice": {
           "title": "Delete Invoice",
           "message": "Are you sure you want to delete invoice \"{{name}}\"? This action cannot be undone.",
@@ -418,7 +431,7 @@
       "baseUnit": "Base unit",
       "derivedUnit": "Derived unit",
       "conversionFactor": "Conversion factor",
-      "conversionInfo": "{{value}} {{fromSymbol}} = 1 {{toSymbol}}",
+      "conversionInfo": "1 {{fromSymbol}} = {{value}} {{toSymbol}}",
       "noBaseUnit": "No base unit",
       "selectBaseUnit": "Select base unit",
       "unitTypes": {
@@ -489,17 +502,20 @@
         "all": "All Invoices",
         "pending": "Pending",
         "paid": "Paid",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "overdue": "Overdue"
       },
       "status": {
         "pending": "Pending",
         "paid": "Paid",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "overdue": "Overdue"
       },
       "table": {
         "invoiceNumber": "Invoice #",
         "supplier": "Supplier",
-        "date": "Date",
+        "createdDate": "Created Date",
+        "paymentDate": "Payment Date",
         "totalAmount": "Total Amount",
         "status": "Status",
         "actions": "Actions"
@@ -806,6 +822,82 @@
       "approve_invoice": "Approve Invoices",
       "reject_invoice": "Reject Invoices",
       "view_api_docs": "View API Documentation"
+    }
+  },
+  "billing": {
+    "navigation": {
+      "invoices": "Invoices",
+      "suppliers": "Suppliers",
+      "categories": "Categories", 
+      "units": "Units"
+    },
+    "page": {
+      "description": "Manage billing and financial operations for",
+      "defaultLocation": "your location"
+    },
+    "suppliers": {
+      "title": "Suppliers",
+      "description": "Manage suppliers and their contact information",
+      "create": "Add Supplier",
+      "edit": "Edit",
+      "delete": "Delete",
+      "restore": "Restore",
+      "activate": "Activate supplier",
+      "deactivate": "Deactivate supplier",
+      "search": "Search suppliers...",
+      "loading": "Loading...",
+      "loadingError": "Failed to load suppliers",
+      "createError": "Failed to create supplier",
+      "updateError": "Failed to update supplier",
+      "deleteError": "Failed to delete supplier",
+      "restoreError": "Failed to restore supplier",
+      "empty": "No suppliers",
+      "noResults": "No suppliers found",
+      "active": "Active",
+      "inactive": "Inactive",
+      "filters": {
+        "all": "All",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "name": "Name",
+      "namePlaceholder": "Enter supplier name",
+      "taxId": "Tax ID",
+      "taxIdPlaceholder": "1234567890123",
+      "paymentTerms": "Payment Terms",
+      "days": "days",
+      "phone": "Phone",
+      "phonePlaceholder": "+1 (555) 123-4567",
+      "email": "Email",
+      "emailPlaceholder": "email@example.com",
+      "website": "Website",
+      "websitePlaceholder": "https://example.com",
+      "address": "Address",
+      "addressPlaceholder": "Enter supplier address",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional information about the supplier",
+      "createTitle": "Add Supplier",
+      "editTitle": "Edit Supplier",
+            "deleteTitle": "Delete Supplier",
+      "deleteMessage": "Are you sure you want to delete this supplier? This action can be undone.",
+      "deleteHardTitle": "Permanently Delete Supplier",
+      "deleteHardMessage": "This supplier has no invoices. The supplier will be permanently deleted without possibility of recovery.",
+      "deleteSoftMessage": "This supplier has {{count}} invoices. The supplier will be deactivated but can be restored later.",
+      "deleteSoftTitle": "Deactivate Supplier",
+      "deleteWithInvoicesTitle": "Deactivate Supplier",
+      "deleteWithInvoicesMessage": "This supplier has {{count}} invoices. The supplier will be deactivated but can be restored later.",
+      "deleteWithoutInvoicesTitle": "Permanently Delete Supplier",
+      "deleteWithoutInvoicesMessage": "This supplier has no invoices. The supplier will be permanently deleted without possibility of recovery.",
+      "basicInfo": "Basic Information",
+      "contactInfo": "Contact Information",
+      "isActive": "Active supplier",
+      "validation": {
+        "nameRequired": "Supplier name is required",
+        "taxIdRequired": "Tax ID is required",
+        "paymentTermsRange": "Payment terms must be between 1 and 365 days",
+        "emailInvalid": "Invalid email format",
+        "businessRequired": "Business is not selected"
+      }
     }
   }
 }

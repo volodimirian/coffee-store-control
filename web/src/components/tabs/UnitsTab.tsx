@@ -4,8 +4,22 @@ import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, EyeSlashIcon } from '@heroico
 import { unitsApi, type Unit } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers/storageHelpers';
-import UnitModal from '~/components/expenses/modals/UnitModal';
-import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
+import UnitModal from '~/components/modals/UnitModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
+
+// Функция для форматирования чисел - убирает лишние нули после запятой
+function formatNumber(value: string | number): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '0';
+  
+  // Если число целое, показываем без дробной части
+  if (num % 1 === 0) {
+    return num.toString();
+  }
+  
+  // Для дробных чисел убираем лишние нули в конце
+  return num.toFixed(4).replace(/\.?0+$/, '');
+}
 
 interface BaseUnitGroup {
   baseUnit: Unit | null; // null for standalone units without base
@@ -452,7 +466,7 @@ function BaseUnitCard({
                     </div>
                     <p className="text-xs text-gray-600 mt-1">
                       {t('expenses.units.conversionInfo', {
-                        value: unit.conversion_factor,
+                        value: formatNumber(unit.conversion_factor),
                         fromSymbol: unit.symbol,
                         toSymbol: baseUnit.symbol,
                       })}
