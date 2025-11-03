@@ -18,6 +18,8 @@ import {
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
+import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
+import Input from '~/shared/ui/Input';
 
 // Функция для форматирования чисел - убирает лишние нули после запятой
 function formatNumber(value: string | number): string {
@@ -185,6 +187,30 @@ export default function InvoiceModal({
     }
   };
 
+  // Helper function to convert units to flat list with labels
+  const getUnitsOptionsForCategory = (categoryId: number): SelectOption[] => {
+    const filteredUnits = getFilteredUnitsForCategory(categoryId, categories, units);
+    const options: SelectOption[] = [];
+    
+    filteredUnits.forEach(({ unit: baseUnit, derived }) => {
+      // Add base unit
+      options.push({
+        id: baseUnit.id,
+        name: `${baseUnit.name} (${baseUnit.symbol})`,
+      });
+      
+      // Add derived units
+      derived.forEach((derivedUnit) => {
+        options.push({
+          id: derivedUnit.id,
+          name: `↳ ${derivedUnit.name} (${derivedUnit.symbol}) = ${formatNumber(derivedUnit.conversion_factor)} ${baseUnit.symbol}`,
+        });
+      });
+    });
+    
+    return options;
+  };
+
   const handleLineItemChange = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
@@ -343,67 +369,73 @@ export default function InvoiceModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                    {isEditing ? t('expenses.invoices.modal.editTitle') : t('expenses.invoices.modal.createTitle')}
-                  </Dialog.Title>
-                  <button
-                    onClick={onClose}
-                    className="text-gray-400 hover:text-gray-500"
-                  >
-                    <XMarkIcon className="h-6 w-6" />
-                  </button>
-                </div>
+              <Dialog.Panel className="w-full max-w-4xl transform rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
+                <div className="p-6 max-h-[90vh]">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                      {isEditing ? t('expenses.invoices.modal.editTitle') : t('expenses.invoices.modal.createTitle')}
+                    </Dialog.Title>
+                    <button
+                      onClick={onClose}
+                      className="text-gray-400 hover:text-gray-500"
+                    >
+                      <XMarkIcon className="h-6 w-6" />
+                    </button>
+                  </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-6">
+                  {/* Form */}
+                  <form onSubmit={handleSubmit}>
+                    <div className="space-y-6">
                     {/* Invoice Header */}
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           {t('expenses.invoices.modal.supplier')} <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          value={supplierId || ''}
-                          onChange={(e) => setSupplierId(Number(e.target.value))}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          disabled={loadingData}
-                        >
-                          <option value="">{t('expenses.invoices.modal.selectSupplier')}</option>
-                          {suppliers.map((supplier) => (
-                            <option key={supplier.id} value={supplier.id}>
-                              {supplier.name}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="mt-1">
+                          <SearchableSelect
+                            options={suppliers.map((s) => ({ id: s.id, name: s.name }))}
+                            value={suppliers.find((s) => s.id === supplierId)
+                              ? { id: supplierId!, name: suppliers.find((s) => s.id === supplierId)!.name }
+                              : null
+                            }
+                            onChange={(selected: SelectOption | null) =>
+                              setSupplierId(selected ? Number(selected.id) : null)
+                            }
+                            placeholder={t('expenses.invoices.modal.selectSupplier')}
+                            searchPlaceholder={t('expenses.invoices.modal.searchSupplier')}
+                            noResultsText={t('expenses.invoices.modal.noSuppliersFound')}
+                            disabled={loadingData}
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           {t('expenses.invoices.modal.invoiceNumber')}
                         </label>
-                        <input
-                          type="text"
-                          value={invoiceNumber}
-                          onChange={(e) => setInvoiceNumber(e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          placeholder={t('expenses.invoices.modal.invoiceNumberPlaceholder')}
-                        />
+                        <div className="mt-1">
+                          <Input
+                            type="text"
+                            value={invoiceNumber}
+                            onChange={(e) => setInvoiceNumber(e.target.value)}
+                            placeholder={t('expenses.invoices.modal.invoiceNumberPlaceholder')}
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           {t('expenses.invoices.modal.invoiceDate')} <span className="text-red-500">*</span>
                         </label>
-                        <input
-                          type="date"
-                          value={invoiceDate}
-                          onChange={(e) => setInvoiceDate(e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                        />
+                        <div className="mt-1">
+                          <Input
+                            type="date"
+                            value={invoiceDate}
+                            onChange={(e) => setInvoiceDate(e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -430,85 +462,90 @@ export default function InvoiceModal({
                               <label className="block text-xs font-medium text-gray-600">
                                 {t('expenses.invoices.modal.category')}
                               </label>
-                              <select
-                                value={item.category_id}
-                                onChange={(e) => handleLineItemChange(index, 'category_id', Number(e.target.value))}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                disabled={loadingData}
-                              >
-                                <option value={0}>{t('expenses.invoices.modal.selectCategory')}</option>
-                                {categories.map((category) => (
-                                  <option key={category.id} value={category.id}>
-                                    {category.name}
-                                  </option>
-                                ))}
-                              </select>
+                              <div className="mt-1">
+                                <SearchableSelect
+                                  options={categories.map((cat) => ({ id: cat.id, name: cat.name }))}
+                                  value={categories.find((cat) => cat.id === item.category_id) 
+                                    ? { id: item.category_id, name: categories.find((cat) => cat.id === item.category_id)!.name }
+                                    : null
+                                  }
+                                  onChange={(selected: SelectOption | null) => 
+                                    handleLineItemChange(index, 'category_id', selected ? Number(selected.id) : 0)
+                                  }
+                                  placeholder={t('expenses.invoices.modal.selectCategory')}
+                                  searchPlaceholder={t('expenses.invoices.modal.searchCategory')}
+                                  noResultsText={t('expenses.invoices.modal.noCategoriesFound')}
+                                  disabled={loadingData}
+                                />
+                              </div>
                             </div>
 
                             <div className="col-span-2">
                               <label className="block text-xs font-medium text-gray-600">
                                 {t('expenses.invoices.modal.quantity')}
                               </label>
-                              <input
-                                type="number"
-                                step="0.001"
-                                value={item.quantity}
-                                onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                placeholder="0"
-                              />
+                              <div className="mt-1">
+                                <Input
+                                  type="number"
+                                  step="0.001"
+                                  value={item.quantity}
+                                  onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
+                                  placeholder="0"
+                                />
+                              </div>
                             </div>
 
                             <div className="col-span-2">
                               <label className="block text-xs font-medium text-gray-600">
                                 {t('expenses.invoices.modal.unit')}
                               </label>
-                              <select
-                                value={item.unit_id}
-                                onChange={(e) => handleLineItemChange(index, 'unit_id', Number(e.target.value))}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                disabled={loadingData}
-                              >
-                                <option value={0}>{t('expenses.invoices.modal.selectUnit')}</option>
-                                {getFilteredUnitsForCategory(item.category_id, categories, units).map(({ unit: baseUnit, derived }) => (
-                                  <optgroup key={baseUnit.id} label={`${baseUnit.name} (${baseUnit.symbol})`}>
-                                    <option value={baseUnit.id}>
-                                      ✓ {baseUnit.name} ({baseUnit.symbol})
-                                    </option>
-                                    {derived.map((derivedUnit) => (
-                                      <option key={derivedUnit.id} value={derivedUnit.id}>
-                                        ↳ {derivedUnit.name} ({derivedUnit.symbol}) = {formatNumber(derivedUnit.conversion_factor)} {baseUnit.symbol}
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                ))}
-                              </select>
+                              <div className="mt-1">
+                                <SearchableSelect
+                                  options={getUnitsOptionsForCategory(item.category_id)}
+                                  value={
+                                    item.unit_id 
+                                      ? getUnitsOptionsForCategory(item.category_id).find((opt) => opt.id === item.unit_id) || null
+                                      : null
+                                  }
+                                  onChange={(selected: SelectOption | null) =>
+                                    handleLineItemChange(index, 'unit_id', selected ? Number(selected.id) : 0)
+                                  }
+                                  placeholder={t('expenses.invoices.modal.selectUnit')}
+                                  searchPlaceholder={t('expenses.invoices.modal.searchUnit')}
+                                  noResultsText={t('expenses.invoices.modal.noUnitsFound')}
+                                  disabled={loadingData || !item.category_id}
+                                  truncateOptions={false}
+                                />
+                              </div>
                             </div>
 
                             <div className="col-span-2">
                               <label className="block text-xs font-medium text-gray-600">
                                 {t('expenses.invoices.modal.unitPrice')}
                               </label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={item.unit_price}
-                                onChange={(e) => handleLineItemChange(index, 'unit_price', e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                placeholder="0.00"
-                              />
+                              <div className="mt-1">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.unit_price}
+                                  onChange={(e) => handleLineItemChange(index, 'unit_price', e.target.value)}
+                                  placeholder="0.00"
+                                />
+                              </div>
                             </div>
 
                             <div className="col-span-2">
                               <label className="block text-xs font-medium text-gray-600">
                                 {t('expenses.invoices.modal.totalPrice')}
                               </label>
-                              <input
-                                type="text"
-                                value={parseFloat(item.total_price).toFixed(2)}
-                                disabled
-                                className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-sm font-medium text-gray-900"
-                              />
+                              <div className="mt-1">
+                                <Input
+                                  type="text"
+                                  value={parseFloat(item.total_price).toFixed(2)}
+                                  disabled
+                                  className="bg-gray-100 font-medium text-gray-900"
+                                />
+                              </div>
                             </div>
 
                             <div className="col-span-1 flex items-end">
@@ -572,6 +609,7 @@ export default function InvoiceModal({
                     </div>
                   </div>
                 </form>
+                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>
