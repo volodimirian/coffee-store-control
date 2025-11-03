@@ -722,6 +722,7 @@
       "addInvoice": "Добавить счет",
       "dueToday": "Срок сегодня",
       "days": "дней",
+      "taxIdLabel": "ИНН",
       "copyTaxId": "Скопировать ИНН",
       "taxIdCopied": "ИНН скопирован",
       "invoiceNumber": "Счет №",

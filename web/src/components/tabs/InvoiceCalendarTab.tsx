@@ -44,6 +44,7 @@ export default function InvoiceCalendarTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [copiedTaxId, setCopiedTaxId] = useState<number | null>(null);
 
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -62,7 +63,18 @@ export default function InvoiceCalendarTab() {
 
   const handleInvoiceAdded = () => {
     setIsInvoiceModalOpen(false);
+    setSelectedInvoice(null);
     loadData();
+  };
+
+  const handleInvoiceClick = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsInvoiceModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsInvoiceModalOpen(false);
+    setSelectedInvoice(null);
   };
 
   const handleCopyTaxId = async (supplierId: number, taxId: string) => {
@@ -295,18 +307,18 @@ export default function InvoiceCalendarTab() {
                     const isToday = isSameDay(day, new Date());
                     return (
                       <React.Fragment key={day.toISOString()}>
-                        <th
-                          className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-r ${
-                            isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
-                          }`}
-                        >
-                          <div className="font-semibold">{format(day, 'd')}</div>
-                          <div className="text-[10px] opacity-75">
-                            {format(day, 'EEE', { locale: dateLocale })}
-                          </div>
-                        </th>
-                        {/* Spacing column */}
-                        <th className="w-6 bg-gray-50"></th>
+                      <th
+                        className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-r min-w-[120px] ${
+                          isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
+                        }`}
+                      >
+                        <div className="font-semibold">{format(day, 'd')}</div>
+                        <div className="text-[10px] opacity-75">
+                          {format(day, 'EEE', { locale: dateLocale })}
+                        </div>
+                      </th>
+                      {/* Spacing column */}
+                      <th className="w-6 bg-gray-50"></th>
                       </React.Fragment>
                     );
                   })}
@@ -319,27 +331,24 @@ export default function InvoiceCalendarTab() {
                     <tr key={`supplier-${row.supplier.id}`} className="hover:bg-gray-50 border-b">
                       <td className="sticky left-0 bg-white hover:bg-gray-50 px-4 py-3 text-sm border-r z-10">
                         <div className="font-medium text-gray-900">{row.supplier.name}</div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                          {row.supplier.tax_id && (
-                            <div className="flex items-center gap-1">
-                              <span>
-                                {t('expenses.suppliers.taxId')}: {row.supplier.tax_id}
-                                <button
-                                  onClick={() => handleCopyTaxId(row.supplier.id, row.supplier.tax_id!)}
-                                  className="p-0.5 hover:bg-gray-200 rounded transition-colors"
-                                  title={t('expenses.invoiceCalendar.copyTaxId')}
-                                >
-                                  {isCopied ? (
-                                    <CheckIcon className="h-3 w-3 text-green-600" />
-                                  ) : (
-                                    <ClipboardDocumentIcon className="h-3 w-3 text-gray-600" />
-                                  )}
-                                </button>  
-                              </span>
-                              
-                            </div>
-                          )}
-                        </div>
+                        {row.supplier.tax_id && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                            <span>
+                              {t('expenses.invoiceCalendar.taxIdLabel')}: {row.supplier.tax_id}
+                            </span>
+                            <button
+                              onClick={() => handleCopyTaxId(row.supplier.id, row.supplier.tax_id!)}
+                              className="p-0.5 hover:bg-gray-200 rounded transition-colors"
+                              title={t('expenses.invoiceCalendar.copyTaxId')}
+                            >
+                              {isCopied ? (
+                                <CheckIcon className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <ClipboardDocumentIcon className="h-3 w-3 text-gray-600" />
+                              )}
+                            </button>
+                          </div>
+                        )}
                         <div className="text-xs text-red-600 mt-1">
                           {t('expenses.invoiceCalendar.table.paymentTerms')}:{' '}
                           {row.supplier.payment_terms_days || 14} {t('expenses.invoiceCalendar.days')}
@@ -353,7 +362,7 @@ export default function InvoiceCalendarTab() {
                         return (
                           <React.Fragment key={`${day.toISOString()}-supplier`}>
                             <td
-                              className={`px-1 py-2 text-center align-top border-r ${
+                              className={`px-2 py-2 text-center align-top border-r min-w-[120px] ${
                                 isToday ? 'bg-blue-50' : ''
                               }`}
                             >
@@ -366,7 +375,8 @@ export default function InvoiceCalendarTab() {
                                     return (
                                       <div
                                         key={invoice.id}
-                                        className={`text-[10px] px-2 py-1 rounded border ${statusColor} cursor-pointer hover:opacity-80 transition-opacity text-center`}
+                                        onClick={() => handleInvoiceClick(invoice)}
+                                        className={`text-[10px] px-2 py-1 rounded border ${statusColor} cursor-pointer hover:opacity-80 hover:shadow-md transition-all text-center`}
                                         title={`${t('expenses.invoices.number')}: ${invoice.invoice_number || `#${invoice.id}`}\n${t('expenses.invoices.date')}: ${format(parseISO(invoice.invoice_date), 'dd.MM.yyyy')}\n${t('expenses.invoices.amount')}: ${parseFloat(invoice.total_amount).toFixed(2)} ₽\n${t('expenses.invoices.status.title')}: ${t(`expenses.invoiceCalendar.statuses.${status}`)}`}
                                       >
                                         <div className="font-semibold text-[11px]">
@@ -403,8 +413,9 @@ export default function InvoiceCalendarTab() {
       {/* Invoice Modal */}
       <InvoiceModal
         isOpen={isInvoiceModalOpen}
-        onClose={() => setIsInvoiceModalOpen(false)}
+        onClose={handleCloseModal}
         onSuccess={handleInvoiceAdded}
+        invoice={selectedInvoice}
       />
     </div>
   );

@@ -581,6 +581,7 @@
       "addInvoice": "Add Invoice",
       "dueToday": "Due Today",
       "days": "days",
+      "taxIdLabel": "Tax ID",
       "copyTaxId": "Copy Tax ID",
       "taxIdCopied": "Tax ID copied",
       "invoiceNumber": "Invoice #",
