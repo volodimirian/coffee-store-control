@@ -860,6 +860,8 @@
       },
       "name": "Name",
       "namePlaceholder": "Enter supplier name",
+      "taxId": "Tax ID",
+      "taxIdPlaceholder": "1234567890123",
       "paymentTerms": "Payment Terms",
       "days": "days",
       "phone": "Phone",
@@ -889,9 +891,10 @@
       "isActive": "Active supplier",
       "validation": {
         "nameRequired": "Supplier name is required",
+        "taxIdRequired": "Tax ID is required",
         "paymentTermsRange": "Payment terms must be between 1 and 365 days",
         "emailInvalid": "Invalid email format",
-        "businessRequired": "Business not selected"
+        "businessRequired": "Business is not selected"
       }
     }
   }

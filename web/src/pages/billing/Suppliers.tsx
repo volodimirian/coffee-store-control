@@ -250,6 +250,9 @@ export default function Suppliers() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {supplier.name}
                         </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {t('billing.suppliers.taxId')}: {supplier.tax_id}
+                        </p>
                         <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
                           <span>
                             {t('billing.suppliers.paymentTerms')}: {supplier.payment_terms_days} {t('billing.suppliers.days')}

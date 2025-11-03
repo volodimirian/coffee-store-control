@@ -69,6 +69,7 @@ class UnitHierarchyResponse(BaseModel):
 # Supplier schemas
 class SupplierBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
+    tax_id: str = Field(..., min_length=1, max_length=50, description="Tax identification number")
     contact_info: Optional[Dict[str, Any]] = None
     payment_terms_days: int = Field(default=14, ge=1, le=365, description="Payment due days after invoice date")
     is_active: bool = True
@@ -80,6 +81,7 @@ class SupplierCreate(SupplierBase):
 
 class SupplierUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
+    tax_id: Optional[str] = Field(None, min_length=1, max_length=50, description="Tax identification number")
     contact_info: Optional[Dict[str, Any]] = None
     payment_terms_days: Optional[int] = Field(None, ge=1, le=365, description="Payment due days after invoice date")
     is_active: Optional[bool] = None

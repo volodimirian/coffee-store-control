@@ -29,6 +29,7 @@ export default function SupplierModal({
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    tax_id: '', // Отдельное поле для ИНН
     payment_terms_days: 14,
     is_active: true,
     contact_info: {
@@ -37,7 +38,6 @@ export default function SupplierModal({
       address: '',
       website: '',
       notes: '',
-      inn: '', // ИНН
     },
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,6 +50,7 @@ export default function SupplierModal({
       if (supplier) {
         setFormData({
           name: supplier.name,
+          tax_id: supplier.tax_id === '0000000000000' ? '' : supplier.tax_id, // Очищаем дефолтное значение
           payment_terms_days: supplier.payment_terms_days,
           is_active: supplier.is_active,
           contact_info: {
@@ -58,12 +59,12 @@ export default function SupplierModal({
             address: supplier.contact_info?.address || '',
             website: supplier.contact_info?.website || '',
             notes: supplier.contact_info?.notes || '',
-            inn: supplier.contact_info?.inn || '',
           },
         });
       } else {
         setFormData({
           name: '',
+          tax_id: '',
           payment_terms_days: 14,
           is_active: true,
           contact_info: {
@@ -72,7 +73,6 @@ export default function SupplierModal({
             address: '',
             website: '',
             notes: '',
-            inn: '',
           },
         });
       }
@@ -86,6 +86,10 @@ export default function SupplierModal({
 
     if (!formData.name.trim()) {
       newErrors.name = t('billing.suppliers.validation.nameRequired');
+    }
+
+    if (!formData.tax_id.trim()) {
+      newErrors.tax_id = t('billing.suppliers.validation.taxIdRequired');
     }
 
     if (formData.payment_terms_days < 1 || formData.payment_terms_days > 365) {
@@ -124,6 +128,7 @@ export default function SupplierModal({
       if (isEditMode && supplier) {
         const updateData: SupplierUpdate = {
           name: formData.name.trim(),
+          tax_id: formData.tax_id.trim(),
           payment_terms_days: formData.payment_terms_days,
           is_active: formData.is_active,
           contact_info: Object.keys(contactInfo).length > 0 ? contactInfo : undefined,
@@ -133,6 +138,7 @@ export default function SupplierModal({
       } else {
         const createData: SupplierCreate = {
           name: formData.name.trim(),
+          tax_id: formData.tax_id.trim(),
           business_id: businessId!,
           payment_terms_days: formData.payment_terms_days,
           is_active: formData.is_active,
@@ -255,19 +261,25 @@ export default function SupplierModal({
                     {/* ИНН */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        {t('billing.suppliers.inn')}
+                        {t('billing.suppliers.taxId')} *
                       </label>
                       <input
                         type="text"
-                        value={formData.contact_info.inn}
+                        value={formData.tax_id}
                         onChange={(e) => setFormData(prev => ({ 
                           ...prev, 
-                          contact_info: { ...prev.contact_info, inn: e.target.value }
+                          tax_id: e.target.value
                         }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                        placeholder={t('billing.suppliers.innPlaceholder')}
+                        className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                          errors.tax_id ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
+                        placeholder={t('billing.suppliers.taxIdPlaceholder')}
                         disabled={isLoading}
+                        required
                       />
+                      {errors.tax_id && (
+                        <p className="mt-1 text-sm text-red-600">{errors.tax_id}</p>
+                      )}
                     </div>
 
                     {/* Payment Terms */}

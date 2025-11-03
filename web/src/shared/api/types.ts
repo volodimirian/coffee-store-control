@@ -246,12 +246,12 @@ export interface SupplierContactInfo {
   address?: string;
   website?: string;
   notes?: string;
-  inn?: string; 
 }
 
 export interface Supplier {
   id: number;
   name: string;
+  tax_id: string; // Tax identification number (ИНН)
   business_id: number;
   created_by: number;
   contact_info?: SupplierContactInfo;
@@ -263,6 +263,7 @@ export interface Supplier {
 
 export interface SupplierCreate {
   name: string;
+  tax_id: string; // Required tax identification number
   business_id: number;
   contact_info?: SupplierContactInfo;
   payment_terms_days?: number; // Default will be 14 days
@@ -271,6 +272,7 @@ export interface SupplierCreate {
 
 export interface SupplierUpdate {
   name?: string;
+  tax_id?: string;
   contact_info?: SupplierContactInfo;
   payment_terms_days?: number;
   is_active?: boolean;

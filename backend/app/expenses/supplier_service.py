@@ -23,7 +23,9 @@ class SupplierService:
         """Create a new supplier."""
         db_supplier = Supplier(
             name=supplier_data.name,
+            tax_id=supplier_data.tax_id,
             contact_info=supplier_data.contact_info,
+            payment_terms_days=supplier_data.payment_terms_days,
             business_id=supplier_data.business_id,
             created_by=created_by_user_id,
             is_active=supplier_data.is_active,
