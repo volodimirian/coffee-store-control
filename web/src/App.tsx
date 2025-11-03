@@ -19,6 +19,7 @@ import Units from "~/pages/expenses/Units";
 import Invoices from "~/pages/expenses/Invoices";
 import Reports from "~/pages/expenses/Reports";
 import BillingInvoices from "~/pages/billing/Invoices";
+import BillingInvoiceCalendar from "~/pages/billing/InvoiceCalendar";
 import BillingSuppliers from "~/pages/billing/Suppliers";
 import BillingCategories from "~/pages/billing/Categories";
 import BillingUnits from "~/pages/billing/Units";
@@ -88,6 +89,7 @@ export default function App() {
             <Route path="billing" element={<Billing />}>
               <Route index element={<BillingInvoices />} />
               <Route path="invoices" element={<Invoices />} />
+              <Route path="invoice-calendar" element={<BillingInvoiceCalendar />} />
               <Route path="categories" element={<BillingCategories />} />
               <Route path="units" element={<BillingUnits />} />
               <Route path="suppliers" element={<BillingSuppliers />} />

@@ -12,20 +12,7 @@ import {
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { groupUnits } from '~/shared/lib/helpers/unitHelpers';
-
-// Функция для форматирования чисел - убирает лишние нули после запятой
-function formatNumber(value: string | number): string {
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) return '0';
-  
-  // Если число целое, показываем без дробной части
-  if (num % 1 === 0) {
-    return num.toString();
-  }
-  
-  // Для дробных чисел убираем лишние нули в конце
-  return num.toFixed(4).replace(/\.?0+$/, '');
-}
+import { formatNumber } from '~/shared/lib/helpers';
 
 interface CategoryModalProps {
   isOpen: boolean;

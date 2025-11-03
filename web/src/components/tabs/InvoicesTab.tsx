@@ -5,6 +5,7 @@ import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Suppl
 import { useAppContext } from '~/shared/context/AppContext';
 import InvoiceModal from '~/components/modals/InvoiceModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
+import { formatCurrency } from '~/shared/lib/helpers';
 
 export default function InvoicesTab() {
   const { t } = useTranslation();
@@ -461,7 +462,7 @@ export default function InvoicesTab() {
                     {invoice.invoice_number || `#${invoice.id}`}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₽{parseFloat(invoice.total_amount).toFixed(2)}
+                    {formatCurrency(invoice.total_amount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(getDisplayStatus(invoice))}`}>

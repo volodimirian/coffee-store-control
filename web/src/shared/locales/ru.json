@@ -680,6 +680,8 @@
         "editTitle": "Редактировать счет",
         "supplier": "Поставщик",
         "selectSupplier": "Выберите поставщика...",
+        "searchSupplier": "Поиск поставщика...",
+        "noSuppliersFound": "Поставщики не найдены",
         "supplierRequired": "Поставщик обязателен",
         "invoiceNumber": "Номер счета",
         "invoiceNumberPlaceholder": "Необязательно",
@@ -691,11 +693,15 @@
         "removeItem": "Удалить",
         "category": "Категория",
         "selectCategory": "Выберите категорию...",
+        "searchCategory": "Поиск категории...",
+        "noCategoriesFound": "Категории не найдены",
         "categoryRequired": "Категория обязательна для строки {{line}}",
         "quantity": "Количество",
         "quantityRequired": "Количество обязательно для строки {{line}}",
         "unit": "Единица",
         "selectUnit": "Выберите единицу...",
+        "searchUnit": "Поиск единицы...",
+        "noUnitsFound": "Единицы не найдены",
         "unitRequired": "Единица измерения обязательна для строки {{line}}",
         "unitPrice": "Цена за единицу",
         "priceRequired": "Цена обязательна для строки {{line}}",
@@ -704,6 +710,33 @@
         "loadDataError": "Ошибка загрузки данных",
         "createError": "Ошибка создания счета",
         "updateError": "Ошибка обновления счета"
+      }
+    },
+    "invoiceCalendar": {
+      "title": "Календарь счетов",
+      "description": "Просмотр и управление счетами по дням",
+      "selectLocation": "Выберите локацию для просмотра календаря счетов",
+      "loadingError": "Ошибка загрузки календаря счетов",
+      "noSuppliers": "Поставщики не найдены",
+      "noSuppliersDescription": "Добавьте поставщиков для начала работы со счетами",
+      "addInvoice": "Добавить счет",
+      "dueToday": "Срок сегодня",
+      "days": "дней",
+      "taxIdLabel": "ИНН",
+      "copyTaxId": "Скопировать ИНН",
+      "taxIdCopied": "ИНН скопирован",
+      "invoiceNumber": "Счет №",
+      "invoiceFrom": "от",
+      "table": {
+        "supplier": "Поставщик",
+        "paymentTerms": "Отсрочка"
+      },
+      "statuses": {
+        "paid": "Оплачен",
+        "pending": "Ожидает оплаты",
+        "overdue": "Просрочен",
+        "dueToday": "Срок сегодня",
+        "cancelled": "Отменен"
       }
     },
     "inventoryTracking": {

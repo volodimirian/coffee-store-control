@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { 
   DocumentTextIcon,
+  CalendarDaysIcon,
   TagIcon,
   ScaleIcon,
   BuildingOffice2Icon
@@ -11,6 +12,11 @@ export default function BillingNavigation() {
   const { t } = useTranslation();
   
   const tabs = [
+    {
+      name: t('expenses.invoiceCalendar.title'),
+      icon: CalendarDaysIcon,
+      path: '/billing/invoice-calendar',
+    },
     {
       name: t('billing.navigation.invoices'),
       icon: DocumentTextIcon,

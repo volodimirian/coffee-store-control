@@ -539,6 +539,8 @@
         "editTitle": "Edit Invoice",
         "supplier": "Supplier",
         "selectSupplier": "Select supplier...",
+        "searchSupplier": "Search supplier...",
+        "noSuppliersFound": "No suppliers found",
         "supplierRequired": "Supplier is required",
         "invoiceNumber": "Invoice Number",
         "invoiceNumberPlaceholder": "Optional",
@@ -550,11 +552,15 @@
         "removeItem": "Remove",
         "category": "Category",
         "selectCategory": "Select category...",
+        "searchCategory": "Search category...",
+        "noCategoriesFound": "No categories found",
         "categoryRequired": "Category is required for line {{line}}",
         "quantity": "Quantity",
         "quantityRequired": "Quantity is required for line {{line}}",
         "unit": "Unit",
         "selectUnit": "Select unit...",
+        "searchUnit": "Search unit...",
+        "noUnitsFound": "No units found",
         "unitRequired": "Unit is required for line {{line}}",
         "unitPrice": "Unit Price",
         "priceRequired": "Unit price is required for line {{line}}",
@@ -563,6 +569,33 @@
         "loadDataError": "Error loading data",
         "createError": "Error creating invoice",
         "updateError": "Error updating invoice"
+      }
+    },
+    "invoiceCalendar": {
+      "title": "Invoice Calendar",
+      "description": "View and manage invoices by day",
+      "selectLocation": "Please select a location to view invoice calendar",
+      "loadingError": "Failed to load invoice calendar",
+      "noSuppliers": "No suppliers found",
+      "noSuppliersDescription": "Add suppliers to start working with invoices",
+      "addInvoice": "Add Invoice",
+      "dueToday": "Due Today",
+      "days": "days",
+      "taxIdLabel": "Tax ID",
+      "copyTaxId": "Copy Tax ID",
+      "taxIdCopied": "Tax ID copied",
+      "invoiceNumber": "Invoice #",
+      "invoiceFrom": "from",
+      "table": {
+        "supplier": "Supplier",
+        "paymentTerms": "Payment Terms"
+      },
+      "statuses": {
+        "paid": "Paid",
+        "pending": "Pending",
+        "overdue": "Overdue",
+        "dueToday": "Due Today",
+        "cancelled": "Cancelled"
       }
     },
     "inventoryTracking": {
