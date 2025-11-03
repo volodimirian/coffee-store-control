@@ -171,10 +171,11 @@ async def update_supplier(
 @router.delete("/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_supplier(
     supplier_id: int,
+    permanent: bool = False,  # Query parameter to control hard vs soft delete
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Soft delete supplier. User must be able to manage the business."""
+    """Delete supplier. Use permanent=true for hard delete, false for soft delete."""
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
         raise HTTPException(
@@ -194,7 +195,11 @@ async def delete_supplier(
             detail="Insufficient permissions to manage this supplier",
         )
 
-    success = await SupplierService.delete_supplier(session, supplier_id)
+    if permanent:
+        success = await SupplierService.hard_delete_supplier(session, supplier_id)
+    else:
+        success = await SupplierService.delete_supplier(session, supplier_id)
+    
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -242,3 +247,44 @@ async def restore_supplier(
     # Return updated supplier
     restored_supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     return restored_supplier
+
+
+@router.get("/{supplier_id}/has-invoices")
+async def check_supplier_has_invoices(
+    supplier_id: int,
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+):
+    """Check if supplier has any invoices."""
+    supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
+    if not supplier:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Supplier not found",
+        )
+
+    # Check if user has access to supplier's business
+    has_access = await BusinessService.can_user_access_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=supplier.business_id,  # type: ignore
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this supplier",
+        )
+
+    # Check invoices
+    from sqlalchemy import select, func
+    from app.expenses.models import Invoice
+    
+    invoice_count_result = await session.execute(
+        select(func.count(Invoice.id)).where(Invoice.supplier_id == supplier_id)
+    )
+    invoice_count = invoice_count_result.scalar() or 0
+    
+    return {
+        "has_invoices": invoice_count > 0,
+        "invoice_count": invoice_count
+    }

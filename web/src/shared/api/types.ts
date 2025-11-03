@@ -246,6 +246,7 @@ export interface SupplierContactInfo {
   address?: string;
   website?: string;
   notes?: string;
+  inn?: string; 
 }
 
 export interface Supplier {

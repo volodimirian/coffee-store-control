@@ -444,10 +444,11 @@ export const suppliersApi = {
   },
 
   /**
-   * Delete supplier (soft delete)
+   * Delete supplier (soft delete by default, hard delete if permanent=true)
    */
-  delete: async (supplierId: number): Promise<void> => {
-    await api.delete(`/expenses/suppliers/${supplierId}`);
+  delete: async (supplierId: number, permanent: boolean = false): Promise<void> => {
+    const queryParams = permanent ? '?permanent=true' : '';
+    await api.delete(`/expenses/suppliers/${supplierId}${queryParams}`);
   },
 
   /**
@@ -455,6 +456,14 @@ export const suppliersApi = {
    */
   restore: async (supplierId: number): Promise<Supplier> => {
     const response = await api.post<Supplier>(`/expenses/suppliers/${supplierId}/restore`);
+    return response.data;
+  },
+
+  /**
+   * Check if supplier has invoices
+   */
+  hasInvoices: async (supplierId: number): Promise<{ has_invoices: boolean; invoice_count: number }> => {
+    const response = await api.get<{ has_invoices: boolean; invoice_count: number }>(`/expenses/suppliers/${supplierId}/has-invoices`);
     return response.data;
   },
 };

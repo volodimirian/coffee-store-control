@@ -19,6 +19,7 @@ import Units from "~/pages/expenses/Units";
 import Invoices from "~/pages/expenses/Invoices";
 import Reports from "~/pages/expenses/Reports";
 import BillingInvoices from "~/pages/billing/Invoices";
+import BillingSuppliers from "~/pages/billing/Suppliers";
 import BillingCategories from "~/pages/billing/Categories";
 import BillingUnits from "~/pages/billing/Units";
 import NotFound from "~/pages/NotFound";
@@ -86,6 +87,7 @@ export default function App() {
             {/* Billing with nested routes */}
             <Route path="billing" element={<Billing />}>
               <Route index element={<BillingInvoices />} />
+              <Route path="suppliers" element={<BillingSuppliers />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="categories" element={<BillingCategories />} />
               <Route path="units" element={<BillingUnits />} />

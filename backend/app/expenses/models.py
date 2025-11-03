@@ -44,7 +44,8 @@ class Supplier(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
-    contact_info = Column(JSON, nullable=True)  # {"phone": "", "email": "", "address": "", "tax_id": ""}
+    tax_id = Column(String(50), nullable=False)  # Tax identification number (ИНН)
+    contact_info = Column(JSON, nullable=True)  # {"phone": "", "email": "", "address": "", "website": ""}
     payment_terms_days = Column(Integer, nullable=False, default=14)  # Payment due days after invoice date
     business_id = Column(Integer, ForeignKey("businesses.id"), nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)

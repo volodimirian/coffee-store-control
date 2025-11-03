@@ -2,7 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { 
   DocumentTextIcon,
   TagIcon,
-  ScaleIcon
+  ScaleIcon,
+  BuildingOffice2Icon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 
@@ -24,6 +25,11 @@ export default function BillingNavigation() {
       name: t('billing.navigation.units'),
       icon: ScaleIcon,
       path: '/billing/units',
+    },
+    {
+      name: t('billing.navigation.suppliers'),
+      icon: BuildingOffice2Icon,
+      path: '/billing/suppliers',
     },
   ];
 

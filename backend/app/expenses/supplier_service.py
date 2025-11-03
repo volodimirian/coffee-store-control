@@ -96,6 +96,17 @@ class SupplierService:
         return True
 
     @staticmethod
+    async def hard_delete_supplier(session: AsyncSession, supplier_id: int) -> bool:
+        """Permanently delete supplier from database."""
+        supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
+        if not supplier:
+            return False
+
+        await session.delete(supplier)
+        await session.flush()
+        return True
+
+    @staticmethod
     async def restore_supplier(session: AsyncSession, supplier_id: int) -> bool:
         """Restore soft-deleted supplier by setting is_active to True."""
         supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
