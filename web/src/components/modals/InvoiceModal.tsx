@@ -18,20 +18,9 @@ import {
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
-import { formatCurrency as formatCurrencyDisplay } from '~/shared/lib/helpers';
+import { formatCurrency as formatCurrencyDisplay, formatNumber } from '~/shared/lib/helpers';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import Input from '~/shared/ui/Input';
-
-function formatNumber(value: string | number): string {
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) return '0';
-  
-  if (num % 1 === 0) {
-    return num.toString();
-  }
-
-  return num.toFixed(4).replace(/\.?0+$/, '');
-}
 
 interface InvoiceModalProps {
   isOpen: boolean;

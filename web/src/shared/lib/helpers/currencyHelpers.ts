@@ -91,3 +91,28 @@ export function formatCurrencyCompact(
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   return formatCurrency(Math.round(numValue), 0, currency);
 }
+
+/**
+ * Format a number by removing trailing zeros after decimal point
+ * Useful for displaying conversion factors and quantities
+ * @param value - The numeric value to format
+ * @returns Formatted number string
+ * 
+ * @example
+ * formatNumber(1000) // "1000"
+ * formatNumber(1.5000) // "1.5"
+ * formatNumber(1.2340) // "1.234"
+ * formatNumber("2.50") // "2.5"
+ */
+export function formatNumber(value: string | number): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '0';
+  
+  // If the number is an integer, show without decimal part
+  if (num % 1 === 0) {
+    return num.toString();
+  }
+  
+  // For decimal numbers, remove trailing zeros
+  return num.toFixed(4).replace(/\.?0+$/, '');
+}
