@@ -49,12 +49,13 @@ export default function OverviewTab() {
         inv => inv.paid_status === 'pending'
       ).length;
 
-      // Calculate this month total (simple sum for now)
+      // Calculate this month total (only paid invoices)
       const thisMonthInvoices = invoicesResponse.invoices.filter(invoice => {
         const invoiceDate = new Date(invoice.invoice_date);
         const now = new Date();
         return invoiceDate.getMonth() === now.getMonth() && 
-               invoiceDate.getFullYear() === now.getFullYear();
+               invoiceDate.getFullYear() === now.getFullYear() &&
+               invoice.paid_status === 'paid';
       });
       
       const thisMonthTotal = thisMonthInvoices.reduce((sum, invoice) => {
