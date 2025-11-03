@@ -18,20 +18,18 @@ import {
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
+import { formatCurrency as formatCurrencyDisplay } from '~/shared/lib/helpers';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import Input from '~/shared/ui/Input';
 
-// Функция для форматирования чисел - убирает лишние нули после запятой
 function formatNumber(value: string | number): string {
   const num = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(num)) return '0';
   
-  // Если число целое, показываем без дробной части
   if (num % 1 === 0) {
     return num.toString();
   }
-  
-  // Для дробных чисел убираем лишние нули в конце
+
   return num.toFixed(4).replace(/\.?0+$/, '');
 }
 
@@ -541,7 +539,7 @@ export default function InvoiceModal({
                               <div className="mt-1">
                                 <Input
                                   type="text"
-                                  value={parseFloat(item.total_price).toFixed(2)}
+                                  value={formatCurrencyDisplay(item.total_price)}
                                   disabled
                                   className="bg-gray-100 font-medium text-gray-900"
                                 />
@@ -568,7 +566,7 @@ export default function InvoiceModal({
                     <div className="flex justify-end">
                       <div className="text-right">
                         <p className="text-sm text-gray-600">{t('expenses.invoices.modal.totalAmount')}</p>
-                        <p className="text-2xl font-bold text-gray-900">₽{totalAmount.toFixed(2)}</p>
+                        <p className="text-2xl font-bold text-gray-900">{formatCurrencyDisplay(totalAmount)}</p>
                       </div>
                     </div>
 

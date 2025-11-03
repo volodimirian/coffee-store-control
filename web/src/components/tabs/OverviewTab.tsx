@@ -11,6 +11,7 @@ import { useAppContext } from '~/shared/context/AppContext';
 import { 
   invoicesApi,
 } from '~/shared/api/expenses';
+import { formatCurrency } from '~/shared/lib/helpers';
 import type { Invoice } from '~/shared/api/types';
 
 export default function OverviewTab() {
@@ -170,7 +171,7 @@ export default function OverviewTab() {
                           {format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: dateLocale })}
                         </td>
                         <td className="px-3 py-2 text-sm text-gray-900 text-right font-medium">
-                          ₽{parseFloat(invoice.total_amount).toFixed(2)}
+                          {formatCurrency(invoice.total_amount)}
                         </td>
                         <td className="px-3 py-2 text-sm">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

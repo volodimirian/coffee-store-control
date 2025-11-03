@@ -29,6 +29,7 @@ import {
 } from '~/shared/api/expenses';
 import CategoryModal from '~/components/modals/CategoryModal';
 import AddSectionModal from '~/components/modals/AddSectionModal';
+import { formatCurrencyCompact } from '~/shared/lib/helpers';
 import type { 
   ExpenseSection,
   ExpenseCategory,
@@ -521,17 +522,17 @@ export default function InventoryTrackingTab() {
                                   <div className="space-y-0.5">
                                     {dayTotals.purchasesAmount !== 0 && (
                                       <div className="text-green-600 font-semibold text-[10px]">
-                                        ₽{dayTotals.purchasesAmount.toFixed(0)}
+                                        {formatCurrencyCompact(dayTotals.purchasesAmount)}
                                       </div>
                                     )}
                                     {dayTotals.usageAmount !== 0 && (
                                       <div className="text-red-600 font-semibold text-[10px]">
-                                        ₽{dayTotals.usageAmount.toFixed(0)}
+                                        {formatCurrencyCompact(dayTotals.usageAmount)}
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="text-blue-600 text-[10px]">₽0</div>
+                                  <div className="text-blue-600 text-[10px]">{formatCurrencyCompact(0)}</div>
                                 )}
                               </td>
                               {/* Spacing column between days */}
@@ -544,7 +545,7 @@ export default function InventoryTrackingTab() {
                         </td>
                         <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100">
                           <div className="font-bold text-blue-900">
-                            ₽{sectionGrandTotal.toFixed(0)}
+                            {formatCurrencyCompact(sectionGrandTotal)}
                           </div>
                         </td>
                       </tr>
@@ -624,20 +625,20 @@ export default function InventoryTrackingTab() {
                                       <div className="space-y-0.5">
                                         {dayData.purchasesAmount !== 0 && (
                                           <div className="text-green-600 font-semibold">
-                                            ₽{dayData.purchasesAmount.toFixed(0)}
+                                            {formatCurrencyCompact(dayData.purchasesAmount)}
                                           </div>
                                         )}
                                         {dayData.usageAmount !== 0 && (
                                           <div className="text-red-600 font-semibold">
-                                            ₽{dayData.usageAmount.toFixed(0)}
+                                            {formatCurrencyCompact(dayData.usageAmount)}
                                           </div>
                                         )}
                                         {dayData.purchasesAmount === 0 && dayData.usageAmount === 0 && (
-                                          <div className="text-gray-400">₽0</div>
+                                          <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
                                         )}
                                       </div>
                                     ) : (
-                                      <div className="text-gray-400">₽0</div>
+                                      <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
                                     )}
                                   </td>
                                   {/* Spacing column between days */}
@@ -652,7 +653,7 @@ export default function InventoryTrackingTab() {
                             </td>
                             <td className="px-2 py-2 text-center text-xs">
                               <div className={totalAmount > 0 ? 'text-green-600 font-bold' : totalAmount < 0 ? 'text-red-600 font-bold' : 'text-gray-900 font-bold'}>
-                                ₽{totalAmount.toFixed(0)}
+                                {formatCurrencyCompact(totalAmount)}
                               </div>
                             </td>
                           </tr>

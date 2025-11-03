@@ -25,6 +25,7 @@ import {
   invoicesApi,
 } from '~/shared/api/expenses';
 import InvoiceModal from '~/components/modals/InvoiceModal';
+import { formatCurrency } from '~/shared/lib/helpers';
 import type {
   Supplier,
   Invoice,
@@ -377,7 +378,7 @@ export default function InvoiceCalendarTab() {
                                         key={invoice.id}
                                         onClick={() => handleInvoiceClick(invoice)}
                                         className={`text-[10px] px-2 py-1 rounded border ${statusColor} cursor-pointer hover:opacity-80 hover:shadow-md transition-all text-center`}
-                                        title={`${t('expenses.invoices.number')}: ${invoice.invoice_number || `#${invoice.id}`}\n${t('expenses.invoices.date')}: ${format(parseISO(invoice.invoice_date), 'dd.MM.yyyy')}\n${t('expenses.invoices.amount')}: ${parseFloat(invoice.total_amount).toFixed(2)} ₽\n${t('expenses.invoices.status.title')}: ${t(`expenses.invoiceCalendar.statuses.${status}`)}`}
+                                        title={`${t('expenses.invoices.number')}: ${invoice.invoice_number || `#${invoice.id}`}\n${t('expenses.invoices.date')}: ${format(parseISO(invoice.invoice_date), 'dd.MM.yyyy')}\n${t('expenses.invoices.amount')}: ${formatCurrency(invoice.total_amount)}\n${t('expenses.invoices.status.title')}: ${t(`expenses.invoiceCalendar.statuses.${status}`)}`}
                                       >
                                         <div className="font-semibold text-[11px]">
                                           {t('expenses.invoiceCalendar.invoiceNumber')}{invoice.invoice_number || invoice.id}
@@ -386,7 +387,7 @@ export default function InvoiceCalendarTab() {
                                           {t('expenses.invoiceCalendar.invoiceFrom')} {format(parseISO(invoice.invoice_date), 'dd.MM.yyyy')}
                                         </div>
                                         <div className="font-bold text-[11px] mt-0.5">
-                                          {parseFloat(invoice.total_amount).toFixed(2)} ₽
+                                          {formatCurrency(invoice.total_amount)}
                                         </div>
                                       </div>
                                     );
