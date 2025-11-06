@@ -233,7 +233,7 @@ async def reorder_sections(
     return [ExpenseSectionOut.from_orm(s) for s in sections]
 
 
-@router.patch("/{section_id}/deactivate", response_model=ExpenseSectionOut)
+@router.patch("/{section_id}/deactivate", status_code=status.HTTP_204_NO_CONTENT)
 async def deactivate_section(
     section_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(
@@ -253,12 +253,9 @@ async def deactivate_section(
         )
     
     await session.commit()
-    
-    deactivated_section = await ExpenseSectionService.get_section_by_id(session, section_id, include_inactive=True)
-    return ExpenseSectionOut.from_orm(deactivated_section)
 
 
-@router.patch("/{section_id}/activate", response_model=ExpenseSectionOut)
+@router.patch("/{section_id}/activate", status_code=status.HTTP_204_NO_CONTENT)
 async def activate_section(
     section_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(
@@ -278,9 +275,6 @@ async def activate_section(
         )
 
     await session.commit()
-    
-    activated_section = await ExpenseSectionService.get_section_by_id(session, section_id)
-    return ExpenseSectionOut.from_orm(activated_section)
 
 
 @router.delete("/{section_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
