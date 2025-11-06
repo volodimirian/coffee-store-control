@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_models import User
 from app.deps import get_current_user, get_db_dep
+from app.core.permissions import check_user_permission
+from app.core.error_codes import ErrorCode, create_error_response
 from app.expenses.schemas import (
     ExpenseCategoryCreate,
     ExpenseCategoryOut,
@@ -27,7 +29,7 @@ async def create_expense_category(
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Create a new expense category. User must have access to the business."""
+    """Create a new expense category. User must have create_category permission."""
     # Get section to verify business access
     section = await ExpenseSectionService.get_section_by_id(session, category_data.section_id)
     if not section:
@@ -36,16 +38,37 @@ async def create_expense_category(
             detail="Section not found",
         )
 
+    business_id = getattr(section, 'business_id')
+    
     # Check if user has access to business
-    has_access = await BusinessService.can_user_manage_business(
+    has_access = await BusinessService.can_user_access_business(
         session=session,
         user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
+        business_id=business_id,
     )
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
+            detail=create_error_response(
+                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
+                detail="Access denied to this business"
+            ),
+        )
+    
+    # Check create_category permission
+    has_permission = await check_user_permission(
+        user_id=current_user.id,
+        permission_name="create_category",
+        db=session,
+        business_id=business_id
+    )
+    if not has_permission:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=create_error_response(
+                error_code=ErrorCode.PERMISSION_CREATE_DENIED,
+                detail="You don't have permission to create categories"
+            ),
         )
 
     category = await ExpenseCategoryService.create_category(
@@ -77,16 +100,37 @@ async def get_categories_by_section(
             detail="Section not found",
         )
 
+    business_id = getattr(section, 'business_id')
+    
     # Check if user has access to business
     has_access = await BusinessService.can_user_access_business(
         session=session,
         user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
+        business_id=business_id,
     )
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
+            detail=create_error_response(
+                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
+                detail="Access denied to this business"
+            ),
+        )
+    
+    # Check view_category permission
+    has_permission = await check_user_permission(
+        user_id=current_user.id,
+        permission_name="view_category",
+        db=session,
+        business_id=business_id
+    )
+    if not has_permission:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=create_error_response(
+                error_code=ErrorCode.PERMISSION_VIEW_DENIED,
+                detail="You don't have permission to view categories"
+            ),
         )
 
     if search:

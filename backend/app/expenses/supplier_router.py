@@ -1,14 +1,17 @@
 """API router for supplier management endpoints."""
 
-from typing import Optional
+from typing import Optional, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core_models import User
-from app.deps import get_current_user, get_db_dep
-from app.core.permissions import check_user_permission
-from app.core.error_codes import ErrorCode, create_error_response
+from app.deps import get_db_dep
+from app.core.resource_permissions import (
+    require_resource_permission,
+    Resource,
+    Action,
+    extract_business_id_from_supplier,
+)
 from app.expenses.schemas import (
     SupplierCreate,
     SupplierOut,
@@ -16,7 +19,6 @@ from app.expenses.schemas import (
     SupplierListOut,
 )
 from app.expenses.supplier_service import SupplierService
-from app.businesses.service import BusinessService
 
 router = APIRouter()
 
@@ -24,45 +26,22 @@ router = APIRouter()
 @router.post("/", response_model=SupplierOut, status_code=status.HTTP_201_CREATED)
 async def create_supplier(
     supplier_data: SupplierCreate,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.SUPPLIERS, Action.CREATE))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Create a new supplier. User must have create_supplier permission."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=supplier_data.business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
+    """
+    Create a new supplier.
     
-    # Check create_supplier permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="create_supplier",
-        db=session,
-        business_id=supplier_data.business_id
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_CREATE_DENIED,
-                detail="You don't have permission to create suppliers"
-            ),
-        )
-
+    Permission: create_supplier
+    The auth dependency automatically:
+    1. Verifies user has access to business (from supplier_data.business_id)
+    2. Checks create_supplier permission
+    3. Returns {"user_id": int, "business_id": int}
+    """
     supplier = await SupplierService.create_supplier(
         session=session,
         supplier_data=supplier_data,
-        created_by_user_id=current_user.id,
+        created_by_user_id=auth["user_id"],
     )
     await session.commit()
     return supplier
@@ -71,45 +50,19 @@ async def create_supplier(
 @router.get("/business/{business_id}", response_model=SupplierListOut)
 async def get_business_suppliers(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.SUPPLIERS, Action.VIEW))],
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     skip: int = Query(0, ge=0, description="Number of suppliers to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of suppliers to return"),
     search: Optional[str] = Query(None, description="Search suppliers by name"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get all suppliers for a business. User must have view_supplier permission."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
+    """
+    Get all suppliers for a business.
     
-    # Check view_supplier permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="view_supplier",
-        db=session,
-        business_id=business_id
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_VIEW_DENIED,
-                detail="You don't have permission to view suppliers"
-            ),
-        )
-
+    Permission: view_supplier
+    Business access is automatically checked via business_id in path.
+    """
     if search:
         suppliers = await SupplierService.search_suppliers(
             session=session,
@@ -134,54 +87,34 @@ async def get_business_suppliers(
         is_active=is_active,
     )
 
-    return SupplierListOut(suppliers=[SupplierOut.model_validate(supplier) for supplier in suppliers], total=total)
+    return SupplierListOut(
+        suppliers=[SupplierOut.model_validate(supplier) for supplier in suppliers],
+        total=total
+    )
 
 
 @router.get("/{supplier_id}", response_model=SupplierOut)
 async def get_supplier(
     supplier_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.SUPPLIERS,
+        Action.VIEW,
+        business_id_extractor=extract_business_id_from_supplier
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get supplier by ID. User must have view_supplier permission."""
+    """
+    Get supplier by ID.
+    
+    Permission: view_supplier
+    Uses custom extractor to get business_id from supplier_id.
+    """
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Supplier not found",
         )
-
-    # Check if user has access to supplier's business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=supplier.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this supplier"
-            ),
-        )
-    
-    # Check view_supplier permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="view_supplier",
-        db=session,
-        business_id=supplier.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_VIEW_DENIED,
-                detail="You don't have permission to view this supplier"
-            ),
-        )
-
     return supplier
 
 
@@ -189,46 +122,23 @@ async def get_supplier(
 async def update_supplier(
     supplier_id: int,
     supplier_data: SupplierUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.SUPPLIERS,
+        Action.EDIT,
+        business_id_extractor=extract_business_id_from_supplier
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Update supplier information. User must have edit_supplier permission."""
+    """
+    Update supplier information.
+    
+    Permission: edit_supplier
+    """
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Supplier not found",
-        )
-
-    # Check if user has access to supplier's business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=supplier.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this supplier"
-            ),
-        )
-    
-    # Check edit_supplier permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="edit_supplier",
-        db=session,
-        business_id=supplier.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_EDIT_DENIED,
-                detail="You don't have permission to edit this supplier"
-            ),
         )
 
     updated_supplier = await SupplierService.update_supplier(
@@ -249,47 +159,24 @@ async def update_supplier(
 @router.delete("/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_supplier(
     supplier_id: int,
-    permanent: bool = False,  # Query parameter to control hard vs soft delete
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.SUPPLIERS,
+        Action.DELETE,
+        business_id_extractor=extract_business_id_from_supplier
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
+    permanent: bool = False,
 ):
-    """Delete supplier. User must have delete_supplier permission."""
+    """
+    Delete supplier.
+    
+    Permission: delete_supplier
+    """
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Supplier not found",
-        )
-
-    # Check if user has access to supplier's business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=supplier.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this supplier"
-            ),
-        )
-    
-    # Check delete_supplier permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="delete_supplier",
-        db=session,
-        business_id=supplier.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_DELETE_DENIED,
-                detail="You don't have permission to delete this supplier"
-            ),
         )
 
     if permanent:
@@ -309,46 +196,23 @@ async def delete_supplier(
 @router.post("/{supplier_id}/restore", response_model=SupplierOut)
 async def restore_supplier(
     supplier_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.SUPPLIERS,
+        Action.ACTIVATE_DEACTIVATE,
+        business_id_extractor=extract_business_id_from_supplier
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Restore soft-deleted supplier. User must have activate_deactivate_supplier permission."""
+    """
+    Restore soft-deleted supplier.
+    
+    Permission: activate_deactivate_supplier
+    """
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Supplier not found",
-        )
-
-    # Check if user has access to supplier's business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=supplier.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this supplier"
-            ),
-        )
-    
-    # Check activate_deactivate_supplier permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="activate_deactivate_supplier",
-        db=session,
-        business_id=supplier.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_ACTIVATE_DEACTIVATE_DENIED,
-                detail="You don't have permission to restore this supplier"
-            ),
         )
 
     success = await SupplierService.restore_supplier(session, supplier_id)
@@ -360,7 +224,6 @@ async def restore_supplier(
 
     await session.commit()
     
-    # Return updated supplier
     restored_supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     return restored_supplier
 
@@ -368,10 +231,18 @@ async def restore_supplier(
 @router.get("/{supplier_id}/has-invoices")
 async def check_supplier_has_invoices(
     supplier_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.SUPPLIERS,
+        Action.VIEW,
+        business_id_extractor=extract_business_id_from_supplier
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Check if supplier has any invoices. User must have view_supplier permission."""
+    """
+    Check if supplier has any invoices.
+    
+    Permission: view_supplier
+    """
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
         raise HTTPException(
@@ -379,38 +250,6 @@ async def check_supplier_has_invoices(
             detail="Supplier not found",
         )
 
-    # Check if user has access to supplier's business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=supplier.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this supplier"
-            ),
-        )
-    
-    # Check view_supplier permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="view_supplier",
-        db=session,
-        business_id=supplier.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_VIEW_DENIED,
-                detail="You don't have permission to view this supplier"
-            ),
-        )
-
-    # Check invoices
     from sqlalchemy import select, func
     from app.expenses.models import Invoice
     
