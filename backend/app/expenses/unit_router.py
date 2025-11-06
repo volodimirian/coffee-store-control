@@ -1,12 +1,17 @@
 """API router for unit management endpoints."""
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core_models import User
-from app.deps import get_current_user, get_db_dep
+from app.deps import get_db_dep
+from app.core.resource_permissions import (
+    require_resource_permission,
+    Resource,
+    Action,
+    extract_business_id_from_unit,
+)
 from app.expenses.schemas import (
     UnitCreate,
     UnitOut,
@@ -17,7 +22,6 @@ from app.expenses.schemas import (
     UnitHierarchyResponse,
 )
 from app.expenses.unit_service import UnitService
-from app.businesses.service import BusinessService
 
 router = APIRouter()
 
@@ -25,22 +29,16 @@ router = APIRouter()
 @router.post("/", response_model=UnitOut, status_code=status.HTTP_201_CREATED)
 async def create_unit(
     unit_data: UnitCreate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.CREATE,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Create a new measurement unit. User must have access to the business."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=unit_data.business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
+    """Create a new measurement unit.
+    
+    Permission: create_unit
+    """
     # Validate unit hierarchy if base unit is specified
     if unit_data.base_unit_id:
         is_valid, error_msg = await UnitService.validate_unit_hierarchy(
@@ -57,7 +55,7 @@ async def create_unit(
     unit = await UnitService.create_unit(
         session=session,
         unit_data=unit_data,
-        created_by_user_id=current_user.id,
+        created_by_user_id=auth["user_id"],
     )
     await session.commit()
     return unit
@@ -66,27 +64,21 @@ async def create_unit(
 @router.get("/business/{business_id}", response_model=UnitListOut)
 async def get_business_units(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.VIEW,
+    ))],
     unit_type: Optional[str] = Query(None, description="Filter by unit type"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     skip: int = Query(0, ge=0, description="Number of units to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of units to return"),
     search: Optional[str] = Query(None, description="Search units by name or symbol"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get all units for a business."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
+    """Get all units for a business.
+    
+    Permission: view_unit
+    """
     if search:
         units = await UnitService.search_units(
             session=session,
@@ -120,23 +112,17 @@ async def get_business_units(
 @router.get("/business/{business_id}/hierarchy", response_model=UnitHierarchyResponse)
 async def get_unit_hierarchy(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.VIEW,
+    ))],
     unit_type: Optional[str] = Query(None, description="Filter by unit type"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get units organized by type with conversion hierarchies."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
+    """Get units organized by type with conversion hierarchies.
+    
+    Permission: view_unit
+    """
     hierarchy = await UnitService.get_unit_hierarchy(
         session=session,
         business_id=business_id,
@@ -152,23 +138,17 @@ async def get_unit_hierarchy(
 @router.get("/business/{business_id}/base-units")
 async def get_base_units(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.VIEW,
+    ))],
     unit_type: Optional[str] = Query(None, description="Filter by unit type"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get base units (no parent conversions) for a business."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
+    """Get base units (no parent conversions) for a business.
+    
+    Permission: view_unit
+    """
     base_units = await UnitService.get_base_units_by_business(
         session=session,
         business_id=business_id,
@@ -181,27 +161,22 @@ async def get_base_units(
 @router.get("/{unit_id}", response_model=UnitOut)
 async def get_unit(
     unit_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.VIEW,
+        business_id_extractor=extract_business_id_from_unit,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get unit by ID."""
+    """Get unit by ID.
+    
+    Permission: view_unit
+    """
     unit = await UnitService.get_unit_by_id(session, unit_id)
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found",
-        )
-
-    # Check if user has access to unit's business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(unit, 'business_id'),
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this unit",
         )
 
     return unit
@@ -211,27 +186,22 @@ async def get_unit(
 async def update_unit(
     unit_id: int,
     unit_data: UnitUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.EDIT,
+        business_id_extractor=extract_business_id_from_unit,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Update unit information. User must be able to manage the business."""
+    """Update unit information.
+    
+    Permission: edit_unit
+    """
     unit = await UnitService.get_unit_by_id(session, unit_id)
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found",
-        )
-
-    # Check if user can manage unit's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(unit, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this unit",
         )
 
     # Validate unit hierarchy if base unit is being changed
@@ -265,27 +235,22 @@ async def update_unit(
 @router.delete("/{unit_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_unit(
     unit_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.ACTIVATE_DEACTIVATE,
+        business_id_extractor=extract_business_id_from_unit,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Soft delete unit. User must be able to manage the business."""
+    """Soft delete unit.
+    
+    Permission: activate_deactivate_unit
+    """
     unit = await UnitService.get_unit_by_id(session, unit_id)
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found",
-        )
-
-    # Check if user can manage unit's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(unit, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this unit",
         )
 
     success = await UnitService.delete_unit(session, unit_id)
@@ -301,10 +266,17 @@ async def delete_unit(
 @router.delete("/{unit_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
 async def hard_delete_unit(
     unit_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.DELETE,
+        business_id_extractor=extract_business_id_from_unit,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Permanently delete unit from database. User must be able to manage the business."""
+    """Permanently delete unit from database.
+    
+    Permission: delete_unit
+    """
     from sqlalchemy import select, func
     from app.expenses.models import ExpenseCategory, InvoiceItem, ExpenseRecord, InventoryBalance
     
@@ -313,18 +285,6 @@ async def hard_delete_unit(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found",
-        )
-
-    # Check if user can manage unit's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(unit, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this unit",
         )
 
     # Check if unit is used in categories (default_unit_id)
@@ -402,27 +362,22 @@ async def hard_delete_unit(
 @router.post("/{unit_id}/restore", response_model=UnitOut)
 async def restore_unit(
     unit_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.ACTIVATE_DEACTIVATE,
+        business_id_extractor=extract_business_id_from_unit,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Restore soft-deleted unit. User must be able to manage the business."""
+    """Restore soft-deleted unit.
+    
+    Permission: activate_deactivate_unit
+    """
     unit = await UnitService.get_unit_by_id(session, unit_id, include_inactive=True)
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found",
-        )
-
-    # Check if user can manage unit's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(unit, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this unit",
         )
 
     success = await UnitService.restore_unit(session, unit_id)
@@ -442,10 +397,16 @@ async def restore_unit(
 @router.post("/convert", response_model=UnitConversionResponse)
 async def convert_units(
     conversion_request: UnitConversionRequest,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.VIEW,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Convert quantity between two units."""
+    """Convert quantity between two units.
+    
+    Permission: view_unit
+    """
     # Get both units to check business access
     from_unit = await UnitService.get_unit_by_id(
         session, conversion_request.from_unit_id
@@ -463,24 +424,6 @@ async def convert_units(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Target unit not found",
-        )
-
-    # Check if user has access to both units' businesses
-    has_access_from = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(from_unit, 'business_id'),
-    )
-    has_access_to = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(to_unit, 'business_id'),
-    )
-    
-    if not has_access_from or not has_access_to:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to one or both units",
         )
 
     # Perform conversion
