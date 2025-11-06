@@ -24,7 +24,7 @@ class Resource:
     CATEGORIES = "categories"  # ExpenseSection in code
     SUBCATEGORIES = "subcategories"  # ExpenseCategory in code
     UNITS = "units"
-    BUSINESSES = "business"
+    BUSINESSES = "businesses"
     USERS = "users"
 
 
@@ -32,14 +32,15 @@ class Resource:
 class Action:
     """Action type constants."""
     VIEW = "view"
+    VIEW_MEMBERS = "view_members"  # View business and its members
     CREATE = "create"
     EDIT = "edit"
     DELETE = "delete"
     ACTIVATE_DEACTIVATE = "activate_deactivate"
     APPROVE = "approve"
     REJECT = "reject"
-    ASSIGN_TO_BUSINESS = "assign_to_business"
-    GRANT_PERMISSIONS = "grant_permissions"
+    MANAGE_MEMBERS = "manage_members"  # Add/remove members, manage memberships
+    GRANT_PERMISSIONS = "grant_permissions"  # Manage member permissions within business
 
 
 def get_permission_name(resource: str, action: str) -> str:
