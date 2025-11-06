@@ -188,8 +188,9 @@ async def revoke_user_permission(
 class PermissionChecker:
     """Permission checker dependency class."""
     
-    def __init__(self, permission_name: str):
+    def __init__(self, permission_name: str, error_code: str | None = None):
         self.permission_name = permission_name
+        self.error_code = error_code or "PERMISSION_DENIED"
     
     async def __call__(
         self,
@@ -204,17 +205,72 @@ class PermissionChecker:
         )
         
         if not has_permission:
+            from app.core.error_codes import ErrorCode, create_error_response
+            error_response = create_error_response(
+                error_code=ErrorCode(self.error_code),
+                detail=f"Permission '{self.permission_name}' required"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission '{self.permission_name}' required"
+                detail=error_response
             )
         
         return True
 
 
-def require_permission(permission_name: str):
-    """Create a permission checker dependency."""
-    return PermissionChecker(permission_name)
+class BusinessPermissionChecker:
+    """Permission checker with business context."""
+    
+    def __init__(self, permission_name: str, error_code: str | None = None):
+        self.permission_name = permission_name
+        self.error_code = error_code or "PERMISSION_DENIED"
+    
+    async def __call__(
+        self,
+        business_id: int,
+        user_id: Annotated[str, Depends(get_current_user_id)],
+        db: Annotated[AsyncSession, Depends(get_db_dep)]
+    ) -> bool:
+        """Check if current user has required permission for specific business."""
+        has_permission = await check_user_permission(
+            user_id=int(user_id), 
+            permission_name=self.permission_name, 
+            db=db,
+            business_id=business_id
+        )
+        
+        if not has_permission:
+            from app.core.error_codes import ErrorCode, create_error_response
+            error_response = create_error_response(
+                error_code=ErrorCode(self.error_code),
+                detail=f"Permission '{self.permission_name}' required for this business"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_response
+            )
+        
+        return True
+
+
+def require_permission(permission_name: str, error_code: str | None = None):
+    """Create a permission checker dependency.
+    
+    Args:
+        permission_name: Name of the permission to check
+        error_code: Optional error code to return (defaults to PERMISSION_DENIED)
+    """
+    return PermissionChecker(permission_name, error_code)
+
+
+def require_business_permission(permission_name: str, error_code: str | None = None):
+    """Create a business permission checker dependency.
+    
+    Args:
+        permission_name: Name of the permission to check
+        error_code: Optional error code to return (defaults to PERMISSION_DENIED)
+    """
+    return BusinessPermissionChecker(permission_name, error_code)
 
 
 def require_admin():

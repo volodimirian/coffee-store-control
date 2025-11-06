@@ -18,6 +18,14 @@ class ErrorCode(str, Enum):
     USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"  # "Username already taken"
     INVALID_ROLE = "INVALID_ROLE"  # "Invalid role specified"
     
+    # Permissions
+    PERMISSION_DENIED = "PERMISSION_DENIED"  # "You don't have permission to perform this action"
+    PERMISSION_VIEW_DENIED = "PERMISSION_VIEW_DENIED"  # "You don't have permission to view this resource"
+    PERMISSION_CREATE_DENIED = "PERMISSION_CREATE_DENIED"  # "You don't have permission to create this resource"
+    PERMISSION_EDIT_DENIED = "PERMISSION_EDIT_DENIED"  # "You don't have permission to edit this resource"
+    PERMISSION_DELETE_DENIED = "PERMISSION_DELETE_DENIED"  # "You don't have permission to delete this resource"
+    PERMISSION_ACTIVATE_DEACTIVATE_DENIED = "PERMISSION_ACTIVATE_DEACTIVATE_DENIED"  # "You don't have permission to activate/deactivate this resource"
+    
     # Role-based access
     BUYERS_NOT_ALLOWED = "BUYERS_NOT_ALLOWED"  # "This operation is not allowed for buyers"
     SUPPLIERS_ONLY = "SUPPLIERS_ONLY"  # "Only suppliers can perform this operation"
@@ -80,6 +88,14 @@ class ErrorMessages:
     EMAIL_ALREADY_EXISTS = "Email already registered"
     USERNAME_ALREADY_EXISTS = "Username already taken"
     INVALID_ROLE = "Invalid role specified"
+    
+    # Permissions
+    PERMISSION_DENIED = "You don't have permission to perform this action"
+    PERMISSION_VIEW_DENIED = "You don't have permission to view this resource"
+    PERMISSION_CREATE_DENIED = "You don't have permission to create this resource"
+    PERMISSION_EDIT_DENIED = "You don't have permission to edit this resource"
+    PERMISSION_DELETE_DENIED = "You don't have permission to delete this resource"
+    PERMISSION_ACTIVATE_DEACTIVATE_DENIED = "You don't have permission to activate/deactivate this resource"
     
     # Role-based access
     BUYERS_NOT_ALLOWED = "This operation is not allowed for buyers"
