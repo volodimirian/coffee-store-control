@@ -1,21 +1,24 @@
 """API router for expense section management endpoints."""
 
-from typing import Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core_models import User
-from app.deps import get_current_user, get_db_dep
+from app.deps import get_db_dep
+from app.core.resource_permissions import (
+    require_resource_permission,
+    Resource,
+    Action,
+    extract_business_id_from_section,
+)
 from app.expenses.schemas import (
     ExpenseSectionCreate,
     ExpenseSectionOut,
     ExpenseSectionUpdate,
     ExpenseSectionListOut,
-    ExpenseSectionReorderRequest,
 )
 from app.expenses.expense_section_service import ExpenseSectionService
-from app.businesses.service import BusinessService
 
 router = APIRouter()
 
@@ -23,26 +26,14 @@ router = APIRouter()
 @router.post("/", response_model=ExpenseSectionOut, status_code=status.HTTP_201_CREATED)
 async def create_expense_section(
     section_data: ExpenseSectionCreate,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.CATEGORIES, Action.CREATE))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Create a new expense section. User must have access to the business."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=section_data.business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
+    """Create a new expense section."""
     section = await ExpenseSectionService.create_section(
         session=session,
         section_data=section_data,
-        created_by_user_id=current_user.id,
+        created_by_user_id=auth["user_id"],
     )
     await session.commit()
     return ExpenseSectionOut.from_orm(section)
@@ -51,27 +42,15 @@ async def create_expense_section(
 @router.get("/business/{business_id}", response_model=ExpenseSectionListOut)
 async def get_sections_by_business(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.CATEGORIES, Action.VIEW))],
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     include_categories: bool = Query(False, description="Include categories in sections"),
     skip: int = Query(0, ge=0, description="Number of sections to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of sections to return"),
     search: Optional[str] = Query(None, description="Search sections by name"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Get all sections for a business."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
     if search:
         sections = await ExpenseSectionService.search_sections(
             session=session,
@@ -106,9 +85,13 @@ async def get_sections_by_business(
 @router.get("/{section_id}", response_model=ExpenseSectionOut)
 async def get_section(
     section_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.VIEW,
+        business_id_extractor=extract_business_id_from_section
+    ))],
     include_categories: bool = Query(False, description="Include categories in section"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Get section by ID."""
     section = await ExpenseSectionService.get_section_by_id(
@@ -122,18 +105,6 @@ async def get_section(
             detail="Section not found",
         )
 
-    # Check if user has access to section's business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this section",
-        )
-
     return ExpenseSectionOut.from_orm(section)
 
 
@@ -141,27 +112,19 @@ async def get_section(
 async def update_section(
     section_id: int,
     section_data: ExpenseSectionUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.EDIT,
+        business_id_extractor=extract_business_id_from_section
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Update section information. User must be able to manage the business."""
+    """Update section information."""
     section = await ExpenseSectionService.get_section_by_id(session, section_id)
     if not section:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Section not found",
-        )
-
-    # Check if user can manage section's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this section",
         )
 
     updated_section = await ExpenseSectionService.update_section(
@@ -169,12 +132,6 @@ async def update_section(
         section_id=section_id,
         section_data=section_data,
     )
-    if not updated_section:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Section not found",
-        )
-
     await session.commit()
     return ExpenseSectionOut.from_orm(updated_section)
 
@@ -182,27 +139,22 @@ async def update_section(
 @router.delete("/{section_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_section(
     section_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.ACTIVATE_DEACTIVATE,
+        business_id_extractor=extract_business_id_from_section
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Soft delete section. User must be able to manage the business."""
+    """Soft delete section (deactivate).
+    
+    Permission: activate_deactivate_category
+    """
     section = await ExpenseSectionService.get_section_by_id(session, section_id)
     if not section:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Section not found",
-        )
-
-    # Check if user can manage section's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this section",
         )
 
     success = await ExpenseSectionService.delete_section(session, section_id)
@@ -218,27 +170,19 @@ async def delete_section(
 @router.post("/{section_id}/restore", response_model=ExpenseSectionOut)
 async def restore_section(
     section_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.ACTIVATE_DEACTIVATE,
+        business_id_extractor=extract_business_id_from_section
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Restore soft-deleted section. User must be able to manage the business."""
+    """Restore soft-deleted section."""
     section = await ExpenseSectionService.get_section_by_id(session, section_id, include_inactive=True)
     if not section:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Section not found",
-        )
-
-    # Check if user can manage section's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this section",
         )
 
     success = await ExpenseSectionService.restore_section(session, section_id)
@@ -255,133 +199,99 @@ async def restore_section(
     return ExpenseSectionOut.from_orm(restored_section)
 
 
-@router.post("/business/{business_id}/reorder", status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/reorder", response_model=List[ExpenseSectionOut])
 async def reorder_sections(
     business_id: int,
-    reorder_request: ExpenseSectionReorderRequest,
+    section_orders: List[tuple[int, int]],  # [(section_id, new_order_index), ...]
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.ACTIVATE_DEACTIVATE
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Reorder sections within a business. User must be able to manage the business."""
-    # Check if user can manage business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
-        )
-
-    success = await ExpenseSectionService.reorder_sections(
+    """Reorder sections for a business (pass array of tuples: [(section_id, order_index), ...])."""
+    # Reorder sections
+    reordered = await ExpenseSectionService.reorder_sections(
         session=session,
         business_id=business_id,
-        section_orders=reorder_request.section_orders,
+        section_orders=section_orders,
     )
-    if not success:
+    if not reordered:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to reorder sections",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid section IDs or mismatch with business",
         )
 
     await session.commit()
+    
+    # Return reordered sections
+    sections = await ExpenseSectionService.get_sections_by_business(
+        session=session,
+        business_id=business_id,
+        is_active=True,
+    )
+    return [ExpenseSectionOut.from_orm(s) for s in sections]
 
 
-@router.patch("/{section_id}/deactivate", status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/{section_id}/deactivate", response_model=ExpenseSectionOut)
 async def deactivate_section(
     section_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.ACTIVATE_DEACTIVATE,
+        business_id_extractor=extract_business_id_from_section
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Deactivate (soft delete) an expense section and all its categories. User must be able to manage the business."""
-    # Get section and verify business access
-    section = await ExpenseSectionService.get_section_by_id(
-        session=session,
-        section_id=section_id,
-        include_inactive=True,
-    )
-    if not section:
+    """Deactivate section (soft delete). User must be able to manage the business."""
+    # Use delete_section which sets is_active=False
+    success = await ExpenseSectionService.delete_section(session, section_id)
+    if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Section not found",
         )
-
-    # Check if user has access to manage the business
-    has_access = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
-        )
-
-    success = await ExpenseSectionService.delete_section(
-        session=session,
-        section_id=section_id,
-    )
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to deactivate section",
-        )
-
+    
     await session.commit()
+    
+    deactivated_section = await ExpenseSectionService.get_section_by_id(session, section_id, include_inactive=True)
+    return ExpenseSectionOut.from_orm(deactivated_section)
 
 
-@router.patch("/{section_id}/activate", status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/{section_id}/activate", response_model=ExpenseSectionOut)
 async def activate_section(
     section_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.ACTIVATE_DEACTIVATE,
+        business_id_extractor=extract_business_id_from_section
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Activate (restore) an expense section. User must be able to manage the business."""
-    # Get section and verify business access
-    section = await ExpenseSectionService.get_section_by_id(
-        session=session,
-        section_id=section_id,
-        include_inactive=True,
-    )
-    if not section:
+    """Activate section (undo soft delete). User must be able to manage the business."""
+    # Use restore_section which sets is_active=True
+    success = await ExpenseSectionService.restore_section(session, section_id)
+    if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Section not found",
         )
 
-    # Check if user has access to manage the business
-    has_access = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this business",
-        )
-
-    success = await ExpenseSectionService.restore_section(
-        session=session,
-        section_id=section_id,
-    )
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to activate section",
-        )
-
     await session.commit()
+    
+    activated_section = await ExpenseSectionService.get_section_by_id(session, section_id)
+    return ExpenseSectionOut.from_orm(activated_section)
 
 
 @router.delete("/{section_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
 async def hard_delete_section(
     section_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.CATEGORIES,
+        Action.DELETE,
+        business_id_extractor=extract_business_id_from_section
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Permanently delete section. User must be able to manage the business."""
     section = await ExpenseSectionService.get_section_by_id(session, section_id, include_inactive=True)
@@ -389,18 +299,6 @@ async def hard_delete_section(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Section not found",
-        )
-
-    # Check if user can manage section's business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=getattr(section, 'business_id'),
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to manage this section",
         )
 
     success = await ExpenseSectionService.hard_delete_section(session, section_id)

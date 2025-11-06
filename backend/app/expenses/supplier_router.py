@@ -161,16 +161,17 @@ async def delete_supplier(
     supplier_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(
         Resource.SUPPLIERS,
-        Action.DELETE,
+        Action.ACTIVATE_DEACTIVATE,
         business_id_extractor=extract_business_id_from_supplier
     ))],
     session: AsyncSession = Depends(get_db_dep),
     permanent: bool = False,
 ):
     """
-    Delete supplier.
+    Delete supplier (soft delete = deactivate).
+    For permanent delete, requires delete_supplier permission.
     
-    Permission: delete_supplier
+    Permission: activate_deactivate_supplier (soft), delete_supplier (permanent)
     """
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
@@ -179,7 +180,25 @@ async def delete_supplier(
             detail="Supplier not found",
         )
 
+    # For permanent delete, check DELETE permission
     if permanent:
+        from app.core.permissions import check_user_permission
+        from app.core.error_codes import ErrorCode, create_error_response
+        
+        has_delete_perm = await check_user_permission(
+            user_id=auth["user_id"],
+            permission_name="delete_supplier",
+            db=session,
+            business_id=getattr(supplier, 'business_id'),
+        )
+        if not has_delete_perm:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=create_error_response(
+                    error_code=ErrorCode.PERMISSION_DENIED,
+                    detail="You don't have permission to permanently delete suppliers"
+                ),
+            )
         success = await SupplierService.hard_delete_supplier(session, supplier_id)
     else:
         success = await SupplierService.delete_supplier(session, supplier_id)

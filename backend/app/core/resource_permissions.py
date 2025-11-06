@@ -13,11 +13,16 @@ from app.businesses.service import BusinessService
 
 # Resource types mapping
 class Resource:
-    """Resource type constants."""
+    """Resource type constants.
+    
+    Note: Names match permission names in database, not model names!
+    - CATEGORIES -> ExpenseSection in code (expense_sections table)
+    - SUBCATEGORIES -> ExpenseCategory in code (expense_categories table)
+    """
     SUPPLIERS = "suppliers"
     INVOICES = "invoices"
-    CATEGORIES = "categories"
-    SUBCATEGORIES = "subcategories"
+    CATEGORIES = "categories"  # ExpenseSection in code
+    SUBCATEGORIES = "subcategories"  # ExpenseCategory in code
     UNITS = "units"
     BUSINESSES = "business"
     USERS = "users"
@@ -47,8 +52,8 @@ def get_permission_name(resource: str, action: str) -> str:
     # Handle special cases
     resource_mapping = {
         "business": "business",
-        "categories": "category",
-        "subcategories": "subcategory",
+        "categories": "category",  # ExpenseSection -> category permission
+        "subcategories": "subcategory",  # ExpenseCategory -> subcategory permission
         "units": "unit",
         "suppliers": "supplier",
         "invoices": "invoice",
@@ -71,7 +76,7 @@ async def extract_business_id_from_request(request: Request) -> Optional[int]:
     """
     # Try to get business_id directly from path
     if "business_id" in request.path_params:
-        return request.path_params["business_id"]
+        return int(request.path_params["business_id"])
     
     # For other resources, we might need to fetch the business_id
     # This will be handled in the specific dependency
@@ -238,39 +243,66 @@ async def extract_business_id_from_invoice(request: Request, db: AsyncSession) -
     return getattr(invoice, 'business_id', None) if invoice else None
 
 
-async def extract_business_id_from_category(request: Request, db: AsyncSession) -> Optional[int]:
-    """Extract business_id from category_id via section."""
-    category_id = request.path_params.get("category_id")
+async def extract_business_id_from_invoice_item(request: Request, db: AsyncSession) -> Optional[int]:
+    """Extract business_id from item_id in path (through invoice)."""
+    item_id = request.path_params.get("item_id")
+    if not item_id:
+        return None
+    
+    # Get item to find invoice_id, then get business_id from invoice
+    from app.expenses.invoice_service import InvoiceItemService, InvoiceService
+    item = await InvoiceItemService.get_invoice_item_by_id(db, int(item_id))
+    if not item:
+        return None
+    
+    invoice = await InvoiceService.get_invoice_by_id(db, getattr(item, 'invoice_id'))
+    return getattr(invoice, 'business_id', None) if invoice else None
+
+
+async def extract_business_id_from_section(request: Request, db: AsyncSession) -> Optional[int]:
+    """Extract business_id from section_id in path.
+    
+    Note: ExpenseSection is called 'category' in permissions.
+    """
     section_id = request.path_params.get("section_id")
+    if not section_id:
+        # Try to get from request body for create operations
+        try:
+            body = await request.json()
+            return body.get("business_id")
+        except Exception:
+            return None
     
-    # Try section_id first
-    if section_id:
-        from app.expenses.expense_section_service import ExpenseSectionService
-        section = await ExpenseSectionService.get_section_by_id(db, int(section_id))
-        return getattr(section, 'business_id', None) if section else None
+    # Get section to find business_id
+    from app.expenses.expense_section_service import ExpenseSectionService
+    section = await ExpenseSectionService.get_section_by_id(db, int(section_id))
+    return getattr(section, 'business_id', None) if section else None
+
+
+async def extract_business_id_from_category(request: Request, db: AsyncSession) -> Optional[int]:
+    """Extract business_id from category_id in path.
     
-    # Try category_id
-    if category_id:
-        from app.expenses.expense_category_service import ExpenseCategoryService
-        category = await ExpenseCategoryService.get_category_by_id(db, int(category_id))
-        if category:
-            # Get section to get business_id
-            from app.expenses.expense_section_service import ExpenseSectionService
-            section = await ExpenseSectionService.get_section_by_id(db, getattr(category, 'section_id'))
-            return getattr(section, 'business_id', None) if section else None
+    Note: ExpenseCategory is called 'subcategory' in permissions.
+    """
+    category_id = request.path_params.get("category_id")
+    if not category_id:
+        # Try to get section_id from request body for create operations
+        try:
+            body = await request.json()
+            section_id = body.get("section_id")
+            if section_id:
+                from app.expenses.expense_section_service import ExpenseSectionService
+                section = await ExpenseSectionService.get_section_by_id(db, section_id)
+                return getattr(section, 'business_id', None) if section else None
+            # Fallback to direct business_id in body
+            return body.get("business_id")
+        except Exception:
+            return None
     
-    # Try request body for create
-    try:
-        body = await request.json()
-        section_id = body.get("section_id")
-        if section_id:
-            from app.expenses.expense_section_service import ExpenseSectionService
-            section = await ExpenseSectionService.get_section_by_id(db, section_id)
-            return getattr(section, 'business_id', None) if section else None
-    except Exception:
-        pass
-    
-    return None
+    # Get category to find business_id (category has business_id directly)
+    from app.expenses.expense_category_service import ExpenseCategoryService
+    category = await ExpenseCategoryService.get_category_by_id(db, int(category_id))
+    return getattr(category, 'business_id', None) if category else None
 
 
 async def extract_business_id_from_unit(request: Request, db: AsyncSession) -> Optional[int]:

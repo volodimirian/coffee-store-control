@@ -1,15 +1,19 @@
 """API router for invoice management endpoints."""
 
-from typing import Optional, List
+from typing import Optional, List, Annotated
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core_models import User
-from app.deps import get_current_user, get_db_dep
-from app.core.permissions import check_user_permission
-from app.core.error_codes import ErrorCode, create_error_response
+from app.deps import get_db_dep
+from app.core.resource_permissions import (
+    require_resource_permission,
+    Resource,
+    Action,
+    extract_business_id_from_invoice,
+    extract_business_id_from_invoice_item,
+)
 from app.expenses.schemas import (
     InvoiceCreate,
     InvoiceOut,
@@ -22,7 +26,6 @@ from app.expenses.schemas import (
 )
 from app.expenses.models import InvoiceStatus
 from app.expenses.invoice_service import InvoiceService, InvoiceItemService
-from app.businesses.service import BusinessService
 
 router = APIRouter()
 
@@ -30,45 +33,14 @@ router = APIRouter()
 @router.post("/", response_model=InvoiceOut, status_code=status.HTTP_201_CREATED)
 async def create_invoice(
     invoice_data: InvoiceCreate,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.INVOICES, Action.CREATE))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Create a new invoice. User must have create_invoice permission."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice_data.business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
-    
-    # Check create_invoice permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="create_invoice",
-        db=session,
-        business_id=invoice_data.business_id
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_CREATE_DENIED,
-                detail="You don't have permission to create invoices"
-            ),
-        )
-
     invoice = await InvoiceService.create_invoice(
         session=session,
         invoice_data=invoice_data,
-        created_by_user_id=current_user.id,
+        created_by_user_id=auth["user_id"],
     )
     await session.commit()
     return invoice
@@ -77,6 +49,7 @@ async def create_invoice(
 @router.get("/business/{business_id}", response_model=InvoiceListOut)
 async def get_business_invoices(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.INVOICES, Action.VIEW))],
     supplier_id: Optional[int] = Query(None, description="Filter by supplier ID"),
     paid_status: Optional[InvoiceStatus] = Query(None, description="Filter by payment status"),
     date_from: Optional[datetime] = Query(None, description="Filter invoices from this date"),
@@ -84,40 +57,8 @@ async def get_business_invoices(
     skip: int = Query(0, ge=0, description="Number of invoices to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of invoices to return"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Get all invoices for a specific business. User must have view_invoice permission."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
-    
-    # Check view_invoice permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="view_invoice",
-        db=session,
-        business_id=business_id
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_VIEW_DENIED,
-                detail="You don't have permission to view invoices"
-            ),
-        )
-
     invoices = await InvoiceService.get_invoices_by_business(
         session=session,
         business_id=business_id,
@@ -141,9 +82,13 @@ async def get_business_invoices(
 @router.get("/{invoice_id}", response_model=InvoiceOut)
 async def get_invoice(
     invoice_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.VIEW,
+        business_id_extractor=extract_business_id_from_invoice
+    ))],
     load_items: bool = Query(False, description="Load invoice items"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Get invoice by ID. User must have view_invoice permission."""
     invoice = await InvoiceService.get_invoice_by_id(
@@ -157,38 +102,6 @@ async def get_invoice(
             detail="Invoice not found",
         )
 
-    # Check if user has access to business
-    # Type: ignore для SQLAlchemy Column[int] -> int автоконвертации
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
-    
-    # Check view_invoice permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="view_invoice",
-        db=session,
-        business_id=invoice.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_VIEW_DENIED,
-                detail="You don't have permission to view this invoice"
-            ),
-        )
-
     return invoice
 
 
@@ -196,8 +109,12 @@ async def get_invoice(
 async def update_invoice(
     invoice_id: int,
     invoice_data: InvoiceUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.EDIT,
+        business_id_extractor=extract_business_id_from_invoice
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Update invoice information. User must have edit_invoice permission."""
     # Get invoice first to check access
@@ -206,37 +123,6 @@ async def update_invoice(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
-    
-    # Check edit_invoice permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="edit_invoice",
-        db=session,
-        business_id=invoice.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_EDIT_DENIED,
-                detail="You don't have permission to edit this invoice"
-            ),
         )
 
     updated_invoice = await InvoiceService.update_invoice(
@@ -251,8 +137,12 @@ async def update_invoice(
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_invoice(
     invoice_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.DELETE,
+        business_id_extractor=extract_business_id_from_invoice
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Delete invoice. User must have delete_invoice permission."""
     # Get invoice first to check access
@@ -261,37 +151,6 @@ async def delete_invoice(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
-    
-    # Check delete_invoice permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="delete_invoice",
-        db=session,
-        business_id=invoice.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_DELETE_DENIED,
-                detail="You don't have permission to delete this invoice"
-            ),
         )
 
     success = await InvoiceService.delete_invoice(session=session, invoice_id=invoice_id)
@@ -307,48 +166,21 @@ async def delete_invoice(
 @router.post("/{invoice_id}/mark-paid", response_model=InvoiceOut)
 async def mark_invoice_as_paid(
     invoice_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.APPROVE,
+        business_id_extractor=extract_business_id_from_invoice
+    ))],
     paid_date: Optional[datetime] = None,
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Mark invoice as paid. User must have approve_invoice permission."""
-    # Get invoice first to check access
+    # Get invoice first to check it exists
     invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
     if not invoice:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
-    
-    # Check approve_invoice permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="approve_invoice",
-        db=session,
-        business_id=invoice.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_DENIED,
-                detail="You don't have permission to approve invoices"
-            ),
         )
 
     updated_invoice = await InvoiceService.mark_invoice_as_paid(
@@ -363,47 +195,20 @@ async def mark_invoice_as_paid(
 @router.post("/{invoice_id}/mark-cancelled", response_model=InvoiceOut)
 async def mark_invoice_as_cancelled(
     invoice_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.REJECT,
+        business_id_extractor=extract_business_id_from_invoice
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Mark invoice as cancelled. User must have reject_invoice permission."""
-    # Get invoice first to check access
+    # Get invoice first to check it exists
     invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
     if not invoice:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.BUSINESS_ACCESS_DENIED,
-                detail="Access denied to this business"
-            ),
-        )
-    
-    # Check reject_invoice permission
-    has_permission = await check_user_permission(
-        user_id=current_user.id,
-        permission_name="reject_invoice",
-        db=session,
-        business_id=invoice.business_id  # type: ignore
-    )
-    if not has_permission:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(
-                error_code=ErrorCode.PERMISSION_DENIED,
-                detail="You don't have permission to reject invoices"
-            ),
         )
 
     updated_invoice = await InvoiceService.mark_invoice_as_cancelled(
@@ -417,25 +222,13 @@ async def mark_invoice_as_cancelled(
 @router.get("/business/{business_id}/search", response_model=InvoiceListOut)
 async def search_invoices(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.INVOICES, Action.VIEW))],
     q: str = Query(..., min_length=1, description="Search query"),
     skip: int = Query(0, ge=0, description="Number of invoices to skip"),
     limit: int = Query(50, ge=1, le=500, description="Maximum number of invoices to return"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Search invoices by invoice number or supplier name."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
     invoices = await InvoiceService.search_invoices(
         session=session,
         business_id=business_id,
@@ -453,28 +246,20 @@ async def search_invoices(
 async def create_invoice_item(
     invoice_id: int,
     item_data: InvoiceItemCreate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.EDIT,
+        business_id_extractor=extract_business_id_from_invoice
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Create a new invoice item."""
-    # Get invoice first to check access
+    # Get invoice first to check it exists
     invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
     if not invoice:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
         )
 
     # Ensure invoice_id matches
@@ -495,9 +280,13 @@ async def create_invoice_item(
 @router.get("/{invoice_id}/items", response_model=List[InvoiceItemOutWithConversion])
 async def get_invoice_items(
     invoice_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.VIEW,
+        business_id_extractor=extract_business_id_from_invoice
+    ))],
     convert_to_category_unit: bool = False,
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """
     Get all items for an invoice.
@@ -506,24 +295,12 @@ async def get_invoice_items(
         invoice_id: ID of the invoice
         convert_to_category_unit: If True, convert quantities to category's default unit
     """
-    # Get invoice first to check access
+    # Get invoice first to check it exists
     invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
     if not invoice:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
         )
 
     items = await InvoiceItemService.get_items_by_invoice(
@@ -589,36 +366,20 @@ async def get_invoice_items(
 async def update_invoice_item(
     item_id: int,
     item_data: InvoiceItemUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.EDIT,
+        business_id_extractor=extract_business_id_from_invoice_item
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Update invoice item."""
-    # Get item first to check access
+    # Get item first to check it exists
     item = await InvoiceItemService.get_invoice_item_by_id(session, item_id)
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice item not found",
-        )
-
-    # Get invoice to check business access
-    invoice = await InvoiceService.get_invoice_by_id(session, item.invoice_id)  # type: ignore
-    if not invoice:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
         )
 
     updated_item = await InvoiceItemService.update_invoice_item(
@@ -628,7 +389,7 @@ async def update_invoice_item(
     )
     
     # Recalculate invoice total
-    await InvoiceItemService.recalculate_invoice_total(session, item.invoice_id)  # type: ignore
+    await InvoiceItemService.recalculate_invoice_total(session, getattr(item, 'invoice_id'))
     
     await session.commit()
     return updated_item
@@ -637,11 +398,15 @@ async def update_invoice_item(
 @router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_invoice_item(
     item_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.INVOICES,
+        Action.DELETE,
+        business_id_extractor=extract_business_id_from_invoice_item
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Delete invoice item."""
-    # Get item first to check access
+    # Get item first to check it exists and store invoice_id
     item = await InvoiceItemService.get_invoice_item_by_id(session, item_id)
     if not item:
         raise HTTPException(
@@ -649,26 +414,8 @@ async def delete_invoice_item(
             detail="Invoice item not found",
         )
 
-    # Get invoice to check business access
-    invoice = await InvoiceService.get_invoice_by_id(session, item.invoice_id)  # type: ignore
-    if not invoice:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invoice not found",
-        )
-
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=invoice.business_id,  # type: ignore
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this business",
-        )
-
+    invoice_id = getattr(item, 'invoice_id')
+    
     success = await InvoiceItemService.delete_invoice_item(session=session, item_id=item_id)
     if not success:
         raise HTTPException(
@@ -677,33 +424,22 @@ async def delete_invoice_item(
         )
     
     # Recalculate invoice total
-    await InvoiceItemService.recalculate_invoice_total(session, item.invoice_id)  # type: ignore
+    await InvoiceItemService.recalculate_invoice_total(session, invoice_id)
     
     await session.commit()
 
 
 @router.post("/update-overdue-statuses")
 async def update_overdue_statuses(
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.INVOICES, Action.EDIT))],
     business_id: Optional[int] = Query(None, description="Business ID to filter invoices"),
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Update overdue statuses for pending invoices based on supplier payment terms."""
+    # Note: business_id is optional - if provided, it will be checked by middleware through business_id in query params
+    # If not provided, will update all invoices user has access to
     
-    # If business_id is provided, check user access
-    if business_id:
-        has_access = await BusinessService.can_user_manage_business(
-            session=session,
-            user_id=current_user.id,
-            business_id=business_id,
-        )
-        if not has_access:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied to this business",
-            )
-    
-    updated_count = await InvoiceService.update_overdue_statuses(session, business_id)  # type: ignore
+    updated_count = await InvoiceService.update_overdue_statuses(session, business_id)
     
     return {
         "message": f"Updated {updated_count} invoices to overdue status",

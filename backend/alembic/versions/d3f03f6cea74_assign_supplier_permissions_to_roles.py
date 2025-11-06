@@ -30,7 +30,7 @@ def upgrade() -> None:
         ON CONFLICT DO NOTHING;
     """)
     
-    # BUSINESS_OWNER permissions: VIEW, CREATE, EDIT, DELETE
+    # BUSINESS_OWNER permissions: VIEW, CREATE, EDIT, DELETE, ACTIVATE_DEACTIVATE
     op.execute("""
         INSERT INTO role_permissions (role_id, permission_id, is_active, created_at, updated_at)
         SELECT r.id, p.id, true, NOW(), NOW()
@@ -40,7 +40,8 @@ def upgrade() -> None:
             'view_supplier',
             'create_supplier',
             'edit_supplier',
-            'delete_supplier'
+            'delete_supplier',
+            'activate_deactivate_supplier'
         )
         ON CONFLICT DO NOTHING;
     """)
