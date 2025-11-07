@@ -86,14 +86,15 @@ def upgrade() -> None:
     """)
     
     # Step 4: Create new business permissions with plural 'businesses' resource
+    # Note: 
+    # - view_businesses covers viewing business and its members (no separate view_members)
+    # - create_businesses not needed as permission (any authenticated user can create business and becomes owner)
     op.execute("""
         INSERT INTO permissions (name, action, resource, description, is_active, created_at)
         VALUES 
-            ('view_businesses', 'view', 'businesses', 'View business information', true, NOW()),
-            ('create_businesses', 'create', 'businesses', 'Create new business location', true, NOW()),
+            ('view_businesses', 'view', 'businesses', 'View business information and members', true, NOW()),
             ('edit_businesses', 'edit', 'businesses', 'Edit business information and settings', true, NOW()),
             ('activate_deactivate_businesses', 'activate_deactivate', 'businesses', 'Activate or deactivate business locations', true, NOW()),
-            ('view_members_businesses', 'view_members', 'businesses', 'View business and its members', true, NOW()),
             ('manage_members_businesses', 'manage_members', 'businesses', 'Add/remove members, manage memberships', true, NOW()),
             ('grant_permissions_businesses', 'grant_permissions', 'businesses', 'Manage member permissions within business', true, NOW())
         ON CONFLICT (name) DO NOTHING;
@@ -107,23 +108,21 @@ def upgrade() -> None:
         WHERE r.name = 'BUSINESS_OWNER'
         AND p.name IN (
             'view_businesses',
-            'create_businesses',
             'edit_businesses',
             'activate_deactivate_businesses',
-            'view_members_businesses',
             'manage_members_businesses',
             'grant_permissions_businesses'
         )
         ON CONFLICT DO NOTHING;
     """)
     
-    # Step 6: Assign view_members_businesses to EMPLOYEE
+    # Step 6: Assign view_businesses to EMPLOYEE
     op.execute("""
         INSERT INTO role_permissions (role_id, permission_id, is_active, created_at, updated_at)
         SELECT r.id, p.id, true, NOW(), NOW()
         FROM roles r, permissions p
         WHERE r.name = 'EMPLOYEE'
-        AND p.name = 'view_members_businesses'
+        AND p.name = 'view_businesses'
         ON CONFLICT DO NOTHING;
     """)
     

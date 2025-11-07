@@ -198,14 +198,14 @@ async def get_business_members(
     business_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(
         Resource.BUSINESSES,
-        Action.VIEW_MEMBERS,
+        Action.VIEW,
     ))],
     is_active: Optional[bool] = True,
     session: AsyncSession = Depends(get_db_dep),
 ):
     """Get all members of a business.
     
-    Permission: view_members_business
+    Permission: view_businesses
     """
     members = await BusinessService.get_business_members(
         session=session,
