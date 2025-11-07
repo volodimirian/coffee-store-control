@@ -65,20 +65,69 @@ async def check_user_permission(
         return True
     
     # Check for role-based permission (lowest priority)
-    from app.core_models import Role, RolePermission, User
-    role_permission = await db.scalar(
-        select(RolePermission)
-        .join(Permission)
-        .join(Role)
-        .join(User, User.role_id == Role.id)
-        .where(
-            User.id == user_id,
-            RolePermission.is_active,
-            Permission.name == permission_name
-        )
-    )
+    from app.core_models import Role, RolePermission, User, UserBusiness
     
-    return role_permission is not None
+    # If business_id is provided, check the user's role in that specific business
+    if business_id is not None:
+        # Get user's role in the business through UserBusiness table
+        user_business = await db.scalar(
+            select(UserBusiness)
+            .where(
+                UserBusiness.user_id == user_id,
+                UserBusiness.business_id == business_id,
+                UserBusiness.is_active
+            )
+        )
+        
+        if not user_business:
+            # User is not a member of this business
+            return False
+        
+        # Map role_in_business to system role name for permission checking
+        # role_in_business values: "owner", "employee", "manager" (lowercase)
+        # System roles: "BUSINESS_OWNER", "EMPLOYEE"
+        # 
+        # Logic: Owners in a business get BUSINESS_OWNER permissions within their business context.
+        # This allows business owners to manage their business.
+        role_name_mapping = {
+            "owner": "BUSINESS_OWNER",
+            "employee": "EMPLOYEE",
+            "manager": "EMPLOYEE",  # Manager treated as employee for permissions
+        }
+        
+        role_name = role_name_mapping.get(user_business.role_in_business.lower())
+        if not role_name:
+            # Unknown role - deny access
+            return False
+        
+        # Check if this role has the required permission
+        role_permission = await db.scalar(
+            select(RolePermission)
+            .join(Permission)
+            .join(Role)
+            .where(
+                Role.name == role_name,
+                RolePermission.is_active,
+                Permission.name == permission_name
+            )
+        )
+        
+        return role_permission is not None
+    else:
+        # No business context - use global user role
+        role_permission = await db.scalar(
+            select(RolePermission)
+            .join(Permission)
+            .join(Role)
+            .join(User, User.role_id == Role.id)
+            .where(
+                User.id == user_id,
+                RolePermission.is_active,
+                Permission.name == permission_name
+            )
+        )
+        
+        return role_permission is not None
 
 
 async def grant_user_permission(

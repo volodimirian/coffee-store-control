@@ -46,25 +46,15 @@ class Action:
 def get_permission_name(resource: str, action: str) -> str:
     """Generate permission name from resource and action.
     
+    All resources use plural form in both code and database.
+    
     Examples:
-        get_permission_name("suppliers", "view") -> "view_supplier"
-        get_permission_name("invoices", "create") -> "create_invoice"
+        get_permission_name("suppliers", "view") -> "view_suppliers"
+        get_permission_name("businesses", "create") -> "create_businesses"
+        get_permission_name("categories", "edit") -> "edit_categories"
     """
-    # Handle special cases
-    resource_mapping = {
-        "business": "business",
-        "categories": "category",  # ExpenseSection -> category permission
-        "subcategories": "subcategory",  # ExpenseCategory -> subcategory permission
-        "units": "unit",
-        "suppliers": "supplier",
-        "invoices": "invoice",
-        "users": "user",
-    }
-    
-    resource_singular = resource_mapping.get(resource, resource.rstrip('s'))
-    
-    # Action goes first in our naming convention
-    return f"{action}_{resource_singular}"
+    # Action goes first in our naming convention: {action}_{resource}
+    return f"{action}_{resource}"
 
 
 async def extract_business_id_from_request(request: Request) -> Optional[int]:

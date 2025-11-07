@@ -64,46 +64,66 @@ def upgrade() -> None:
     
     # ===== BUSINESS PERMISSIONS UPDATE =====
     
-    # Add new business permissions: view_members_business, manage_members_business, grant_permissions_business
+    # Step 1: Delete user_permissions that reference old 'business' resource permissions
+    op.execute("""
+        DELETE FROM user_permissions
+        WHERE permission_id IN (
+            SELECT id FROM permissions WHERE resource = 'business'
+        );
+    """)
+    
+    # Step 2: Delete role_permissions that reference old 'business' resource permissions
+    op.execute("""
+        DELETE FROM role_permissions 
+        WHERE permission_id IN (
+            SELECT id FROM permissions WHERE resource = 'business'
+        );
+    """)
+    
+    # Step 3: Delete old business permissions with singular 'business' resource
+    op.execute("""
+        DELETE FROM permissions WHERE resource = 'business';
+    """)
+    
+    # Step 4: Create new business permissions with plural 'businesses' resource
     op.execute("""
         INSERT INTO permissions (name, action, resource, description, is_active, created_at)
         VALUES 
-            ('view_members_business', 'view_members', 'businesses', 'View business and its members', true, NOW()),
-            ('manage_members_business', 'manage_members', 'businesses', 'Add/remove members, manage memberships', true, NOW()),
-            ('grant_permissions_business', 'grant_permissions', 'businesses', 'Manage member permissions within business', true, NOW())
+            ('view_businesses', 'view', 'businesses', 'View business information', true, NOW()),
+            ('create_businesses', 'create', 'businesses', 'Create new business location', true, NOW()),
+            ('edit_businesses', 'edit', 'businesses', 'Edit business information and settings', true, NOW()),
+            ('activate_deactivate_businesses', 'activate_deactivate', 'businesses', 'Activate or deactivate business locations', true, NOW()),
+            ('view_members_businesses', 'view_members', 'businesses', 'View business and its members', true, NOW()),
+            ('manage_members_businesses', 'manage_members', 'businesses', 'Add/remove members, manage memberships', true, NOW()),
+            ('grant_permissions_businesses', 'grant_permissions', 'businesses', 'Manage member permissions within business', true, NOW())
         ON CONFLICT (name) DO NOTHING;
     """)
     
-    # Rename view_business to view_members_business (update existing permission)
-    op.execute("""
-        UPDATE permissions 
-        SET name = 'view_members_business', 
-            action = 'view_members',
-            description = 'View business and its members'
-        WHERE name = 'view_business' AND resource = 'businesses';
-    """)
-    
-    # Assign new business permissions to BUSINESS_OWNER
+    # Step 5: Assign business permissions to BUSINESS_OWNER
     op.execute("""
         INSERT INTO role_permissions (role_id, permission_id, is_active, created_at, updated_at)
         SELECT r.id, p.id, true, NOW(), NOW()
         FROM roles r, permissions p
         WHERE r.name = 'BUSINESS_OWNER'
         AND p.name IN (
-            'view_members_business',
-            'manage_members_business',
-            'grant_permissions_business'
+            'view_businesses',
+            'create_businesses',
+            'edit_businesses',
+            'activate_deactivate_businesses',
+            'view_members_businesses',
+            'manage_members_businesses',
+            'grant_permissions_businesses'
         )
         ON CONFLICT DO NOTHING;
     """)
     
-    # Assign view_members_business to EMPLOYEE
+    # Step 6: Assign view_members_businesses to EMPLOYEE
     op.execute("""
         INSERT INTO role_permissions (role_id, permission_id, is_active, created_at, updated_at)
         SELECT r.id, p.id, true, NOW(), NOW()
         FROM roles r, permissions p
         WHERE r.name = 'EMPLOYEE'
-        AND p.name = 'view_members_business'
+        AND p.name = 'view_members_businesses'
         ON CONFLICT DO NOTHING;
     """)
     
@@ -125,7 +145,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove supplier permissions from roles and revert business permissions."""
     
-    # Remove supplier permissions
+    # Remove supplier permissions from roles
     op.execute("""
         DELETE FROM role_permissions 
         WHERE permission_id IN (
@@ -133,30 +153,54 @@ def downgrade() -> None:
         );
     """)
     
-    # Remove new business permissions
+    # Remove user_permissions that reference plural 'businesses' resource permissions
     op.execute("""
-        DELETE FROM role_permissions 
+        DELETE FROM user_permissions
         WHERE permission_id IN (
-            SELECT id FROM permissions 
-            WHERE name IN ('view_members_business', 'manage_members_business', 'grant_permissions_business')
+            SELECT id FROM permissions WHERE resource = 'businesses'
         );
     """)
     
+    # Remove role_permissions that reference plural 'businesses' resource permissions
     op.execute("""
-        DELETE FROM permissions 
-        WHERE name IN ('manage_members_business', 'grant_permissions_business');
+        DELETE FROM role_permissions 
+        WHERE permission_id IN (
+            SELECT id FROM permissions WHERE resource = 'businesses'
+        );
     """)
     
-    # Revert view_members_business back to view_business
+    # Delete plural 'businesses' permissions
     op.execute("""
-        UPDATE permissions 
-        SET name = 'view_business', 
-            action = 'view',
-            description = 'View business details'
-        WHERE name = 'view_members_business' AND resource = 'businesses';
+        DELETE FROM permissions WHERE resource = 'businesses';
     """)
     
-    # Restore user permissions (basic structure)
+    # Restore old business permissions with singular 'business' resource
+    op.execute("""
+        INSERT INTO permissions (name, action, resource, description, is_active, created_at)
+        VALUES 
+            ('view_business', 'view', 'business', 'View business information', true, NOW()),
+            ('create_business', 'create', 'business', 'Create new business location', true, NOW()),
+            ('edit_business', 'edit', 'business', 'Edit business information and settings', true, NOW()),
+            ('activate_deactivate_business', 'activate_deactivate', 'business', 'Activate or deactivate business locations', true, NOW())
+        ON CONFLICT (name) DO NOTHING;
+    """)
+    
+    # Assign old business permissions to BUSINESS_OWNER
+    op.execute("""
+        INSERT INTO role_permissions (role_id, permission_id, is_active, created_at, updated_at)
+        SELECT r.id, p.id, true, NOW(), NOW()
+        FROM roles r, permissions p
+        WHERE r.name = 'BUSINESS_OWNER'
+        AND p.name IN (
+            'view_business',
+            'create_business',
+            'edit_business',
+            'activate_deactivate_business'
+        )
+        ON CONFLICT DO NOTHING;
+    """)
+    
+    # Restore user permissions
     op.execute("""
         INSERT INTO permissions (name, action, resource, description, is_active, created_at)
         VALUES 
