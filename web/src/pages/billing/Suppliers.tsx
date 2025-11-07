@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, PencilIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { suppliersApi, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
+import { Protected } from '~/shared/ui';
 import SupplierModal from '~/components/modals/SupplierModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 
@@ -185,13 +186,15 @@ export default function Suppliers() {
             {t('billing.suppliers.description')}
           </p>
         </div>
-        <button
-          onClick={handleCreateSupplier}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          {t('billing.suppliers.create')}
-        </button>
+        <Protected permission={{ resource: 'suppliers', action: 'create' }}>
+          <button
+            onClick={handleCreateSupplier}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            {t('billing.suppliers.create')}
+          </button>
+        </Protected>
       </div>
 
       {/* Filters */}
@@ -294,48 +297,56 @@ export default function Suppliers() {
                           )}
                         </div>
                       </div>
-                      <div className="flex-shrink-0 ml-4">
-                        <button
-                          onClick={() => handleToggleSupplierStatus(supplier)}
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-200 hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${
-                            supplier.is_active
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200 focus:ring-green-500'
-                              : 'bg-red-100 text-red-800 hover:bg-red-200 focus:ring-red-500'
-                          }`}
-                          title={supplier.is_active ? t('billing.suppliers.deactivate') : t('billing.suppliers.activate')}
-                        >
-                          {supplier.is_active ? t('billing.suppliers.active') : t('billing.suppliers.inactive')}
-                        </button>
-                      </div>
+                      <Protected permission={{ resource: 'suppliers', action: 'activate_deactivate' }}>
+                        <div className="flex-shrink-0 ml-4">
+                          <button
+                            onClick={() => handleToggleSupplierStatus(supplier)}
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-200 hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${
+                              supplier.is_active
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200 focus:ring-green-500'
+                                : 'bg-red-100 text-red-800 hover:bg-red-200 focus:ring-red-500'
+                            }`}
+                            title={supplier.is_active ? t('billing.suppliers.deactivate') : t('billing.suppliers.activate')}
+                          >
+                            {supplier.is_active ? t('billing.suppliers.active') : t('billing.suppliers.inactive')}
+                          </button>
+                        </div>
+                      </Protected>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleEditSupplier(supplier)}
-                      className="text-blue-600 hover:text-blue-900"
-                      title={t('billing.suppliers.edit')}
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
+                    <Protected permission={{ resource: 'suppliers', action: 'edit' }}>
+                      <button
+                        onClick={() => handleEditSupplier(supplier)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title={t('billing.suppliers.edit')}
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                    </Protected>
                     
                     {supplier.is_active ? (
-                      <button
-                        onClick={() => handleDeleteClick(supplier)}
-                        className="text-red-600 hover:text-red-900"
-                        title={t('billing.suppliers.delete')}
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                      <Protected permission={{ resource: 'suppliers', action: 'delete' }}>
+                        <button
+                          onClick={() => handleDeleteClick(supplier)}
+                          className="text-red-600 hover:text-red-900"
+                          title={t('billing.suppliers.delete')}
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </Protected>
                     ) : (
-                      <button
-                        onClick={() => handleRestoreSupplier(supplier)}
-                        className="text-green-600 hover:text-green-900"
-                        title={t('billing.suppliers.restore')}
-                      >
-                        <ArrowPathIcon className="h-5 w-5" />
-                      </button>
+                      <Protected permission={{ resource: 'suppliers', action: 'activate_deactivate' }}>
+                        <button
+                          onClick={() => handleRestoreSupplier(supplier)}
+                          className="text-green-600 hover:text-green-900"
+                          title={t('billing.suppliers.restore')}
+                        >
+                          <ArrowPathIcon className="h-5 w-5" />
+                        </button>
+                      </Protected>
                     )}
                   </div>
                 </div>
