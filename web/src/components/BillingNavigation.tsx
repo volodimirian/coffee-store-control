@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { 
   DocumentTextIcon,
   CalendarDaysIcon,
@@ -22,6 +23,8 @@ interface Tab {
 export default function BillingNavigation() {
   const { t } = useTranslation();
   const { permissions, isLoading } = usePermissions();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const tabs: Tab[] = [
     {
@@ -60,15 +63,6 @@ export default function BillingNavigation() {
     },
   ];
 
-  // Wait for permissions to load before filtering
-  if (isLoading) {
-    return (
-      <div className="border-b border-gray-200 pb-5 mb-6">
-        <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1 animate-pulse h-12"></div>
-      </div>
-    );
-  }
-
   // Filter tabs based on permissions
   const visibleTabs = tabs.filter((tab) => {
     // Check for multiple required permissions (AND logic)
@@ -84,6 +78,28 @@ export default function BillingNavigation() {
     // No permission requirement - show by default
     return true;
   });
+
+  // Redirect to first available tab if current page is not accessible
+  useEffect(() => {
+    if (isLoading || !permissions || visibleTabs.length === 0) return;
+
+    // Check if current path matches any visible tab
+    const currentTabIsVisible = visibleTabs.some(tab => tab.path === location.pathname);
+
+    // If current tab is not visible, redirect to first available tab
+    if (!currentTabIsVisible) {
+      navigate(visibleTabs[0].path, { replace: true });
+    }
+  }, [isLoading, permissions, location.pathname, visibleTabs, navigate]);
+
+  // Wait for permissions to load before filtering
+  if (isLoading) {
+    return (
+      <div className="border-b border-gray-200 pb-5 mb-6">
+        <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1 animate-pulse h-12"></div>
+      </div>
+    );
+  }
 
   // If no tabs are visible, show message
   if (visibleTabs.length === 0) {
