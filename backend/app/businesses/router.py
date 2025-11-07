@@ -435,14 +435,14 @@ async def get_business_members_list(
     business_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(
         Resource.BUSINESSES,
-        Action.VIEW_MEMBERS,
+        Action.VIEW,
     ))],
     is_active: Optional[bool] = True,
     session: AsyncSession = Depends(get_db_dep),
 ):
     """Get members (employees) of a specific business.
     
-    Permission: view_members_business
+    Permission: view_businesses
     """
     # Get all members (we'll filter employees)
     members = await BusinessService.get_business_members(
@@ -709,27 +709,23 @@ async def get_user_permissions_detail(
     user_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(
         Resource.BUSINESSES,
-        Action.VIEW_MEMBERS,
+        Action.VIEW,
     ))],
     session: AsyncSession = Depends(get_db_dep),
 ):
     """Get detailed permission information for a user in a business context.
     
-    Permission: view_members_business
+    Permission: view_businesses
     
     Shows:
     - All available permissions
     - Which permissions the user has (from role or explicit grant)
     - Source of each permission (role, user, both, or none)
     - Whether permission was explicitly granted/revoked
-    
-    Priority: explicit user permissions > role permissions
-    
-    This endpoint is useful for displaying a permission management UI
-    where you can see which permissions are inherited from role vs
-    explicitly granted/revoked.
     """
-    detail = await BusinessService.get_user_permissions_detail(
-        session, user_id, business_id
+    result = await BusinessService.get_user_permissions_detail(
+        session=session,
+        user_id=user_id,
+        business_id=business_id,
     )
-    return UserPermissionsDetailOut(**detail)
+    return result
