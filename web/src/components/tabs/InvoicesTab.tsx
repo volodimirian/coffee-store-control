@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
+import { Protected } from '~/shared/ui';
 import InvoiceModal from '~/components/modals/InvoiceModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 import { formatCurrency } from '~/shared/lib/helpers';
@@ -282,13 +283,15 @@ export default function InvoicesTab() {
               <FunnelIcon className="h-5 w-5 mr-2" />
               {t('common.filters')}
             </button>
-            <button
-              onClick={handleAddInvoice}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              {t('expenses.invoices.addInvoice')}
-            </button>
+            <Protected permission={{ resource: 'invoices', action: 'create' }}>
+              <button
+                onClick={handleAddInvoice}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                {t('expenses.invoices.addInvoice')}
+              </button>
+            </Protected>
           </div>
         </div>
 
@@ -473,36 +476,44 @@ export default function InvoicesTab() {
                     <div className="flex items-center justify-end space-x-2">
                       {invoice.paid_status === 'pending' && (
                         <>
-                          <button
-                            onClick={() => handleMarkAsPaid(invoice)}
-                            className="text-green-600 hover:text-green-900"
-                            title={t('expenses.invoices.actions.markAsPaid')}
-                          >
-                            <CheckCircleIcon className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleMarkAsCancelled(invoice)}
-                            className="text-red-600 hover:text-red-900"
-                            title={t('expenses.invoices.actions.markAsCancelled')}
-                          >
-                            <XCircleIcon className="h-5 w-5" />
-                          </button>
+                          <Protected permission={{ resource: 'invoices', action: 'approve' }}>
+                            <button
+                              onClick={() => handleMarkAsPaid(invoice)}
+                              className="text-green-600 hover:text-green-900"
+                              title={t('expenses.invoices.actions.markAsPaid')}
+                            >
+                              <CheckCircleIcon className="h-5 w-5" />
+                            </button>
+                          </Protected>
+                          <Protected permission={{ resource: 'invoices', action: 'reject' }}>
+                            <button
+                              onClick={() => handleMarkAsCancelled(invoice)}
+                              className="text-red-600 hover:text-red-900"
+                              title={t('expenses.invoices.actions.markAsCancelled')}
+                            >
+                              <XCircleIcon className="h-5 w-5" />
+                            </button>
+                          </Protected>
                         </>
                       )}
-                      <button
-                        onClick={() => handleEditInvoice(invoice)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title={t('expenses.invoices.actions.edit')}
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteInvoice(invoice)}
-                        className="text-red-600 hover:text-red-900"
-                        title={t('expenses.invoices.actions.delete')}
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                      <Protected permission={{ resource: 'invoices', action: 'edit' }}>
+                        <button
+                          onClick={() => handleEditInvoice(invoice)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title={t('expenses.invoices.actions.edit')}
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                      </Protected>
+                      <Protected permission={{ resource: 'invoices', action: 'delete' }}>
+                        <button
+                          onClick={() => handleDeleteInvoice(invoice)}
+                          className="text-red-600 hover:text-red-900"
+                          title={t('expenses.invoices.actions.delete')}
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </Protected>
                     </div>
                   </td>
                 </tr>

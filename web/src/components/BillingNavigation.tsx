@@ -21,7 +21,7 @@ interface Tab {
 
 export default function BillingNavigation() {
   const { t } = useTranslation();
-  const { permissions } = usePermissions();
+  const { permissions, isLoading } = usePermissions();
   
   const tabs: Tab[] = [
     {
@@ -59,6 +59,15 @@ export default function BillingNavigation() {
       requiredPermission: 'suppliers' as Resource,
     },
   ];
+
+  // Wait for permissions to load before filtering
+  if (isLoading) {
+    return (
+      <div className="border-b border-gray-200 pb-5 mb-6">
+        <div className="flex space-x-1 rounded-xl bg-blue-900/20 p-1 animate-pulse h-12"></div>
+      </div>
+    );
+  }
 
   // Filter tabs based on permissions
   const visibleTabs = tabs.filter((tab) => {
