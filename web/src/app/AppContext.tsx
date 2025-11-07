@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from '@tanstack/react-query';
 import { AppContext, type AppContextType } from "~/shared/context/AppContext";
 import { locationsApi } from "~/shared/api/locations";
 import { invoicesApi } from "~/shared/api/expenses";
@@ -9,6 +10,7 @@ import { setLogoutHandler } from "~/shared/api/client";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<AppContextType["user"]>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
@@ -22,6 +24,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     console.log('Manually setting current location:', location);
     setCurrentLocationState(location);
     localStorage.setItem('currentLocation', JSON.stringify(location));
+    
+    // Invalidate permissions cache when business changes
+    queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
   };
 
   const updateOverdueStatuses = useCallback(async (businessId: number): Promise<void> => {
@@ -163,9 +168,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentLocationState(null);
     setLocations([]);
     
+    // Clear all React Query cache (including permissions)
+    queryClient.clear();
+    
     // Use helper logout function which handles localStorage cleanup and redirect
     helperLogout();
-  }, []);
+  }, [queryClient]);
 
   // Set up automatic logout handler for API client
   useEffect(() => {
