@@ -7,6 +7,7 @@ import { getShowInactivePreference, setShowInactivePreference } from '~/shared/l
 import { formatNumber } from '~/shared/lib/helpers';
 import UnitModal from '~/components/modals/UnitModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
+import { Protected } from '~/shared/ui/Protected';
 
 interface BaseUnitGroup {
   baseUnit: Unit | null; // null for standalone units without base
@@ -229,13 +230,15 @@ export default function UnitsTab() {
                 </>
               )}
             </button>
-            <button
-              onClick={handleAddUnit}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              {t('expenses.units.addUnit')}
-            </button>
+            <Protected permission={{ resource: 'units', action: 'create' }}>
+              <button
+                onClick={handleAddUnit}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                {t('expenses.units.addUnit')}
+              </button>
+            </Protected>
           </div>
         </div>
 
@@ -251,13 +254,15 @@ export default function UnitsTab() {
         <div className="bg-white shadow rounded-lg p-12 text-center">
           <p className="text-gray-500 text-lg">{t('expenses.units.noUnits')}</p>
           <p className="text-gray-400 text-sm mt-2">{t('expenses.units.noUnitsDescription')}</p>
-          <button
-            onClick={handleAddUnit}
-            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            {t('expenses.units.createFirstUnit')}
-          </button>
+          <Protected permission={{ resource: 'units', action: 'create' }}>
+            <button
+              onClick={handleAddUnit}
+              className="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              {t('expenses.units.createFirstUnit')}
+            </button>
+          </Protected>
         </div>
       ) : (
         <div className="space-y-6">
@@ -386,39 +391,45 @@ function BaseUnitCard({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {baseUnit.is_active ? (
+            <Protected permission={{ resource: 'units', action: 'activate_deactivate' }}>
+              {baseUnit.is_active ? (
+                <button
+                  onClick={() => onToggleStatus(baseUnit.id, true)}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
+                  title={t('expenses.units.deactivate')}
+                >
+                  <EyeSlashIcon className="h-3 w-3 mr-1" />
+                  {t('expenses.units.deactivate')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => onToggleStatus(baseUnit.id, false)}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
+                  title={t('expenses.units.activate')}
+                >
+                  <EyeIcon className="h-3 w-3 mr-1" />
+                  {t('expenses.units.activate')}
+                </button>
+              )}
+            </Protected>
+            <Protected permission={{ resource: 'units', action: 'edit' }}>
               <button
-                onClick={() => onToggleStatus(baseUnit.id, true)}
-                className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
-                title={t('expenses.units.deactivate')}
+                onClick={() => onEditUnit(baseUnit)}
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                title={t('expenses.units.editUnit')}
               >
-                <EyeSlashIcon className="h-3 w-3 mr-1" />
-                {t('expenses.units.deactivate')}
+                <PencilIcon className="h-4 w-4" />
               </button>
-            ) : (
+            </Protected>
+            <Protected permission={{ resource: 'units', action: 'delete' }}>
               <button
-                onClick={() => onToggleStatus(baseUnit.id, false)}
-                className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
-                title={t('expenses.units.activate')}
+                onClick={() => onDeleteUnit(baseUnit)}
+                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
+                title={t('expenses.units.deleteUnit')}
               >
-                <EyeIcon className="h-3 w-3 mr-1" />
-                {t('expenses.units.activate')}
+                <TrashIcon className="h-4 w-4" />
               </button>
-            )}
-            <button
-              onClick={() => onEditUnit(baseUnit)}
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
-              title={t('expenses.units.editUnit')}
-            >
-              <PencilIcon className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onDeleteUnit(baseUnit)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
-              title={t('expenses.units.deleteUnit')}
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
+            </Protected>
           </div>
         </div>
       </div>
@@ -463,39 +474,45 @@ function BaseUnitCard({
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
-                    {unit.is_active ? (
+                    <Protected permission={{ resource: 'units', action: 'activate_deactivate' }}>
+                      {unit.is_active ? (
+                        <button
+                          onClick={() => onToggleStatus(unit.id, true)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
+                          title={t('expenses.units.deactivate')}
+                        >
+                          <EyeSlashIcon className="h-3 w-3 mr-1" />
+                          {t('expenses.units.deactivate')}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onToggleStatus(unit.id, false)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
+                          title={t('expenses.units.activate')}
+                        >
+                          <EyeIcon className="h-3 w-3 mr-1" />
+                          {t('expenses.units.activate')}
+                        </button>
+                      )}
+                    </Protected>
+                    <Protected permission={{ resource: 'units', action: 'edit' }}>
                       <button
-                        onClick={() => onToggleStatus(unit.id, true)}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
-                        title={t('expenses.units.deactivate')}
+                        onClick={() => onEditUnit(unit)}
+                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                        title={t('expenses.units.editUnit')}
                       >
-                        <EyeSlashIcon className="h-3 w-3 mr-1" />
-                        {t('expenses.units.deactivate')}
+                        <PencilIcon className="h-4 w-4" />
                       </button>
-                    ) : (
+                    </Protected>
+                    <Protected permission={{ resource: 'units', action: 'delete' }}>
                       <button
-                        onClick={() => onToggleStatus(unit.id, false)}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
-                        title={t('expenses.units.activate')}
+                        onClick={() => onDeleteUnit(unit)}
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                        title={t('expenses.units.deleteUnit')}
                       >
-                        <EyeIcon className="h-3 w-3 mr-1" />
-                        {t('expenses.units.activate')}
+                        <TrashIcon className="h-4 w-4" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => onEditUnit(unit)}
-                      className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                      title={t('expenses.units.editUnit')}
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteUnit(unit)}
-                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                      title={t('expenses.units.deleteUnit')}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
+                    </Protected>
                   </div>
                 </div>
               </div>
