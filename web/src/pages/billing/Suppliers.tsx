@@ -82,8 +82,11 @@ export default function Suppliers() {
   }, [currentLocation, activeFilter, debouncedSearchQuery, currentPage, pageSize, t]);
 
   useEffect(() => {
-    loadSuppliers();
-  }, [loadSuppliers]);
+    // Only load suppliers if user has permission
+    if (!isLoadingPermissions && can.view(permissions, 'suppliers')) {
+      loadSuppliers();
+    }
+  }, [loadSuppliers, isLoadingPermissions, permissions]);
 
   const handleCreateSupplier = () => {
     setSelectedSupplier(null);

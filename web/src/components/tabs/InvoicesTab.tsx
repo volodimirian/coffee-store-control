@@ -139,8 +139,11 @@ export default function InvoicesTab() {
   }, [currentLocation, statusFilter, supplierFilter, dateFromFilter, dateToFilter, debouncedSearchQuery, currentPage, pageSize, t, isOverdue]);
 
   useEffect(() => {
-    loadInvoices();
-  }, [loadInvoices]);
+    // Only load invoices if user has permission
+    if (!isLoadingPermissions && can.view(permissions, 'invoices')) {
+      loadInvoices();
+    }
+  }, [loadInvoices, isLoadingPermissions, permissions]);
 
   // Helper to get supplier name
   const getSupplierName = (supplierId: number): string => {

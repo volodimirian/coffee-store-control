@@ -59,8 +59,11 @@ export default function UnitsTab() {
   }, [currentLocation, showInactive, t]);
 
   useEffect(() => {
-    loadUnits();
-  }, [loadUnits]);
+    // Only load units if user has permission
+    if (!isLoadingPermissions && can.view(permissions, 'units')) {
+      loadUnits();
+    }
+  }, [loadUnits, isLoadingPermissions, permissions]);
 
   // Group units by base unit
   const groupedUnits = useCallback((): BaseUnitGroup[] => {

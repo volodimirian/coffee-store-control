@@ -17,6 +17,7 @@ interface Tab {
   icon: React.ComponentType<{ className?: string }>;
   path: string;
   requiredPermission?: Resource;
+  requiredPermissions?: Array<{ resource: Resource; action: 'view' | 'create' | 'edit' | 'delete' }>;
 }
 
 export default function ExpensesNavigation() {
@@ -36,7 +37,13 @@ export default function ExpensesNavigation() {
       name: t('expenses.navigation.inventoryTracking'),
       icon: TableCellsIcon,
       path: '/expenses/inventory-tracking',
-      requiredPermission: 'invoices' as Resource, // Inventory tracking requires invoices view
+      // Inventory tracking requires BOTH invoices (for data) and units (for table structure)
+      requiredPermissions: [
+        { resource: 'invoices', action: 'view' },
+        { resource: 'units', action: 'view' },
+        // { resource: 'categories', action: 'view' },
+        { resource: 'subcategories', action: 'view' }
+      ],
     },
     {
       name: t('expenses.navigation.categories'),
@@ -60,13 +67,20 @@ export default function ExpensesNavigation() {
 
   // Filter tabs based on permissions
   const visibleTabs = tabs.filter((tab) => {
-    // If no required permission, tab is always visible (access already checked in Sidebar)
-    if (!tab.requiredPermission) {
-      return true;
+    // Check for multiple required permissions (AND logic)
+    if (tab.requiredPermissions) {
+      return tab.requiredPermissions.every(perm => 
+        can.view(permissions, perm.resource)
+      );
     }
     
     // Check for single required permission
-    return can.view(permissions, tab.requiredPermission);
+    if (tab.requiredPermission) {
+      return can.view(permissions, tab.requiredPermission);
+    }
+    
+    // If no required permission, tab is always visible (access already checked in Sidebar)
+    return true;
   });
 
   // Redirect to first available tab if current page is not accessible
