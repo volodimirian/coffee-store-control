@@ -8,6 +8,8 @@ import { formatNumber } from '~/shared/lib/helpers';
 import UnitModal from '~/components/modals/UnitModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 import { Protected } from '~/shared/ui/Protected';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { can } from '~/shared/utils/permissions';
 
 interface BaseUnitGroup {
   baseUnit: Unit | null; // null for standalone units without base
@@ -17,6 +19,7 @@ interface BaseUnitGroup {
 export default function UnitsTab() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
+  const { permissions, isLoading: isLoadingPermissions } = usePermissions();
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -182,6 +185,27 @@ export default function UnitsTab() {
   const handleModalSuccess = () => {
     loadUnits();
   };
+
+  // Check permissions
+  if (isLoadingPermissions) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  if (!can.view(permissions, 'units')) {
+    return (
+      <div className="text-center py-12">
+        <div className="rounded-xl bg-yellow-50 p-8 inline-block">
+          <p className="text-sm text-yellow-800">
+            {t('errors.INSUFFICIENT_PERMISSIONS')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentLocation) {
     return (

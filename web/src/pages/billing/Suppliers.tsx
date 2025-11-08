@@ -4,6 +4,8 @@ import { PlusIcon, PencilIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react
 import { suppliersApi, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Protected } from '~/shared/ui';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { can } from '~/shared/utils/permissions';
 import SupplierModal from '~/components/modals/SupplierModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 
@@ -15,6 +17,7 @@ type SupplierWithInvoiceInfo = Supplier & {
 export default function Suppliers() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
+  const { permissions, isLoading: isLoadingPermissions } = usePermissions();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -173,6 +176,27 @@ export default function Suppliers() {
   };
 
   const totalPages = Math.ceil(totalSuppliers / pageSize);
+
+  // Check permissions
+  if (isLoadingPermissions) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  if (!can.view(permissions, 'suppliers')) {
+    return (
+      <div className="text-center py-12">
+        <div className="rounded-xl bg-yellow-50 p-8 inline-block">
+          <p className="text-sm text-yellow-800">
+            {t('errors.INSUFFICIENT_PERMISSIONS')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

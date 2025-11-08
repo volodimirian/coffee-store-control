@@ -71,6 +71,11 @@ const menuSections: MenuSection[] = [
         path: '/expenses',
         icon: CurrencyDollarIcon,
         labelKey: 'navigation.expenseTracking',
+        requiredPermissions: [
+          { resource: 'invoices', action: 'view' },
+          { resource: 'categories', action: 'view' },
+          { resource: 'units', action: 'view' },
+        ],
       },
       {
         id: 'billing',

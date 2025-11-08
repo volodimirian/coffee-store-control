@@ -30,7 +30,8 @@
     "today": "Сегодня",
     "original": "Изначально",
     "converted": "Приведено к",
-    "quantity": "Количество"
+    "quantity": "Количество",
+    "retry": "Повторить"
   },
   "navigation": {
     "home": "Главная",

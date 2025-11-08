@@ -4,6 +4,8 @@ import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIc
 import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Protected } from '~/shared/ui';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { can } from '~/shared/utils/permissions';
 import InvoiceModal from '~/components/modals/InvoiceModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 import { formatCurrency } from '~/shared/lib/helpers';
@@ -11,6 +13,7 @@ import { formatCurrency } from '~/shared/lib/helpers';
 export default function InvoicesTab() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
+  const { permissions, isLoading: isLoadingPermissions } = usePermissions();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -265,6 +268,27 @@ export default function InvoicesTab() {
     };
     return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
   };
+
+  // Check permissions
+  if (isLoadingPermissions) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  if (!can.view(permissions, 'invoices')) {
+    return (
+      <div className="text-center py-12">
+        <div className="rounded-xl bg-yellow-50 p-8 inline-block">
+          <p className="text-sm text-yellow-800">
+            {t('errors.INSUFFICIENT_PERMISSIONS')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
