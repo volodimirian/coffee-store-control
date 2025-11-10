@@ -105,18 +105,15 @@ export default function Suppliers() {
 
   const handleDeleteClick = async (supplier: Supplier) => {
     try {
-      // Проверяем есть ли инвойсы у поставщика
       const invoiceCheck = await suppliersApi.hasInvoices(supplier.id);
       
       if (invoiceCheck.has_invoices) {
-        // Если есть инвойсы, показываем предупреждение о мягком удалении
         setSupplierToDelete({
           ...supplier,
           _hasInvoices: true,
           _invoiceCount: invoiceCheck.invoice_count
         });
       } else {
-        // Если нет инвойсов, можно удалить жестко
         setSupplierToDelete({
           ...supplier,
           _hasInvoices: false,
@@ -127,7 +124,6 @@ export default function Suppliers() {
       setIsDeleteModalOpen(true);
     } catch (err) {
       console.error('Failed to check supplier invoices:', err);
-      // В случае ошибки просто открываем модал с мягким удалением
       setSupplierToDelete(supplier);
       setIsDeleteModalOpen(true);
     }
@@ -138,7 +134,6 @@ export default function Suppliers() {
 
     setIsDeleting(true);
     try {
-      // Use permanent deletion if supplier has no invoices, soft delete if they do
       const permanent = !supplierToDelete._hasInvoices;
       await suppliersApi.delete(supplierToDelete.id, permanent);
       await loadSuppliers();
@@ -165,10 +160,8 @@ export default function Suppliers() {
   const handleToggleSupplierStatus = async (supplier: Supplier) => {
     try {
       if (supplier.is_active) {
-        // Деактивировать поставщика (мягкое удаление)
         await suppliersApi.delete(supplier.id, false);
       } else {
-        // Активировать поставщика (восстановление)
         await suppliersApi.restore(supplier.id);
       }
       await loadSuppliers();
@@ -289,11 +282,9 @@ export default function Suppliers() {
           <ul className="divide-y divide-gray-200">
             {suppliers
               .sort((a, b) => {
-                // Сначала активные поставщики, потом неактивные
                 if (a.is_active !== b.is_active) {
                   return a.is_active ? -1 : 1;
                 }
-                // Внутри группы сортируем по имени
                 return a.name.localeCompare(b.name);
               })
               .map((supplier) => (
