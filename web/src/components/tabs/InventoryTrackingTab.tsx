@@ -418,12 +418,12 @@ export default function InventoryTrackingTab() {
                     const isToday = isSameDay(day, new Date());
                     return (
                       <React.Fragment key={`${day.toISOString()}-sub`}>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x ${
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[60px] ${
                           isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
                         }`}>
                           {t('expenses.inventoryTracking.table.qty')}
                         </th>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x ${
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[80px] ${
                           isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
                         }`}>
                           {t('expenses.inventoryTracking.table.amount')}
@@ -433,10 +433,10 @@ export default function InventoryTrackingTab() {
                       </React.Fragment>
                     );
                   })}
-                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-x">
+                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-x min-w-[60px]">
                     {t('expenses.inventoryTracking.table.qty')}
                   </th>
-                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400">
+                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 min-w-[80px]">
                     {t('expenses.inventoryTracking.table.amount')}
                   </th>
                 </tr>
@@ -512,12 +512,12 @@ export default function InventoryTrackingTab() {
                           return (
                             <React.Fragment key={`${day.toISOString()}-section`}>
                               {/* Skip Quantity Column for section header */}
-                              <td className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                              <td className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
                                 <div className="text-blue-600 text-[10px]">—</div>
                               </td>
                               
                               {/* Amount Column - show section totals */}
-                              <td className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                              <td className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
                                 {dayTotals && (dayTotals.purchasesAmount !== 0 || dayTotals.usageAmount !== 0) ? (
                                   <div className="space-y-0.5">
                                     {dayTotals.purchasesAmount !== 0 && (
@@ -540,10 +540,10 @@ export default function InventoryTrackingTab() {
                             </React.Fragment>
                           );
                         })}
-                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 border-x">
+                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 border-x whitespace-nowrap">
                           <div className="text-blue-600 text-[10px]">—</div>
                         </td>
-                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100">
+                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 whitespace-nowrap">
                           <div className="font-bold text-blue-900">
                             {formatCurrencyCompact(sectionGrandTotal)}
                           </div>
@@ -586,7 +586,7 @@ export default function InventoryTrackingTab() {
                                 <React.Fragment key={`${day.toISOString()}-cat`}>
                                   {/* Quantity Column */}
                                   <td 
-                                    className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-50' : ''}`}
+                                    className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-50' : ''}`}
                                     title={dayData && dayData.purchaseDetails.length > 0 ? 
                                       dayData.purchaseDetails.map(detail => 
                                         detail.wasConverted 
@@ -619,7 +619,7 @@ export default function InventoryTrackingTab() {
                                   
                                   {/* Amount Column */}
                                   <td 
-                                    className={`px-1 py-2 text-center text-xs border-x ${isToday ? 'bg-blue-50' : ''}`}
+                                    className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-50' : ''}`}
                                   >
                                     {dayData ? (
                                       <div className="space-y-0.5">
@@ -646,12 +646,12 @@ export default function InventoryTrackingTab() {
                                 </React.Fragment>
                               );
                             })}
-                            <td className="px-2 py-2 text-center text-xs border-x">
+                            <td className="px-2 py-2 text-center text-xs border-x whitespace-nowrap">
                               <div className={totalQty > 0 ? 'text-green-600' : totalQty < 0 ? 'text-red-600' : 'text-gray-900'}>
                                 {formatQty(totalQty)}
                               </div>
                             </td>
-                            <td className="px-2 py-2 text-center text-xs">
+                            <td className="px-2 py-2 text-center text-xs whitespace-nowrap">
                               <div className={totalAmount > 0 ? 'text-green-600 font-bold' : totalAmount < 0 ? 'text-red-600 font-bold' : 'text-gray-900 font-bold'}>
                                 {formatCurrencyCompact(totalAmount)}
                               </div>

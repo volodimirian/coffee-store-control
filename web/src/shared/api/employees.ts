@@ -14,13 +14,13 @@ import type {
 export const employeesApi = {
   // Create new employee and add to business
   createEmployee: async (businessId: number, data: EmployeeCreateRequest): Promise<Employee> => {
-    const response = await api.post(`/businesses/${businessId}/employees`, data);
+    const response = await api.post(`/businesses/${businessId}/members/create`, data);
     return response.data;
   },
 
   // Get all employees for a specific business
   getBusinessEmployees: async (businessId: number, isActive: boolean = true): Promise<Employee[]> => {
-    const response = await api.get(`/businesses/${businessId}/employees`, {
+    const response = await api.get(`/businesses/${businessId}/members/list`, {
       params: { is_active: isActive }
     });
     return response.data;

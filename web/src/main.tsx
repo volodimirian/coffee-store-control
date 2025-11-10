@@ -8,10 +8,10 @@ import '~/shared/lib/i18n';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppProvider>
-      <QueryProvider>
+    <QueryProvider>
+      <AppProvider>
         <App />
-      </QueryProvider>
-    </AppProvider>
+      </AppProvider>
+    </QueryProvider>
   </StrictMode>
 )

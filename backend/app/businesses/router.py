@@ -1,12 +1,17 @@
 """API router for business management endpoints."""
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_models import User
 from app.core.permissions import grant_user_permission, revoke_user_permission
+from app.core.resource_permissions import (
+    require_resource_permission,
+    Resource,
+    Action,
+)
 from app.core.error_codes import ErrorCode, create_error_response
 from app.deps import get_current_user, get_db_dep
 from app.businesses.schemas import (
@@ -61,21 +66,6 @@ async def get_my_businesses(
     return BusinessListOut.from_business_list(businesses)
 
 
-@router.get("/owned", response_model=BusinessListOut)
-async def get_owned_businesses(
-    is_active: Optional[bool] = None,
-    session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
-):
-    """Get all businesses owned by current user."""
-    businesses = await BusinessService.get_businesses_by_owner(
-        session=session,
-        owner_id=current_user.id,
-        is_active=is_active,
-    )
-    return BusinessListOut.from_business_list(businesses)
-
-
 @router.get("/{business_id}", response_model=BusinessOut)
 async def get_business(
     business_id: int,
@@ -109,22 +99,16 @@ async def get_business(
 async def update_business(
     business_id: int,
     business_data: BusinessUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.EDIT,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Update business information. User must be owner or manager."""
-    # Check if user can manage business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
-        )
-
+    """Update business information.
+    
+    Permission: edit_business
+    """
     business = await BusinessService.update_business(
         session=session,
         business_id=business_id,
@@ -145,7 +129,11 @@ async def restore_business(
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Restore soft-deleted business. Only owner can restore business."""
+    """Restore soft-deleted business.
+    
+    Owner-only operation: Only the business owner can restore their business.
+    This is not a permission-based check but an ownership verification.
+    """
     business = await BusinessService.get_business_by_id(session, business_id)
     if not business:
         raise HTTPException(
@@ -178,7 +166,11 @@ async def delete_business(
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
 ):
-    """Soft delete business. Only owner can delete business."""
+    """Soft delete business.
+    
+    Owner-only operation: Only the business owner can delete their business.
+    This is not a permission-based check but an ownership verification.
+    """
     business = await BusinessService.get_business_by_id(session, business_id)
     if not business:
         raise HTTPException(
@@ -204,23 +196,17 @@ async def delete_business(
 @router.get("/{business_id}/members", response_model=BusinessMembersOut)
 async def get_business_members(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.VIEW,
+    ))],
     is_active: Optional[bool] = True,
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get all members of a business. User must have access to business."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.BUSINESS_ACCESS_DENIED),
-        )
-
+    """Get all members of a business.
+    
+    Permission: view_businesses
+    """
     members = await BusinessService.get_business_members(
         session=session,
         business_id=business_id,
@@ -233,22 +219,16 @@ async def get_business_members(
 async def add_member_to_business(
     business_id: int,
     member_data: UserBusinessCreate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.MANAGE_MEMBERS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Add a user to business. User must be owner or manager."""
-    # Check if user can manage business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
-        )
-
+    """Add a user to business as a member.
+    
+    Permission: manage_members_business
+    """
     # Ensure business_id matches URL parameter
     if member_data.business_id != business_id:
         raise HTTPException(
@@ -281,22 +261,16 @@ async def update_member_role(
     business_id: int,
     user_id: int,
     update_data: UserBusinessUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.MANAGE_MEMBERS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Update user's role in business. User must be owner or manager."""
-    # Check if user can manage business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
-        )
-
+    """Update member's role in business.
+    
+    Permission: manage_members_business
+    """
     user_business = await BusinessService.update_user_business_role(
         session=session,
         user_id=user_id,
@@ -316,22 +290,16 @@ async def update_member_role(
 async def remove_member_from_business(
     business_id: int,
     user_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.MANAGE_MEMBERS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Remove user from business. User must be owner or manager."""
-    # Check if user can manage business
-    can_manage = await BusinessService.can_user_manage_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not can_manage:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.INSUFFICIENT_PERMISSIONS),
-        )
-
+    """Remove member from business.
+    
+    Permission: manage_members_business
+    """
     # Don't allow removing business owner
     business = await BusinessService.get_business_by_id(session, business_id)
     if business and business.owner_id == user_id:
@@ -352,14 +320,20 @@ async def remove_member_from_business(
         )
 
 
-@router.post("/{business_id}/employees", response_model=EmployeeOut, status_code=status.HTTP_201_CREATED)
-async def create_employee(
+@router.post("/{business_id}/members/create", response_model=EmployeeOut, status_code=status.HTTP_201_CREATED)
+async def create_member(
     business_id: int,
     employee_data: EmployeeCreateRequest,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.MANAGE_MEMBERS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Create new employee and add to business. Only owner can create employees."""
+    """Create new member (employee) and add to business.
+    
+    Permission: manage_members_business
+    """
     # Ensure business_id matches
     if employee_data.business_id != business_id:
         raise HTTPException(
@@ -371,7 +345,7 @@ async def create_employee(
     new_user, error = await BusinessService.create_employee(
         session=session,
         employee_data=employee_data,
-        owner_id=current_user.id,
+        owner_id=auth["user_id"],
     )
     
     if error or not new_user:
@@ -415,6 +389,8 @@ async def get_owner_employees(
     return OwnerEmployeesOut(employees=employees, total=len(employees))
 
 
+# TODOD: fix that to make it possibel 
+# to search users across all platform for making him employee
 @router.get("/users/search")
 async def search_user_by_email(
     email: str,
@@ -454,26 +430,20 @@ async def search_user_by_email(
     }
 
 
-@router.get("/{business_id}/employees", response_model=list[EmployeeOut])
-async def get_business_employees(
+@router.get("/{business_id}/members/list", response_model=list[EmployeeOut])
+async def get_business_members_list(
     business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.VIEW,
+    ))],
     is_active: Optional[bool] = True,
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """Get employees of a specific business. User must have access to business."""
-    # Check if user has access to business
-    has_access = await BusinessService.can_user_access_business(
-        session=session,
-        user_id=current_user.id,
-        business_id=business_id,
-    )
-    if not has_access:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.BUSINESS_ACCESS_DENIED),
-        )
+    """Get members (employees) of a specific business.
     
+    Permission: view_businesses
+    """
     # Get all members (we'll filter employees)
     members = await BusinessService.get_business_members(
         session=session,
@@ -501,10 +471,15 @@ async def grant_permissions_to_user(
     business_id: int,
     user_id: int,
     permission_data: PermissionGrantRequest,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.GRANT_PERMISSIONS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Grant one or multiple permissions to a single user.
+    
+    Permission: grant_permissions_business
     
     Use this endpoint for:
     - Managing permissions for a specific employee
@@ -513,14 +488,6 @@ async def grant_permissions_to_user(
     
     For granting same permissions to multiple users, use /permissions/grant-batch instead.
     """
-    # Verify user is owner
-    business = await BusinessService.get_business_by_id(session, business_id)
-    if not business or business.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.ONLY_OWNER_CAN_MANAGE_PERMISSIONS),
-        )
-    
     # Verify user is member of business
     has_access = await BusinessService.can_user_access_business(
         session=session,
@@ -565,10 +532,15 @@ async def revoke_permissions_from_user(
     business_id: int,
     user_id: int,
     permission_data: PermissionRevokeRequest,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.GRANT_PERMISSIONS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Revoke one or multiple permissions from a single user.
+    
+    Permission: grant_permissions_business
     
     Use this endpoint for:
     - Removing permissions from a specific employee
@@ -577,14 +549,6 @@ async def revoke_permissions_from_user(
     
     For revoking same permissions from multiple users, use /permissions/revoke-batch instead.
     """
-    # Verify user is owner
-    business = await BusinessService.get_business_by_id(session, business_id)
-    if not business or business.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.ONLY_OWNER_CAN_MANAGE_PERMISSIONS),
-        )
-    
     # Verify user is member of business
     has_access = await BusinessService.can_user_access_business(
         session=session,
@@ -628,10 +592,15 @@ async def revoke_permissions_from_user(
 async def grant_permissions_batch(
     business_id: int,
     batch_data: PermissionBatchRequest,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.GRANT_PERMISSIONS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Grant same set of permissions to multiple users.
+    
+    Permission: grant_permissions_business
     
     Use this endpoint for:
     - Onboarding new employees (apply role template to multiple users)
@@ -644,14 +613,6 @@ async def grant_permissions_batch(
     Returns success/failure status for each user+permission combination.
     For managing permissions of a single user, use /members/{user_id}/permissions/grant instead.
     """
-    # Verify user is owner
-    business = await BusinessService.get_business_by_id(session, business_id)
-    if not business or business.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.ONLY_OWNER_CAN_MANAGE_PERMISSIONS),
-        )
-    
     # Grant permissions to all users
     results = []
     for user_id in batch_data.user_ids:
@@ -679,10 +640,15 @@ async def grant_permissions_batch(
 async def revoke_permissions_batch(
     business_id: int,
     batch_data: PermissionBatchRequest,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.GRANT_PERMISSIONS,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
     """Revoke same set of permissions from multiple users.
+    
+    Permission: grant_permissions_business
     
     Use this endpoint for:
     - Removing access from multiple employees at once
@@ -695,14 +661,6 @@ async def revoke_permissions_batch(
     Returns success/failure status for each user+permission combination.
     For managing permissions of a single user, use /members/{user_id}/permissions/revoke instead.
     """
-    # Verify user is owner
-    business = await BusinessService.get_business_by_id(session, business_id)
-    if not business or business.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.ONLY_OWNER_CAN_MANAGE_PERMISSIONS),
-        )
-    
     # Revoke permissions from all users
     results = []
     for user_id in batch_data.user_ids:
@@ -749,33 +707,25 @@ async def get_all_permissions(
 async def get_user_permissions_detail(
     business_id: int,
     user_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.BUSINESSES,
+        Action.VIEW,
+    ))],
     session: AsyncSession = Depends(get_db_dep),
-    current_user: User = Depends(get_current_user),
 ):
-    """
-    Get detailed permission information for a user in a business context.
+    """Get detailed permission information for a user in a business context.
+    
+    Permission: view_businesses
     
     Shows:
     - All available permissions
     - Which permissions the user has (from role or explicit grant)
     - Source of each permission (role, user, both, or none)
     - Whether permission was explicitly granted/revoked
-    
-    Priority: explicit user permissions > role permissions
-    
-    This endpoint is useful for displaying a permission management UI
-    where you can see which permissions are inherited from role vs
-    explicitly granted/revoked.
     """
-    # Verify business ownership
-    business = await BusinessService.get_business_by_id(session, business_id)
-    if not business or business.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=create_error_response(ErrorCode.BUSINESS_ACCESS_DENIED),
-        )
-    
-    detail = await BusinessService.get_user_permissions_detail(
-        session, user_id, business_id
+    result = await BusinessService.get_user_permissions_detail(
+        session=session,
+        user_id=user_id,
+        business_id=business_id,
     )
-    return UserPermissionsDetailOut(**detail)
+    return result

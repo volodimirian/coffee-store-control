@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation, type Location } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { fetchMe, login } from "~/shared/api/authentication"
 import type { AuthResponse, UserResponse } from "~/shared/api/types"
 import { useAppContext } from "~/shared/context/AppContext";
@@ -13,6 +14,7 @@ type FieldErrors = {
 
 export default function Login() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("test@example.com");
   const [password, setPassword] = useState("qwerty");
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +39,9 @@ export default function Login() {
       
       const me: UserResponse = await fetchMe();
       setUser(me);
+      
+      // Clear all cached permissions when user logs in
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
       
       navigate(from, { replace: true });
     } catch (e: unknown) {

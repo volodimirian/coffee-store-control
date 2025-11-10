@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
+import { Protected } from '~/shared/ui';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { can } from '~/shared/utils/permissions';
 import InvoiceModal from '~/components/modals/InvoiceModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 import { formatCurrency } from '~/shared/lib/helpers';
@@ -10,6 +13,7 @@ import { formatCurrency } from '~/shared/lib/helpers';
 export default function InvoicesTab() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
+  const { permissions, isLoading: isLoadingPermissions } = usePermissions();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -135,8 +139,11 @@ export default function InvoicesTab() {
   }, [currentLocation, statusFilter, supplierFilter, dateFromFilter, dateToFilter, debouncedSearchQuery, currentPage, pageSize, t, isOverdue]);
 
   useEffect(() => {
-    loadInvoices();
-  }, [loadInvoices]);
+    // Only load invoices if user has permission
+    if (!isLoadingPermissions && can.view(permissions, 'invoices')) {
+      loadInvoices();
+    }
+  }, [loadInvoices, isLoadingPermissions, permissions]);
 
   // Helper to get supplier name
   const getSupplierName = (supplierId: number): string => {
@@ -265,6 +272,27 @@ export default function InvoicesTab() {
     return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
   };
 
+  // Check permissions
+  if (isLoadingPermissions) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  if (!can.view(permissions, 'invoices')) {
+    return (
+      <div className="text-center py-12">
+        <div className="rounded-xl bg-yellow-50 p-8 inline-block">
+          <p className="text-sm text-yellow-800">
+            {t('errors.INSUFFICIENT_PERMISSIONS')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -282,13 +310,15 @@ export default function InvoicesTab() {
               <FunnelIcon className="h-5 w-5 mr-2" />
               {t('common.filters')}
             </button>
-            <button
-              onClick={handleAddInvoice}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              {t('expenses.invoices.addInvoice')}
-            </button>
+            <Protected permission={{ resource: 'invoices', action: 'create' }}>
+              <button
+                onClick={handleAddInvoice}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                {t('expenses.invoices.addInvoice')}
+              </button>
+            </Protected>
           </div>
         </div>
 
@@ -473,36 +503,44 @@ export default function InvoicesTab() {
                     <div className="flex items-center justify-end space-x-2">
                       {invoice.paid_status === 'pending' && (
                         <>
-                          <button
-                            onClick={() => handleMarkAsPaid(invoice)}
-                            className="text-green-600 hover:text-green-900"
-                            title={t('expenses.invoices.actions.markAsPaid')}
-                          >
-                            <CheckCircleIcon className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleMarkAsCancelled(invoice)}
-                            className="text-red-600 hover:text-red-900"
-                            title={t('expenses.invoices.actions.markAsCancelled')}
-                          >
-                            <XCircleIcon className="h-5 w-5" />
-                          </button>
+                          <Protected permission={{ resource: 'invoices', action: 'approve' }}>
+                            <button
+                              onClick={() => handleMarkAsPaid(invoice)}
+                              className="text-green-600 hover:text-green-900"
+                              title={t('expenses.invoices.actions.markAsPaid')}
+                            >
+                              <CheckCircleIcon className="h-5 w-5" />
+                            </button>
+                          </Protected>
+                          <Protected permission={{ resource: 'invoices', action: 'reject' }}>
+                            <button
+                              onClick={() => handleMarkAsCancelled(invoice)}
+                              className="text-red-600 hover:text-red-900"
+                              title={t('expenses.invoices.actions.markAsCancelled')}
+                            >
+                              <XCircleIcon className="h-5 w-5" />
+                            </button>
+                          </Protected>
                         </>
                       )}
-                      <button
-                        onClick={() => handleEditInvoice(invoice)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title={t('expenses.invoices.actions.edit')}
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteInvoice(invoice)}
-                        className="text-red-600 hover:text-red-900"
-                        title={t('expenses.invoices.actions.delete')}
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                      <Protected permission={{ resource: 'invoices', action: 'edit' }}>
+                        <button
+                          onClick={() => handleEditInvoice(invoice)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title={t('expenses.invoices.actions.edit')}
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                      </Protected>
+                      <Protected permission={{ resource: 'invoices', action: 'delete' }}>
+                        <button
+                          onClick={() => handleDeleteInvoice(invoice)}
+                          className="text-red-600 hover:text-red-900"
+                          title={t('expenses.invoices.actions.delete')}
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </Protected>
                     </div>
                   </td>
                 </tr>

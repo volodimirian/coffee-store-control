@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { USER_ROLES } from '~/shared/api/authentication';
 import {
   HomeIcon,
@@ -20,6 +20,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { hasAnyPermission } from '~/shared/utils/permissions';
+import type { Resource, Action } from '~/shared/utils/permissions';
 
 interface MenuItem {
   id: string;
@@ -27,6 +30,7 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
   labelKey: string;
   badge?: number;
+  requiredPermissions?: Array<{ resource: Resource; action: Action }>;
 }
 
 interface MenuSection {
@@ -67,12 +71,24 @@ const menuSections: MenuSection[] = [
         path: '/expenses',
         icon: CurrencyDollarIcon,
         labelKey: 'navigation.expenseTracking',
+        requiredPermissions: [
+          { resource: 'invoices', action: 'view' },
+          { resource: 'categories', action: 'view' },
+          { resource: 'units', action: 'view' },
+        ],
       },
       {
         id: 'billing',
         path: '/billing',
         icon: BanknotesIcon,
         labelKey: 'navigation.billing',
+        requiredPermissions: [
+          { resource: 'invoices', action: 'view' },
+          { resource: 'suppliers', action: 'view' },
+          { resource: 'categories', action: 'view' },
+          { resource: 'subcategories', action: 'view' },
+          { resource: 'units', action: 'view' },
+        ],
       },
       // {
       //   id: 'products',
@@ -162,12 +178,30 @@ function LocationSelectorWrapper() {
 
 export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
   const { t } = useTranslation();
+  const { permissions } = usePermissions();
+  
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
     menuSections.reduce((acc, section) => ({
       ...acc,
       [section.id]: section.defaultExpanded ?? false
     }), {})
   );
+
+  // Filter menu items based on permissions
+  const filteredMenuSections = useMemo(() => {
+    return menuSections.map(section => ({
+      ...section,
+      items: section.items.filter(item => {
+        // If no required permissions, show the item
+        if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
+          return true;
+        }
+        
+        // Check if user has ANY of the required permissions (OR logic)
+        return hasAnyPermission(permissions, item.requiredPermissions);
+      })
+    })).filter(section => section.items.length > 0); // Remove empty sections
+  }, [permissions]);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => ({
@@ -249,7 +283,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
         {isCollapsed ? (
           // Collapsed view - show only icons
           <>
-            {menuSections.map((section) =>
+            {filteredMenuSections.map((section) =>
               section.items.map((item) => (
                 <NavLink
                   key={item.id}
@@ -272,7 +306,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
         ) : (
           // Expanded view - show sections
           <>
-            {menuSections.map((section) => (
+            {filteredMenuSections.map((section) => (
               <div key={section.id} className="space-y-1">
                 {/* Section Header */}
                 <button
