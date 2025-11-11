@@ -666,7 +666,8 @@
       "statuses": {
         "pending": "Ожидает оплаты",
         "paid": "Оплачен",
-        "cancelled": "Отменен"
+        "cancelled": "Отменен",
+        "overdue": "Просрочен"
       },
       "actions": {
         "edit": "Редактировать",

@@ -527,7 +527,8 @@
       "statuses": {
         "pending": "Pending Payment",
         "paid": "Paid",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "overdue": "Overdue"
       },
       "actions": {
         "edit": "Edit",
