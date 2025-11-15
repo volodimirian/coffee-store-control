@@ -65,7 +65,14 @@ export type ErrorCode =
   | 'INTERNAL_ERROR'
   | 'NOT_FOUND'
   | 'CONFLICT'
-  | 'BAD_REQUEST';
+  | 'BAD_REQUEST'
+  
+  // Categories & Products
+  | 'CATEGORY_NOT_FOUND'
+  | 'SUBCATEGORY_NOT_FOUND'
+  | 'PRODUCT_NOT_FOUND'
+  | 'CATEGORY_NAME_EXISTS'
+  | 'SUBCATEGORY_NAME_EXISTS';
 
 // ============ User & Auth Types ============
 
