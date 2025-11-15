@@ -21,7 +21,7 @@ import {
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
 import { usePermissions } from '~/shared/lib/usePermissions';
-import { hasAnyPermission } from '~/shared/utils/permissions';
+import { hasAllPermissions } from '~/shared/utils/permissions';
 import type { Resource, Action } from '~/shared/utils/permissions';
 
 interface MenuItem {
@@ -197,8 +197,8 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
           return true;
         }
         
-        // Check if user has ANY of the required permissions (OR logic)
-        return hasAnyPermission(permissions, item.requiredPermissions);
+        // Check if user has ALL of the required permissions (AND logic)
+        return hasAllPermissions(permissions, item.requiredPermissions);
       })
     })).filter(section => section.items.length > 0); // Remove empty sections
   }, [permissions]);

@@ -550,15 +550,18 @@ export default function InvoicesTab() {
                           </Protected>
                         </>
                       )}
-                      <Protected permission={{ resource: 'invoices', action: 'view' }}>
+                      {/* Show eye icon only if has view permission but NOT edit permission */}
+                      {can.view(permissions, 'invoices') && 
+                       !can.edit(permissions, 'invoices') && (
                         <button
                           onClick={() => handleViewInvoice(invoice)}
-                          className="text-gray-600 hover:text-gray-900"
+                          className="text-blue-600 hover:text-blue-900"
                           title={t('expenses.invoices.actions.view')}
                         >
                           <EyeIcon className="h-5 w-5" />
                         </button>
-                      </Protected>
+                      )}
+                      {/* Show edit icon only if has both edit and view_suppliers permissions */}
                       <Protected 
                         allOf={[
                           { resource: 'invoices', action: 'edit' },
