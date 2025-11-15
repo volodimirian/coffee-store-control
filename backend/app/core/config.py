@@ -1,6 +1,6 @@
 """Core config (pydantic-settings)."""
-from typing import List
-from pydantic_settings import BaseSettings
+from typing import List, Union
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 import json
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     
     # CORS
-    cors_origins: List[str] = Field(..., alias="CORS_ORIGINS")
+    cors_origins: Union[str, List[str]] = Field(..., alias="CORS_ORIGINS")
     cors_credentials: bool = Field(True, alias="CORS_CREDENTIALS")
     
     # Database debug
@@ -32,19 +32,29 @@ class Settings(BaseSettings):
 
     @field_validator('cors_origins', mode='before')
     @classmethod
-    def parse_cors_origins(cls, v):
+    def parse_cors_origins(cls, v) -> List[str]:
+        if isinstance(v, list):
+            return v
         if isinstance(v, str):
+            # Remove any extra quotes or whitespace
+            v = v.strip().strip('"').strip("'")
             try:
-                return json.loads(v)
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
             except json.JSONDecodeError:
-                # Fallback: split by comma
-                return [origin.strip() for origin in v.split(',')]
+                pass
+            # Fallback: split by comma
+            return [origin.strip() for origin in v.split(',') if origin.strip()]
         return v
 
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8"
-    }
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        json_schema_extra={
+            "env_parse_none_str": None
+        }
+    )
 
 # Create singleton instance
 settings = Settings()  # type: ignore[call-arg]
