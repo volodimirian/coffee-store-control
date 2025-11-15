@@ -19,29 +19,54 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
-    # Drop foreign key constraints first
-    op.drop_constraint('expense_sections_month_period_id_fkey', 'expense_sections', type_='foreignkey')
+    """Upgrade schema - idempotent version."""
+    # Get connection to check existing state
+    conn = op.get_bind()
     
-    # Remove month_period_id from expense_sections
-    op.drop_column('expense_sections', 'month_period_id')
+    # Check if month_period_id column exists in expense_sections
+    result = conn.execute(sa.text("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='expense_sections' AND column_name='month_period_id'
+    """))
     
-    # Add business_id to expense_categories (nullable at first)
-    op.add_column('expense_categories', sa.Column('business_id', sa.Integer(), nullable=True))
+    if result.fetchone() is not None:
+        # Drop foreign key constraint first (check if exists)
+        result = conn.execute(sa.text("""
+            SELECT constraint_name 
+            FROM information_schema.table_constraints 
+            WHERE table_name='expense_sections' AND constraint_name='expense_sections_month_period_id_fkey'
+        """))
+        if result.fetchone() is not None:
+            op.drop_constraint('expense_sections_month_period_id_fkey', 'expense_sections', type_='foreignkey')
+        
+        # Remove month_period_id from expense_sections
+        op.drop_column('expense_sections', 'month_period_id')
     
-    # Update business_id from related sections
-    op.execute("""
-        UPDATE expense_categories 
-        SET business_id = expense_sections.business_id 
-        FROM expense_sections 
-        WHERE expense_categories.section_id = expense_sections.id
-    """)
+    # Check if business_id already exists in expense_categories
+    result = conn.execute(sa.text("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='expense_categories' AND column_name='business_id'
+    """))
     
-    # Make business_id non-nullable
-    op.alter_column('expense_categories', 'business_id', nullable=False)
-    
-    # Add foreign key constraint
-    op.create_foreign_key('expense_categories_business_id_fkey', 'expense_categories', 'businesses', ['business_id'], ['id'])
+    if result.fetchone() is None:
+        # Add business_id to expense_categories (nullable at first)
+        op.add_column('expense_categories', sa.Column('business_id', sa.Integer(), nullable=True))
+        
+        # Update business_id from related sections
+        op.execute("""
+            UPDATE expense_categories 
+            SET business_id = expense_sections.business_id 
+            FROM expense_sections 
+            WHERE expense_categories.section_id = expense_sections.id
+        """)
+        
+        # Make business_id non-nullable
+        op.alter_column('expense_categories', 'business_id', nullable=False)
+        
+        # Add foreign key constraint
+        op.create_foreign_key('expense_categories_business_id_fkey', 'expense_categories', 'businesses', ['business_id'], ['id'])
 
 
 def downgrade() -> None:
