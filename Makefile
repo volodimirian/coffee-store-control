@@ -23,6 +23,30 @@ api-prod:
 		--error-logfile - \
 		--log-level info
 
+prod-start:
+  sudo systemctl start coffee-store-api
+
+prod-stop:
+  sudo systemctl stop coffee-store-api
+
+prod-restart:
+  sudo systemctl restart coffee-store-api
+
+prod-status:
+  sudo systemctl status coffee-store-api
+
+prod-logs:
+  sudo journalctl -u coffee-store-api -f
+
+prod-logs-today:
+  sudo journalctl -u coffee-store-api --since today
+
+prod-logs-errors:
+  sudo journalctl -u coffee-store-api -p err -f
+
+prod-logs-last:
+    sudo journalctl -u coffee-store-api -n 100 --no-pager
+
 fmt:
 	cd backend && ruff check --fix . && black . && mypy .
 	cd web && pnpm exec eslint . --fix
