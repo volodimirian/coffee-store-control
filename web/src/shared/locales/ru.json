@@ -6,6 +6,7 @@
     "save": "Сохранить",
     "saving": "Сохранение...",
     "cancel": "Отмена",
+    "close": "Закрыть",
     "delete": "Удалить",
     "deleting": "Удаление...",
     "create": "Создать",
@@ -384,6 +385,21 @@
       "delete_invoices": "Удаление накладных",
       "approve_invoices": "Утверждение накладных",
       "reject_invoices": "Отклонение накладных"
+    },
+    "dependencies": {
+      "required": "Требуется для:",
+      "affectsLabel": "Перестанет работать:",
+      "willBeRevoked": "Будут автоматически сняты:",
+      "needsPermissions": "Для работы требуются:",
+      "warning": "Внимание: есть зависимости",
+      "info": "Требует другие права",
+      "features": {
+        "createInvoices": "Создание накладных",
+        "editInvoices": "Редактирование накладных",
+        "inventoryTracking": "Учет расходов",
+        "expenseReports": "Отчеты по расходам",
+        "expenseDetails": "Детализация расходов"
+      }
     }
   },
   "expenses": {
@@ -672,6 +688,7 @@
         "overdue": "Просрочен"
       },
       "actions": {
+        "view": "Просмотр",
         "edit": "Редактировать",
         "delete": "Удалить",
         "markAsPaid": "Отметить оплаченным",
@@ -680,6 +697,7 @@
       "modal": {
         "createTitle": "Создать счет",
         "editTitle": "Редактировать счет",
+        "viewTitle": "Просмотр накладной",
         "supplier": "Поставщик",
         "selectSupplier": "Выберите поставщика...",
         "searchSupplier": "Поиск поставщика...",

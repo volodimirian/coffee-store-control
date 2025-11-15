@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Protected } from '~/shared/ui';
@@ -23,6 +23,7 @@ export default function InvoicesTab() {
   // Modal states
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [invoiceMode, setInvoiceMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,10 +51,14 @@ export default function InvoicesTab() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Load suppliers for filter
+  // Load suppliers for filter - only if user has permission
   useEffect(() => {
     const loadSuppliers = async () => {
       if (!currentLocation) return;
+      // Only load suppliers if user has permission to view them
+      if (!isLoadingPermissions && !can.view(permissions, 'suppliers')) {
+        return;
+      }
       try {
         const response = await suppliersApi.list({
           business_id: currentLocation.id,
@@ -66,7 +71,7 @@ export default function InvoicesTab() {
       }
     };
     loadSuppliers();
-  }, [currentLocation]);
+  }, [currentLocation, isLoadingPermissions, permissions]);
 
   // Helper to determine if invoice is overdue
   const isOverdue = useCallback((invoice: Invoice): boolean => {
@@ -146,12 +151,14 @@ export default function InvoicesTab() {
   }, [loadInvoices, isLoadingPermissions, permissions]);
 
   // Helper to get supplier name
-  const getSupplierName = (supplierId: number): string => {
+  const getSupplierName = (supplierId: number) => {
+    // If user doesn't have permission to view suppliers, show generic name
+    if (!can.view(permissions, 'suppliers')) {
+      return `Supplier #${supplierId}`;
+    }
     const supplier = suppliers.find(s => s.id === supplierId);
-    return supplier ? supplier.name : `Supplier #${supplierId}`;
-  };
-
-  // Helper to get payment date
+    return supplier ? supplier.name : t('expenses.invoices.unknownSupplier');
+  };  // Helper to get payment date
   const getPaymentDate = (invoice: Invoice): string => {
     if (invoice.paid_status === 'paid' && invoice.paid_date) {
       return new Date(invoice.paid_date).toLocaleDateString();
@@ -192,11 +199,19 @@ export default function InvoicesTab() {
 
   const handleAddInvoice = () => {
     setSelectedInvoice(null);
+    setInvoiceMode('create');
     setIsInvoiceModalOpen(true);
   };
 
   const handleEditInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
+    setInvoiceMode('edit');
+    setIsInvoiceModalOpen(true);
+  };
+
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setInvoiceMode('view');
     setIsInvoiceModalOpen(true);
   };
 
@@ -310,7 +325,12 @@ export default function InvoicesTab() {
               <FunnelIcon className="h-5 w-5 mr-2" />
               {t('common.filters')}
             </button>
-            <Protected permission={{ resource: 'invoices', action: 'create' }}>
+            <Protected 
+              allOf={[
+                { resource: 'invoices', action: 'create' },
+                { resource: 'suppliers', action: 'view' }
+              ]}
+            >
               <button
                 onClick={handleAddInvoice}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -431,13 +451,20 @@ export default function InvoicesTab() {
         <div className="bg-white shadow rounded-lg p-12 text-center">
           <p className="text-gray-500 text-lg">{t('expenses.invoices.noInvoices')}</p>
           <p className="text-gray-400 text-sm mt-2">{t('expenses.invoices.noInvoicesDescription')}</p>
-          <button
-            onClick={handleAddInvoice}
-            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          <Protected 
+            allOf={[
+              { resource: 'invoices', action: 'create' },
+              { resource: 'suppliers', action: 'view' }
+            ]}
           >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            {t('expenses.invoices.createFirstInvoice')}
-          </button>
+            <button
+              onClick={handleAddInvoice}
+              className="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              {t('expenses.invoices.createFirstInvoice')}
+            </button>
+          </Protected>
         </div>
       ) : (
         <div className="bg-white shadow rounded-lg overflow-hidden relative">
@@ -523,7 +550,21 @@ export default function InvoicesTab() {
                           </Protected>
                         </>
                       )}
-                      <Protected permission={{ resource: 'invoices', action: 'edit' }}>
+                      <Protected permission={{ resource: 'invoices', action: 'view' }}>
+                        <button
+                          onClick={() => handleViewInvoice(invoice)}
+                          className="text-gray-600 hover:text-gray-900"
+                          title={t('expenses.invoices.actions.view')}
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
+                      </Protected>
+                      <Protected 
+                        allOf={[
+                          { resource: 'invoices', action: 'edit' },
+                          { resource: 'suppliers', action: 'view' }
+                        ]}
+                      >
                         <button
                           onClick={() => handleEditInvoice(invoice)}
                           className="text-blue-600 hover:text-blue-900"
@@ -643,6 +684,7 @@ export default function InvoicesTab() {
         }}
         onSuccess={handleModalSuccess}
         invoice={selectedInvoice}
+        mode={invoiceMode}
       />
 
       <ConfirmDeleteModal

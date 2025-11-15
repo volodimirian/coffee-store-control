@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, InformationCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { employeesApi, permissionsApi } from '~/shared/api/employees';
 import type { Employee, UserPermissionDetail } from '~/shared/types/locations';
 import { useApiError } from '~/shared/lib/useApiError';
+import { 
+  getDependentPermissions, 
+  getAffectedFeatures,
+  hasDependentPermissions,
+  getRequiredPermissions 
+} from '~/shared/utils/permissionDependencies';
 
 interface PermissionModalProps {
   isOpen: boolean;
@@ -267,44 +273,98 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                         {permissions.map(permission => {
                           const isChecked = getEffectivePermission(permission);
                           const badge = getPermissionBadge(permission);
+                          const dependents = getDependentPermissions(permission.permission_name);
+                          const affected = getAffectedFeatures(permission.permission_name);
+                          const required = getRequiredPermissions(permission.permission_name);
+                          const hasWarnings = !isChecked && hasDependentPermissions(permission.permission_name);
+                          const hasInfo = isChecked && required.length > 0;
                           
                           return (
-                            <label
-                              key={permission.permission_name}
-                              className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                                isChecked
-                                  ? 'border-blue-300 bg-blue-50'
-                                  : 'border-gray-200 hover:border-gray-300 bg-white'
-                              } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              <div className="flex items-center flex-1">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => handleTogglePermission(permission.permission_name)}
-                                  disabled={isSubmitting}
-                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <div className="ml-3 flex-1">
-                                  <span className="text-sm text-gray-700">
-                                    {t(`permissions.names.${permission.permission_name}`, permission.permission_name)}
-                                  </span>
-                                  {badge && (
-                                    <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                      badge === 'modified' ? 'bg-yellow-100 text-yellow-800' :
-                                      badge === 'from-role' ? 'bg-purple-100 text-purple-800' :
-                                      badge === 'granted' ? 'bg-green-100 text-green-800' :
-                                      'bg-red-100 text-red-800'
-                                    }`}>
-                                      {badge === 'modified' ? t('permissions.badge.modified') :
-                                       badge === 'from-role' ? t('permissions.badge.fromRole') :
-                                       badge === 'granted' ? t('permissions.badge.explicitlyGranted') :
-                                       t('permissions.badge.explicitlyRevoked')}
+                            <div key={permission.permission_name} className="relative group">
+                              <label
+                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                                  isChecked
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                <div className="flex items-center flex-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => handleTogglePermission(permission.permission_name)}
+                                    disabled={isSubmitting}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  />
+                                  <div className="ml-3 flex-1 flex items-center">
+                                    <span className="text-sm text-gray-700">
+                                      {t(`permissions.names.${permission.permission_name}`, permission.permission_name)}
                                     </span>
+                                    {badge && (
+                                      <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                        badge === 'modified' ? 'bg-yellow-100 text-yellow-800' :
+                                        badge === 'from-role' ? 'bg-purple-100 text-purple-800' :
+                                        badge === 'granted' ? 'bg-green-100 text-green-800' :
+                                        'bg-red-100 text-red-800'
+                                      }`}>
+                                        {badge === 'modified' ? t('permissions.badge.modified') :
+                                         badge === 'from-role' ? t('permissions.badge.fromRole') :
+                                         badge === 'granted' ? t('permissions.badge.explicitlyGranted') :
+                                         t('permissions.badge.explicitlyRevoked')}
+                                      </span>
+                                    )}
+                                    {hasWarnings && (
+                                      <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-500" />
+                                    )}
+                                    {hasInfo && (
+                                      <InformationCircleIcon className="ml-2 h-4 w-4 text-blue-500" />
+                                    )}
+                                  </div>
+                                </div>
+                              </label>
+                              
+                              {/* Tooltip with dependencies info */}
+                              {(hasWarnings || hasInfo) && (
+                                <div className="hidden group-hover:block absolute left-0 right-0 top-full mt-1 z-10 p-3 bg-white border border-gray-300 rounded-lg shadow-lg text-xs">
+                                  {!isChecked && dependents.length > 0 && (
+                                    <div className="mb-2">
+                                      <p className="font-medium text-yellow-700 flex items-center">
+                                        <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                                        {t('permissions.dependencies.willBeRevoked')}
+                                      </p>
+                                      <ul className="mt-1 ml-4 list-disc text-gray-600">
+                                        {dependents.map(dep => (
+                                          <li key={dep}>{t(`permissions.names.${dep}`, dep)}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {!isChecked && affected.length > 0 && (
+                                    <div className={dependents.length > 0 ? 'mt-2' : ''}>
+                                      <p className="font-medium text-red-700">{t('permissions.dependencies.affectsLabel')}</p>
+                                      <ul className="mt-1 ml-4 list-disc text-gray-600">
+                                        {affected.map(feature => (
+                                          <li key={feature}>{t(feature, feature)}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {isChecked && required.length > 0 && (
+                                    <div>
+                                      <p className="font-medium text-blue-700 flex items-center">
+                                        <InformationCircleIcon className="h-3 w-3 mr-1" />
+                                        {t('permissions.dependencies.needsPermissions')}
+                                      </p>
+                                      <ul className="mt-1 ml-4 list-disc text-gray-600">
+                                        {required.map(req => (
+                                          <li key={req}>{t(`permissions.names.${req}`, req)}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
                                   )}
                                 </div>
-                              </div>
-                            </label>
+                              )}
+                            </div>
                           );
                         })}
                       </div>

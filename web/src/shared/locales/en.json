@@ -6,6 +6,7 @@
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
+    "close": "Close",
     "delete": "Delete",
     "deleting": "Deleting...",
     "create": "Create",
@@ -533,14 +534,16 @@
         "overdue": "Overdue"
       },
       "actions": {
+        "view": "View",
         "edit": "Edit",
         "delete": "Delete",
         "markAsPaid": "Mark as Paid",
         "markAsCancelled": "Cancel"
       },
       "modal": {
-        "createTitle": "Create Invoice",
+        "createTitle": "New Invoice",
         "editTitle": "Edit Invoice",
+        "viewTitle": "View Invoice",
         "supplier": "Supplier",
         "selectSupplier": "Select supplier...",
         "searchSupplier": "Search supplier...",
@@ -857,6 +860,21 @@
       "delete_invoices": "Delete Invoices",
       "approve_invoices": "Approve Invoices",
       "reject_invoices": "Reject Invoices"
+    },
+    "dependencies": {
+      "required": "Required for:",
+      "affectsLabel": "Will stop working:",
+      "willBeRevoked": "Will be automatically revoked:",
+      "needsPermissions": "Requires permissions:",
+      "warning": "Warning: has dependencies",
+      "info": "Requires other permissions",
+      "features": {
+        "createInvoices": "Creating invoices",
+        "editInvoices": "Editing invoices",
+        "inventoryTracking": "Inventory tracking",
+        "expenseReports": "Expense reports",
+        "expenseDetails": "Expense details"
+      }
     }
   },
   "billing": {
