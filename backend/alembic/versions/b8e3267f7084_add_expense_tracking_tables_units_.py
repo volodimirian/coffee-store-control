@@ -54,6 +54,224 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(['base_unit_id'], ['units.id'], ondelete='CASCADE'),
         )
         op.create_index(op.f('ix_units_id'), 'units', ['id'], unique=False)
+    
+    # Create suppliers table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='suppliers'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('suppliers',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('name', sa.String(length=200), nullable=False),
+            sa.Column('contact_info', postgresql.JSON(), nullable=True),
+            sa.Column('business_id', sa.Integer(), nullable=False),
+            sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['business_id'], ['businesses.id']),
+        )
+        op.create_index(op.f('ix_suppliers_id'), 'suppliers', ['id'], unique=False)
+    
+    # Create month_periods table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='month_periods'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('month_periods',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('name', sa.String(length=100), nullable=False),
+            sa.Column('business_id', sa.Integer(), nullable=False),
+            sa.Column('year', sa.Integer(), nullable=False),
+            sa.Column('month', sa.Integer(), nullable=False),
+            sa.Column('status', sa.String(length=20), nullable=False, server_default='active'),
+            sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['business_id'], ['businesses.id']),
+        )
+        op.create_index(op.f('ix_month_periods_id'), 'month_periods', ['id'], unique=False)
+    
+    # Create expense_sections table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='expense_sections'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('expense_sections',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('name', sa.String(length=200), nullable=False),
+            sa.Column('business_id', sa.Integer(), nullable=False),
+            sa.Column('order_index', sa.Integer(), nullable=False, server_default='0'),
+            sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['business_id'], ['businesses.id']),
+        )
+        op.create_index(op.f('ix_expense_sections_id'), 'expense_sections', ['id'], unique=False)
+    
+    # Create expense_categories table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='expense_categories'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('expense_categories',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('name', sa.String(length=200), nullable=False),
+            sa.Column('section_id', sa.Integer(), nullable=False),
+            sa.Column('business_id', sa.Integer(), nullable=False),
+            sa.Column('default_unit_id', sa.Integer(), nullable=False),
+            sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
+            sa.Column('order_index', sa.Integer(), nullable=False, server_default='0'),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['section_id'], ['expense_sections.id']),
+            sa.ForeignKeyConstraint(['business_id'], ['businesses.id']),
+            sa.ForeignKeyConstraint(['default_unit_id'], ['units.id']),
+        )
+        op.create_index(op.f('ix_expense_categories_id'), 'expense_categories', ['id'], unique=False)
+    
+    # Create invoices table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='invoices'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('invoices',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('business_id', sa.Integer(), nullable=False),
+            sa.Column('supplier_id', sa.Integer(), nullable=False),
+            sa.Column('invoice_number', sa.String(length=100), nullable=True),
+            sa.Column('invoice_date', postgresql.TIMESTAMP(), nullable=False),
+            sa.Column('total_amount', sa.Numeric(precision=12, scale=2), nullable=False),
+            sa.Column('paid_status', sa.String(length=20), nullable=False, server_default='pending'),
+            sa.Column('paid_date', postgresql.TIMESTAMP(), nullable=True),
+            sa.Column('document_path', sa.String(length=500), nullable=True),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['business_id'], ['businesses.id']),
+            sa.ForeignKeyConstraint(['supplier_id'], ['suppliers.id']),
+        )
+        op.create_index(op.f('ix_invoices_id'), 'invoices', ['id'], unique=False)
+    
+    # Create invoice_items table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='invoice_items'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('invoice_items',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('invoice_id', sa.Integer(), nullable=False),
+            sa.Column('category_id', sa.Integer(), nullable=False),
+            sa.Column('quantity', sa.Numeric(precision=10, scale=3), nullable=False),
+            sa.Column('unit_id', sa.Integer(), nullable=False),
+            sa.Column('unit_price', sa.Numeric(precision=12, scale=4), nullable=False),
+            sa.Column('total_price', sa.Numeric(precision=12, scale=2), nullable=False),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['invoice_id'], ['invoices.id']),
+            sa.ForeignKeyConstraint(['category_id'], ['expense_categories.id']),
+            sa.ForeignKeyConstraint(['unit_id'], ['units.id']),
+        )
+        op.create_index(op.f('ix_invoice_items_id'), 'invoice_items', ['id'], unique=False)
+    
+    # Create expense_records table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='expense_records'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('expense_records',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('category_id', sa.Integer(), nullable=False),
+            sa.Column('month_period_id', sa.Integer(), nullable=False),
+            sa.Column('date', postgresql.TIMESTAMP(), nullable=False),
+            sa.Column('quantity_used', sa.Numeric(precision=10, scale=3), nullable=False),
+            sa.Column('unit_id', sa.Integer(), nullable=False),
+            sa.Column('invoice_item_id', sa.Integer(), nullable=True),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['category_id'], ['expense_categories.id']),
+            sa.ForeignKeyConstraint(['month_period_id'], ['month_periods.id']),
+            sa.ForeignKeyConstraint(['unit_id'], ['units.id']),
+            sa.ForeignKeyConstraint(['invoice_item_id'], ['invoice_items.id']),
+        )
+        op.create_index(op.f('ix_expense_records_id'), 'expense_records', ['id'], unique=False)
+    
+    # Create inventory_balances table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='inventory_balances'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('inventory_balances',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('category_id', sa.Integer(), nullable=False),
+            sa.Column('month_period_id', sa.Integer(), nullable=False),
+            sa.Column('opening_balance', sa.Numeric(precision=10, scale=3), nullable=False, server_default='0'),
+            sa.Column('purchases_total', sa.Numeric(precision=10, scale=3), nullable=False, server_default='0'),
+            sa.Column('usage_total', sa.Numeric(precision=10, scale=3), nullable=False, server_default='0'),
+            sa.Column('closing_balance', sa.Numeric(precision=10, scale=3), nullable=False, server_default='0'),
+            sa.Column('unit_id', sa.Integer(), nullable=False),
+            sa.Column('last_calculated', postgresql.TIMESTAMP(), nullable=True),
+            sa.Column('created_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.Column('updated_at', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['category_id'], ['expense_categories.id']),
+            sa.ForeignKeyConstraint(['month_period_id'], ['month_periods.id']),
+            sa.ForeignKeyConstraint(['unit_id'], ['units.id']),
+        )
+        op.create_index(op.f('ix_inventory_balances_id'), 'inventory_balances', ['id'], unique=False)
+    
+    # Create audit_trail table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name='audit_trail'
+    """))
+    
+    if result.fetchone() is None:
+        op.create_table('audit_trail',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('table_name', sa.String(length=100), nullable=False),
+            sa.Column('record_id', sa.Integer(), nullable=False),
+            sa.Column('action', sa.String(length=20), nullable=False),
+            sa.Column('old_value', postgresql.JSON(), nullable=True),
+            sa.Column('new_value', postgresql.JSON(), nullable=True),
+            sa.Column('user_id', sa.Integer(), nullable=False),
+            sa.Column('business_id', sa.Integer(), nullable=False),
+            sa.Column('timestamp', postgresql.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['user_id'], ['users.id']),
+            sa.ForeignKeyConstraint(['business_id'], ['businesses.id']),
+        )
+        op.create_index(op.f('ix_audit_trail_id'), 'audit_trail', ['id'], unique=False)
     # ### end Alembic commands ###
 
 
