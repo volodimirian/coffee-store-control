@@ -57,11 +57,13 @@ export function getAffectedFeatures(permissionName: string): string[] {
 }
 
 /**
- * Check if revoking a permission will affect other permissions
+ * Check if revoking a permission will affect other permissions or features
  */
 export function hasDependentPermissions(permissionName: string): boolean {
-  const dependents = getDependentPermissions(permissionName);
-  return dependents.length > 0;
+  const dependency = permissionDependencies[permissionName];
+  if (!dependency) return false;
+  
+  return dependency.requiredFor.length > 0 || dependency.affects.length > 0;
 }
 
 /**

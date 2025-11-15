@@ -276,13 +276,14 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                           const dependents = getDependentPermissions(permission.permission_name);
                           const affected = getAffectedFeatures(permission.permission_name);
                           const required = getRequiredPermissions(permission.permission_name);
-                          const hasWarnings = !isChecked && hasDependentPermissions(permission.permission_name);
-                          const hasInfo = isChecked && required.length > 0;
+                          const hasDependencies = hasDependentPermissions(permission.permission_name);
+                          const hasRequirements = required.length > 0;
+                          const showTooltip = hasDependencies || hasRequirements;
                           
                           return (
                             <div key={permission.permission_name} className="relative group">
                               <label
-                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors group ${
                                   isChecked
                                     ? 'border-blue-300 bg-blue-50'
                                     : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -313,10 +314,10 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                                          t('permissions.badge.explicitlyRevoked')}
                                       </span>
                                     )}
-                                    {hasWarnings && (
+                                    {hasDependencies && (
                                       <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-500" />
                                     )}
-                                    {hasInfo && (
+                                    {hasRequirements && (
                                       <InformationCircleIcon className="ml-2 h-4 w-4 text-blue-500" />
                                     )}
                                   </div>
@@ -324,9 +325,9 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                               </label>
                               
                               {/* Tooltip with dependencies info */}
-                              {(hasWarnings || hasInfo) && (
-                                <div className="hidden group-hover:block absolute left-0 right-0 top-full mt-1 z-10 p-3 bg-white border border-gray-300 rounded-lg shadow-lg text-xs">
-                                  {!isChecked && dependents.length > 0 && (
+                              {showTooltip && (
+                                <div className="hidden group-hover:block absolute left-0 top-full mt-1 z-[9999] p-3 bg-white border-2 border-gray-400 rounded-lg shadow-2xl text-xs pointer-events-none min-w-[300px] max-w-[400px]">
+                                  {dependents.length > 0 && (
                                     <div className="mb-2">
                                       <p className="font-medium text-yellow-700 flex items-center">
                                         <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
@@ -339,9 +340,12 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                                       </ul>
                                     </div>
                                   )}
-                                  {!isChecked && affected.length > 0 && (
+                                  {affected.length > 0 && (
                                     <div className={dependents.length > 0 ? 'mt-2' : ''}>
-                                      <p className="font-medium text-red-700">{t('permissions.dependencies.affectsLabel')}</p>
+                                      <p className="font-medium text-red-700 flex items-center">
+                                        <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                                        {t('permissions.dependencies.affectsLabel')}
+                                      </p>
                                       <ul className="mt-1 ml-4 list-disc text-gray-600">
                                         {affected.map(feature => (
                                           <li key={feature}>{t(feature, feature)}</li>
@@ -349,8 +353,8 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                                       </ul>
                                     </div>
                                   )}
-                                  {isChecked && required.length > 0 && (
-                                    <div>
+                                  {required.length > 0 && (
+                                    <div className={(dependents.length > 0 || affected.length > 0) ? 'mt-2' : ''}>
                                       <p className="font-medium text-blue-700 flex items-center">
                                         <InformationCircleIcon className="h-3 w-3 mr-1" />
                                         {t('permissions.dependencies.needsPermissions')}
