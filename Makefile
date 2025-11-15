@@ -13,7 +13,15 @@ api:
 	cd backend && uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 api-prod:
-	cd backend && uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --workers 2
+	cd backend && uv run gunicorn app.main:app \
+		--bind 0.0.0.0:8000 \
+		--workers 4 \
+		--worker-class uvicorn.workers.UvicornWorker \
+		--timeout 120 \
+		--graceful-timeout 30 \
+		--access-logfile - \
+		--error-logfile - \
+		--log-level info
 
 fmt:
 	cd backend && ruff check --fix . && black . && mypy .
