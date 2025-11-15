@@ -12,6 +12,9 @@ web:
 api:
 	cd backend && uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
+api-prod:
+	cd backend && uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --workers 2
+
 fmt:
 	cd backend && ruff check --fix . && black . && mypy .
 	cd web && pnpm exec eslint . --fix
