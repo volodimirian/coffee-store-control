@@ -87,6 +87,27 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
     setModifiedPermissions(prev => {
       const newMap = new Map(prev);
       newMap.set(permissionName, newValue);
+      
+      if (newValue) {
+        // If checking, automatically check all required permissions
+        const required = getRequiredPermissions(permissionName);
+        required.forEach(reqPermName => {
+          const reqPerm = permissionDetails.find(p => p.permission_name === reqPermName);
+          if (reqPerm && !getEffectivePermission(reqPerm)) {
+            newMap.set(reqPermName, true);
+          }
+        });
+      } else {
+        // If unchecking, automatically uncheck dependent permissions
+        const dependents = getDependentPermissions(permissionName);
+        dependents.forEach(depPermName => {
+          const depPerm = permissionDetails.find(p => p.permission_name === depPermName);
+          if (depPerm && getEffectivePermission(depPerm)) {
+            newMap.set(depPermName, false);
+          }
+        });
+      }
+      
       return newMap;
     });
     
@@ -94,8 +115,10 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
       setError(null);
     }
 
-    // Show tooltip immediately if unchecking and has dependencies
-    if (!newValue && targetElement && hasDependentPermissions(permissionName)) {
+    // Show tooltip immediately if has dependencies or requirements
+    const hasDeps = hasDependentPermissions(permissionName);
+    const hasReqs = getRequiredPermissions(permissionName).length > 0;
+    if (targetElement && (hasDeps || hasReqs)) {
       const rect = targetElement.getBoundingClientRect();
       setTooltipPosition({
         top: rect.bottom + window.scrollY + 4,
@@ -302,14 +325,16 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                           const isChecked = getEffectivePermission(permission);
                           const badge = getPermissionBadge(permission);
                           const isModified = modifiedPermissions.has(permission.permission_name);
+                          const willBeChecked = isModified && modifiedPermissions.get(permission.permission_name);
                           const willBeUnchecked = isModified && !modifiedPermissions.get(permission.permission_name);
                           const hasDependencies = hasDependentPermissions(permission.permission_name);
                           const hasRequirements = getRequiredPermissions(permission.permission_name).length > 0;
-                          const hasAnyDependencies = hasDependencies || hasRequirements;
-                          // Show icon if has dependencies
-                          const showIcon = hasAnyDependencies;
-                          // Show tooltip only if currently unchecked OR will be unchecked after modification
-                          const canShowTooltip = (!isChecked || willBeUnchecked) && hasAnyDependencies;
+                          // Show warning icon if has dependents and is/will be unchecked
+                          const showWarningIcon = hasDependencies && (!isChecked || willBeUnchecked);
+                          // Show info icon if has requirements and is/will be checked
+                          const showInfoIcon = hasRequirements && (isChecked || willBeChecked);
+                          // Show tooltip if has dependencies or requirements
+                          const canShowTooltip = hasDependencies || hasRequirements;
                           
                           return (
                             <div key={permission.permission_name} className="relative">
@@ -358,8 +383,11 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                                          t('permissions.badge.explicitlyRevoked')}
                                       </span>
                                     )}
-                                    {showIcon && (!isChecked || willBeUnchecked) && (
+                                    {showWarningIcon && (
                                       <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-500" />
+                                    )}
+                                    {showInfoIcon && (
+                                      <InformationCircleIcon className="ml-2 h-4 w-4 text-blue-500" />
                                     )}
                                   </div>
                                 </div>
