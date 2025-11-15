@@ -278,7 +278,9 @@
       "activeSections": "Active sections",
       "inactiveSections": "Inactive sections",
       "activateSection": "Activate section",
-      "deactivateSection": "Deactivate section"
+      "deactivateSection": "Deactivate section",
+      "noPermissionToCreate": "You don't have permission to create sections",
+      "noPermissionToCreateCategory": "You don't have permission to create categories"
     },
     "sections": {
       "add": "Add Section"

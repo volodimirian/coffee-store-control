@@ -417,7 +417,9 @@
       "activeSections": "Активные разделы",
       "inactiveSections": "Неактивные разделы",
       "activateSection": "Активировать раздел",
-      "deactivateSection": "Деактивировать раздел"
+      "deactivateSection": "Деактивировать раздел",
+      "noPermissionToCreate": "У вас нет прав на создание разделов",
+      "noPermissionToCreateCategory": "У вас нет прав на создание категорий"
     },
     "sections": {
       "add": "Добавить раздел"
