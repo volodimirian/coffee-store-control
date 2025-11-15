@@ -9,11 +9,20 @@ down:
 web:
 	cd web && pnpm dev
 
+web-build:
+	cd web && pnpm build
+
+web-preview:
+	cd web && pnpm preview
+
 api:
 	cd backend && uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 install-deps:
 	cd backend && uv sync
+
+install-deps-web:
+	cd web && pnpm install
 
 api-prod:
 	cd backend && uv run gunicorn app.main:app \
@@ -53,12 +62,34 @@ prod-logs-last:
 prod-deploy:
 	@echo "🚀 Deploying to production..."
 	git pull origin permissions-setup
+	@echo "📦 Installing backend dependencies..."
 	$(MAKE) install-deps
+	@echo "📦 Installing frontend dependencies..."
+	$(MAKE) install-deps-web
+	@echo "🏗️  Building frontend..."
+	$(MAKE) web-build
+	@echo "🗄️  Running database migrations..."
 	cd backend && uv run alembic upgrade head
+	@echo "🔄 Restarting API service..."
 	$(MAKE) prod-restart
 	@echo "✅ Deployment complete!"
 	@sleep 3
 	$(MAKE) prod-status
+
+prod-deploy-backend:
+	@echo "🚀 Deploying backend only..."
+	git pull origin permissions-setup
+	$(MAKE) install-deps
+	cd backend && uv run alembic upgrade head
+	$(MAKE) prod-restart
+	@echo "✅ Backend deployed!"
+
+prod-deploy-frontend:
+	@echo "🚀 Deploying frontend only..."
+	git pull origin permissions-setup
+	$(MAKE) install-deps-web
+	$(MAKE) web-build
+	@echo "✅ Frontend built! Update nginx to serve from web/dist"
 
 fmt:
 	cd backend && ruff check --fix . && black . && mypy .
