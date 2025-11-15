@@ -12,6 +12,9 @@ web:
 api:
 	cd backend && uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
+install-deps:
+	cd backend && uv sync
+
 api-prod:
 	cd backend && uv run gunicorn app.main:app \
 		--bind 0.0.0.0:8000 \
@@ -24,28 +27,38 @@ api-prod:
 		--log-level info
 
 prod-start:
-    sudo systemctl start coffee-store-api
+	sudo systemctl start coffee-store-api
 
 prod-stop:
-    sudo systemctl stop coffee-store-api
+	sudo systemctl stop coffee-store-api
 
 prod-restart:
-    sudo systemctl restart coffee-store-api
+	sudo systemctl restart coffee-store-api
 
 prod-status:
-    sudo systemctl status coffee-store-api
+	sudo systemctl status coffee-store-api
 
 prod-logs:
-    sudo journalctl -u coffee-store-api -f
+	sudo journalctl -u coffee-store-api -f
 
 prod-logs-today:
-    sudo journalctl -u coffee-store-api --since today
+	sudo journalctl -u coffee-store-api --since today
 
 prod-logs-errors:
-    sudo journalctl -u coffee-store-api -p err -f
+	sudo journalctl -u coffee-store-api -p err -f
 
 prod-logs-last:
-    sudo journalctl -u coffee-store-api -n 100 --no-pager
+	sudo journalctl -u coffee-store-api -n 100 --no-pager
+
+prod-deploy:
+	@echo "🚀 Deploying to production..."
+	git pull origin permissions-setup
+	$(MAKE) install-deps
+	cd backend && uv run alembic upgrade head
+	$(MAKE) prod-restart
+	@echo "✅ Deployment complete!"
+	@sleep 3
+	$(MAKE) prod-status
 
 fmt:
 	cd backend && ruff check --fix . && black . && mypy .
