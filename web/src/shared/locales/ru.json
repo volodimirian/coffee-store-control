@@ -81,7 +81,8 @@
     "signInDescription": "Введите ваши данные для доступа к аккаунту",
     "invalidCredentials": "Неверный email или пароль",
     "sessionExpired": "Ваша сессия истекла. Необходимо войти в систему заново.",
-    "sessionExpiredTitle": "Сессия истекла"
+    "sessionExpiredTitle": "Сессия истекла",
+    "rememberMe": "Запомнить меня"
   },
   "roles": {
     "admin": "Администратор",

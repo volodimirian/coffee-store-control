@@ -1,0 +1,26 @@
+[Unit]
+Description=Coffee Store Control API (via Makefile)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/coffee-store-control
+Environment="PATH=/root/.local/bin:/root/coffee-store-control/backend/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/make api-prod
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=coffee-store-api
+
+[Install]
+WantedBy=multi-user.target

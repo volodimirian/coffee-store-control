@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(..., alias="JWT_SECRET")
     jwt_alg: str = Field("HS256", alias="JWT_ALG")
     access_token_expire_minutes: int = Field(default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    refresh_token_expire_days: int = Field(default=30, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     
     # CORS
     cors_origins: List[str] = Field(..., alias="CORS_ORIGINS")

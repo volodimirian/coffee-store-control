@@ -14,9 +14,23 @@ export const getBearerToken = () => {
     return token ? `Bearer ${token}` : null;
 };
 
+// Refresh token helpers
+export const getRefreshToken = () => localStorage.getItem("refresh_token");
+
+export const saveRefreshToken = (token: string) => {
+    localStorage.setItem("refresh_token", token);
+};
+
+export const removeRefreshToken = () => {
+    localStorage.removeItem("refresh_token");
+};
+
+export const hasRefreshToken = () => !!localStorage.getItem("refresh_token");
+
 export const logout = () => {
     // Clear all auth-related data from localStorage
     localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("currentLocation");
 
     // Redirect to login page

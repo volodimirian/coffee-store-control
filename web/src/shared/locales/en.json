@@ -77,6 +77,7 @@
     "createAndManage": "Create and manage your product listings",
     "createBusinessAccount": "Create Business Account",
     "signInDescription": "Enter your credentials to access your account",
+    "rememberMe": "Remember me",
     "invalidCredentials": "Invalid email or password",
     "sessionExpired": "Your session has expired. Please log in again.",
     "sessionExpiredTitle": "Session Expired"

@@ -21,10 +21,16 @@ export const USER_ROLE_LABELS = {
 
 export async function login(
   email: string,
-  password: string
+  password: string,
+  rememberMe: boolean = false
 ): Promise<TokenResponse> {
-  const payload: LoginRequest = { email, password };
+  const payload: LoginRequest = { email, password, remember_me: rememberMe };
   const { data } = await api.post<TokenResponse>('/auth/login', payload);
+  return data;
+}
+
+export async function refreshToken(refreshToken: string): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>('/auth/refresh', { refresh_token: refreshToken });
   return data;
 }
 

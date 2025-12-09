@@ -33,6 +33,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
+    # Remember me / refresh token
+    refresh_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    refresh_token_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    
     # Role relationship
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
     role: Mapped["Role"] = relationship("Role", back_populates="users")
