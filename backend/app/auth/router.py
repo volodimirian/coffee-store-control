@@ -82,8 +82,9 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db_dep)):
 @router.post("/refresh", response_model=TokenOut)
 async def refresh(refresh_token: str, db: AsyncSession = Depends(get_db_dep)):
     """Refresh access token using refresh token."""
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
     from app.core.security import decode_token
+    from app.core.config import settings
     
     try:
         payload = decode_token(refresh_token)
@@ -126,7 +127,41 @@ async def refresh(refresh_token: str, db: AsyncSession = Depends(get_db_dep)):
     # Create new access token
     new_access_token = create_access_token(subject=user.id)
     
-    return TokenOut(access_token=new_access_token, refresh_token=refresh_token)
+    # Rotate refresh token (create new one)
+    new_refresh_token = create_refresh_token(subject=user.id)
+    user.refresh_token = new_refresh_token
+    user.refresh_token_expires = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+    await db.commit()
+    
+    return TokenOut(access_token=new_access_token, refresh_token=new_refresh_token)
+
+@router.post("/logout")
+async def logout(
+    db: AsyncSession = Depends(get_db_dep),
+    user_id: str = Depends(get_current_user_id)
+):
+    """Logout user and clear refresh token."""
+    user = await db.scalar(select(User).where(User.id == int(user_id)))
+    if user:
+        user.refresh_token = None
+        user.refresh_token_expires = None
+        await db.commit()
+    
+    return {"message": "Successfully logged out"}
+
+@router.post("/revoke-all")
+async def revoke_all_sessions(
+    db: AsyncSession = Depends(get_db_dep),
+    user_id: str = Depends(get_current_user_id)
+):
+    """Revoke all refresh tokens for the current user (all sessions)."""
+    user = await db.scalar(select(User).where(User.id == int(user_id)))
+    if user:
+        user.refresh_token = None
+        user.refresh_token_expires = None
+        await db.commit()
+    
+    return {"message": "All sessions revoked successfully"}
 
 @router.get("/me", response_model=UserOut)
 async def me(user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db_dep)):

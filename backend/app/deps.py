@@ -1,4 +1,5 @@
 """Dependency injection stubs (DB, auth, etc)."""
+from datetime import datetime, timezone
 from fastapi import Depends, HTTPException, status, Path
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,7 +33,7 @@ async def get_current_user(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db_dep)
 ) -> User:
-    """Get current authenticated user."""
+    """Get current authenticated user and clean up expired refresh tokens."""
     user = await db.scalar(
         select(User)
         .options(selectinload(User.role))
@@ -43,6 +44,14 @@ async def get_current_user(
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=create_error_response(ErrorCode.USER_NOT_FOUND)
         )
+    
+    # Lazy cleanup: remove expired refresh tokens
+    if user.refresh_token and user.refresh_token_expires:
+        if user.refresh_token_expires < datetime.now(timezone.utc):
+            user.refresh_token = None
+            user.refresh_token_expires = None
+            await db.commit()
+    
     return user
 
 

@@ -35,7 +35,7 @@ class User(Base):
     
     # Remember me / refresh token
     refresh_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    refresh_token_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    refresh_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Role relationship
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)

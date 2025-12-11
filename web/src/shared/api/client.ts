@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
-import { getToken, logout, getRefreshToken, saveToken, hasRefreshToken } from "~/shared/lib/helpers/storageHelpers";
+import { getToken, logout, getRefreshToken, saveToken, hasRefreshToken, saveRefreshToken } from "~/shared/lib/helpers/storageHelpers";
 import type { ApiErrorResponse, TokenResponse } from "./types";
 
 // Auto-logout functionality for 401 errors
@@ -94,8 +94,11 @@ api.interceptors.response.use(
             { refresh_token: refreshToken }
           );
           
-          // Save new access token
+          // Save new tokens (refresh token is rotated on backend)
           saveToken(data.access_token);
+          if (data.refresh_token) {
+            saveRefreshToken(data.refresh_token);
+          }
           
           // Update original request with new token
           if (originalRequest.headers) {

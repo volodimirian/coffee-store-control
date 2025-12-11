@@ -50,7 +50,11 @@ export async function fetchMe(): Promise<User> {
   return data;
 }
 
-/* TODO: invalidate refresh token on the server & create it on the backend */
 export async function logout(): Promise<void> {
-  await api.post('/auth/logout');
+  try {
+    await api.post('/auth/logout');
+  } catch (error) {
+    // Ignore errors - logout locally even if server call fails
+    console.warn('Logout API call failed:', error);
+  }
 }   
