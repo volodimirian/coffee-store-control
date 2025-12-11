@@ -32,7 +32,7 @@ import { fetchMe } from "~/shared/api/authentication";
 import { hasToken } from "~/shared/lib/helpers/storageHelpers";
 
 export default function App() {
-  const { setUser, setIsInitialized } = useAppContext();
+  const { setUser } = useAppContext();
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -45,17 +45,14 @@ export default function App() {
       fetchMe()
         .then(user => {
           setUser(user);
-          setIsInitialized(true);
         })
         .catch(() => {
           setUser(null);
-          setIsInitialized(true);
         });
     } else {
       setUser(null);
-      setIsInitialized(true);
     }
-  }, [setUser, setIsInitialized]);
+  }, [setUser]);
 
   return (
     <BrowserRouter>

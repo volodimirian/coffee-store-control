@@ -17,7 +17,6 @@ export type AppContextType = {
   deleteLocation: (id: number) => Promise<void>;
   fetchLocations: () => Promise<void>;
   fetchLocationMembers: (id: number) => Promise<LocationMember[]>;
-  setIsInitialized: (initialized: boolean) => void;
   // Invoice management
   updateOverdueStatuses: (businessId: number) => Promise<void>;
 };

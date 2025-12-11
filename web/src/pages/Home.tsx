@@ -1,24 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from 'react-i18next';
-import { fetchHealth } from "~/shared/api/health";
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '~/shared/context/AppContext';
+import { hasToken } from '~/shared/lib/helpers/storageHelpers';
 
 export default function Home() {
-  const { t } = useTranslation();
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["health"],
-    queryFn: fetchHealth
-});
+  const navigate = useNavigate();
+  const { user } = useAppContext();
 
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t('navigation.home')}</h1>
-      {isLoading && <div className="p-3 bg-gray-100 rounded">{t('common.loading')}</div>}
-      {isError && <div className="p-3 bg-red-100 text-red-700 rounded">Backend error</div>}
-      {data && (
-        <div className="p-3 bg-green-100 text-green-800 rounded">
-          /health: <b>{data.status}</b>
-        </div>
-      )}
-    </div>
-  );
+  useEffect(() => {
+    // Redirect based on authentication status
+    // If we have a token but no user yet, wait for user to load
+    if (hasToken() && !user) return;
+
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    } else {
+      navigate('/login', { replace: true });
+    }
+  }, [user, navigate]);
+
+  // Show nothing while redirecting
+  return null;
 }
