@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, InformationCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { employeesApi, permissionsApi } from '~/shared/api/employees';
 import type { Employee, UserPermissionDetail } from '~/shared/types/locations';
 import { useApiError } from '~/shared/lib/useApiError';
+import { 
+  getDependentPermissions, 
+  getAffectedFeatures,
+  hasDependentPermissions,
+  getRequiredPermissions 
+} from '~/shared/utils/permissionDependencies';
 
 interface PermissionModalProps {
   isOpen: boolean;
@@ -28,6 +34,24 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hoveredPermission, setHoveredPermission] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+
+  // Hide tooltip on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setHoveredPermission(null);
+    };
+
+    if (isOpen) {
+      const modalContent = document.querySelector('.permission-modal-content');
+      modalContent?.addEventListener('scroll', handleScroll);
+      
+      return () => {
+        modalContent?.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [isOpen]);
 
   // Fetch permission details from backend
   useEffect(() => {
@@ -52,7 +76,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
     fetchPermissions();
   }, [isOpen, employee, businessId, getErrorMessage]);
 
-  const handleTogglePermission = (permissionName: string) => {
+  const handleTogglePermission = (permissionName: string, targetElement?: HTMLElement) => {
     // Get the current effective permission (considering modifications)
     const permission = permissionDetails.find(p => p.permission_name === permissionName);
     if (!permission) return;
@@ -63,11 +87,44 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
     setModifiedPermissions(prev => {
       const newMap = new Map(prev);
       newMap.set(permissionName, newValue);
+      
+      if (newValue) {
+        // If checking, automatically check all required permissions
+        const required = getRequiredPermissions(permissionName);
+        required.forEach(reqPermName => {
+          const reqPerm = permissionDetails.find(p => p.permission_name === reqPermName);
+          if (reqPerm && !getEffectivePermission(reqPerm)) {
+            newMap.set(reqPermName, true);
+          }
+        });
+      } else {
+        // If unchecking, automatically uncheck dependent permissions
+        const dependents = getDependentPermissions(permissionName);
+        dependents.forEach(depPermName => {
+          const depPerm = permissionDetails.find(p => p.permission_name === depPermName);
+          if (depPerm && getEffectivePermission(depPerm)) {
+            newMap.set(depPermName, false);
+          }
+        });
+      }
+      
       return newMap;
     });
     
     if (error) {
       setError(null);
+    }
+
+    // Show tooltip immediately if has dependencies or requirements
+    const hasDeps = hasDependentPermissions(permissionName);
+    const hasReqs = getRequiredPermissions(permissionName).length > 0;
+    if (targetElement && (hasDeps || hasReqs)) {
+      const rect = targetElement.getBoundingClientRect();
+      setTooltipPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX
+      });
+      setHoveredPermission(permissionName);
     }
   };
 
@@ -221,7 +278,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6">
+          <form onSubmit={handleSubmit} className="p-6 permission-modal-content">
             {/* Error message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -267,50 +324,139 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
                         {permissions.map(permission => {
                           const isChecked = getEffectivePermission(permission);
                           const badge = getPermissionBadge(permission);
+                          const isModified = modifiedPermissions.has(permission.permission_name);
+                          const willBeChecked = isModified && modifiedPermissions.get(permission.permission_name);
+                          const willBeUnchecked = isModified && !modifiedPermissions.get(permission.permission_name);
+                          const hasDependencies = hasDependentPermissions(permission.permission_name);
+                          const hasRequirements = getRequiredPermissions(permission.permission_name).length > 0;
+                          // Show warning icon if has dependents and is/will be unchecked
+                          const showWarningIcon = hasDependencies && (!isChecked || willBeUnchecked);
+                          // Show info icon if has requirements and is/will be checked
+                          const showInfoIcon = hasRequirements && (isChecked || willBeChecked);
+                          // Show tooltip if has dependencies or requirements
+                          const canShowTooltip = hasDependencies || hasRequirements;
                           
                           return (
-                            <label
-                              key={permission.permission_name}
-                              className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                                isChecked
-                                  ? 'border-blue-300 bg-blue-50'
-                                  : 'border-gray-200 hover:border-gray-300 bg-white'
-                              } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              <div className="flex items-center flex-1">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => handleTogglePermission(permission.permission_name)}
-                                  disabled={isSubmitting}
-                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <div className="ml-3 flex-1">
-                                  <span className="text-sm text-gray-700">
-                                    {t(`permissions.names.${permission.permission_name}`, permission.permission_name)}
-                                  </span>
-                                  {badge && (
-                                    <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                      badge === 'modified' ? 'bg-yellow-100 text-yellow-800' :
-                                      badge === 'from-role' ? 'bg-purple-100 text-purple-800' :
-                                      badge === 'granted' ? 'bg-green-100 text-green-800' :
-                                      'bg-red-100 text-red-800'
-                                    }`}>
-                                      {badge === 'modified' ? t('permissions.badge.modified') :
-                                       badge === 'from-role' ? t('permissions.badge.fromRole') :
-                                       badge === 'granted' ? t('permissions.badge.explicitlyGranted') :
-                                       t('permissions.badge.explicitlyRevoked')}
+                            <div key={permission.permission_name} className="relative">
+                              <label
+                                onMouseEnter={(e) => {
+                                  if (canShowTooltip) {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setTooltipPosition({
+                                      top: rect.bottom + window.scrollY + 4,
+                                      left: rect.left + window.scrollX
+                                    });
+                                    setHoveredPermission(permission.permission_name);
+                                  }
+                                }}
+                                onMouseLeave={() => {
+                                  setHoveredPermission(null);
+                                }}
+                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                                  isChecked
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                <div className="flex items-center flex-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => handleTogglePermission(permission.permission_name, e.currentTarget.closest('label') as HTMLElement)}
+                                    disabled={isSubmitting}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  />
+                                  <div className="ml-3 flex-1 flex items-center">
+                                    <span className="text-sm text-gray-700">
+                                      {t(`permissions.names.${permission.permission_name}`, permission.permission_name)}
                                     </span>
-                                  )}
+                                    {badge && (
+                                      <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                        badge === 'modified' ? 'bg-yellow-100 text-yellow-800' :
+                                        badge === 'from-role' ? 'bg-purple-100 text-purple-800' :
+                                        badge === 'granted' ? 'bg-green-100 text-green-800' :
+                                        'bg-red-100 text-red-800'
+                                      }`}>
+                                        {badge === 'modified' ? t('permissions.badge.modified') :
+                                         badge === 'from-role' ? t('permissions.badge.fromRole') :
+                                         badge === 'granted' ? t('permissions.badge.explicitlyGranted') :
+                                         t('permissions.badge.explicitlyRevoked')}
+                                      </span>
+                                    )}
+                                    {showWarningIcon && (
+                                      <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-500" />
+                                    )}
+                                    {showInfoIcon && (
+                                      <InformationCircleIcon className="ml-2 h-4 w-4 text-blue-500" />
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            </label>
+                              </label>
+
+                            </div>
                           );
                         })}
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Global Fixed Tooltip */}
+                {hoveredPermission && (() => {
+                  const permission = permissionDetails.find(p => p.permission_name === hoveredPermission);
+                  if (!permission) return null;
+                  
+                  const dependents = getDependentPermissions(permission.permission_name);
+                  const affected = getAffectedFeatures(permission.permission_name);
+                  const required = getRequiredPermissions(permission.permission_name);
+                  
+                  return (
+                    <div 
+                      className="fixed z-[9999] p-3 bg-white border-2 border-gray-400 rounded-lg shadow-2xl text-xs pointer-events-none min-w-[300px] max-w-[400px]"
+                      style={{ top: `${tooltipPosition.top}px`, left: `${tooltipPosition.left}px` }}
+                    >
+                      {dependents.length > 0 && (
+                        <div className="mb-2">
+                          <p className="font-medium text-yellow-700 flex items-center">
+                            <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                            {t('permissions.dependencies.willBeRevoked')}
+                          </p>
+                          <ul className="mt-1 ml-4 list-disc text-gray-600">
+                            {dependents.map(dep => (
+                              <li key={dep}>{t(`permissions.names.${dep}`, dep)}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {affected.length > 0 && (
+                        <div className={dependents.length > 0 ? 'mt-2' : ''}>
+                          <p className="font-medium text-red-700 flex items-center">
+                            <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                            {t('permissions.dependencies.affectsLabel')}
+                          </p>
+                          <ul className="mt-1 ml-4 list-disc text-gray-600">
+                            {affected.map(feature => (
+                              <li key={feature}>{t(feature, feature)}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {required.length > 0 && (
+                        <div className={(dependents.length > 0 || affected.length > 0) ? 'mt-2' : ''}>
+                          <p className="font-medium text-blue-700 flex items-center">
+                            <InformationCircleIcon className="h-3 w-3 mr-1" />
+                            {t('permissions.dependencies.needsPermissions')}
+                          </p>
+                          <ul className="mt-1 ml-4 list-disc text-gray-600">
+                            {required.map(req => (
+                              <li key={req}>{t(`permissions.names.${req}`, req)}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Summary */}
                 <div className="mt-4 p-3 bg-gray-50 rounded-md">

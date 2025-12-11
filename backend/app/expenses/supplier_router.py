@@ -169,9 +169,9 @@ async def delete_supplier(
 ):
     """
     Delete supplier (soft delete = deactivate).
-    For permanent delete, requires delete_supplier permission.
+    For permanent delete, requires delete_suppliers permission.
     
-    Permission: activate_deactivate_supplier (soft), delete_supplier (permanent)
+    Permission: activate_deactivate_suppliers (soft), delete_suppliers (permanent)
     """
     supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
     if not supplier:
@@ -187,7 +187,7 @@ async def delete_supplier(
         
         has_delete_perm = await check_user_permission(
             user_id=auth["user_id"],
-            permission_name="delete_supplier",
+            permission_name="delete_suppliers",
             db=session,
             business_id=getattr(supplier, 'business_id'),
         )

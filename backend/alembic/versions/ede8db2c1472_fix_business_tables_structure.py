@@ -19,7 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
+    """Upgrade schema - idempotent version."""
+    # Get connection to check existing state
+    conn = op.get_bind()
+    
     # Fix businesses table: make city and address NOT NULL
     op.execute("UPDATE businesses SET city = 'Unknown' WHERE city IS NULL")
     op.execute("UPDATE businesses SET address = 'Unknown' WHERE address IS NULL")
@@ -30,10 +33,28 @@ def upgrade() -> None:
                existing_type=sa.TEXT(),
                nullable=False)
     
-    # Fix user_businesses table: remove auto-increment id and use composite primary key
-    op.drop_constraint('user_businesses_pkey', 'user_businesses', type_='primary')
-    op.drop_column('user_businesses', 'id')
-    op.create_primary_key('user_businesses_pkey', 'user_businesses', ['user_id', 'business_id'])
+    # Fix user_businesses table: remove auto-increment id and use composite primary key (idempotent)
+    # Check if 'id' column exists before trying to drop it
+    result = conn.execute(sa.text("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='user_businesses' AND column_name='id'
+    """))
+    
+    if result.fetchone() is not None:
+        # Only drop if it exists
+        op.drop_constraint('user_businesses_pkey', 'user_businesses', type_='primary')
+        op.drop_column('user_businesses', 'id')
+        op.create_primary_key('user_businesses_pkey', 'user_businesses', ['user_id', 'business_id'])
+    else:
+        # Ensure composite primary key exists
+        result = conn.execute(sa.text("""
+            SELECT constraint_name 
+            FROM information_schema.table_constraints 
+            WHERE table_name='user_businesses' AND constraint_name='user_businesses_pkey'
+        """))
+        if result.fetchone() is None:
+            op.create_primary_key('user_businesses_pkey', 'user_businesses', ['user_id', 'business_id'])
     
     # Fix NULL values in other tables before setting NOT NULL constraints
     op.execute("UPDATE permissions SET created_at = NOW() WHERE created_at IS NULL")
@@ -71,12 +92,31 @@ def upgrade() -> None:
                existing_type=sa.TIMESTAMP(),
                nullable=False)
     
-    # Add foreign key constraint for business_id
-    op.create_foreign_key('user_permissions_business_id_fkey', 'user_permissions', 'businesses', ['business_id'], ['id'])
+    # Add foreign key constraint for business_id (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name='user_permissions' AND constraint_name='user_permissions_business_id_fkey'
+    """))
+    if result.fetchone() is None:
+        op.create_foreign_key('user_permissions_business_id_fkey', 'user_permissions', 'businesses', ['business_id'], ['id'])
     
-    # Drop unique constraints on users table
-    op.drop_constraint('users_email_key', 'users', type_='unique')
-    op.drop_constraint('users_username_key', 'users', type_='unique')
+    # Drop unique constraints on users table (idempotent)
+    result = conn.execute(sa.text("""
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name='users' AND constraint_name='users_email_key'
+    """))
+    if result.fetchone() is not None:
+        op.drop_constraint('users_email_key', 'users', type_='unique')
+    
+    result = conn.execute(sa.text("""
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name='users' AND constraint_name='users_username_key'
+    """))
+    if result.fetchone() is not None:
+        op.drop_constraint('users_username_key', 'users', type_='unique')
 
 
 def downgrade() -> None:

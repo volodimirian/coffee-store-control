@@ -37,11 +37,11 @@ export default function ExpensesNavigation() {
       name: t('expenses.navigation.inventoryTracking'),
       icon: TableCellsIcon,
       path: '/expenses/inventory-tracking',
-      // Inventory tracking requires BOTH invoices (for data) and units (for table structure)
+      // Inventory tracking requires invoices (data), units (table structure), and categories (structure)
       requiredPermissions: [
         { resource: 'invoices', action: 'view' },
         { resource: 'units', action: 'view' },
-        // { resource: 'categories', action: 'view' },
+        { resource: 'categories', action: 'view' },
         { resource: 'subcategories', action: 'view' }
       ],
     },

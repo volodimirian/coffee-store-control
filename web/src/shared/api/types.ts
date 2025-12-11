@@ -65,7 +65,14 @@ export type ErrorCode =
   | 'INTERNAL_ERROR'
   | 'NOT_FOUND'
   | 'CONFLICT'
-  | 'BAD_REQUEST';
+  | 'BAD_REQUEST'
+  
+  // Categories & Products
+  | 'CATEGORY_NOT_FOUND'
+  | 'SUBCATEGORY_NOT_FOUND'
+  | 'PRODUCT_NOT_FOUND'
+  | 'CATEGORY_NAME_EXISTS'
+  | 'SUBCATEGORY_NAME_EXISTS';
 
 // ============ User & Auth Types ============
 
@@ -93,10 +100,12 @@ export interface RegisterRequest {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember_me?: boolean;
 }
 
 export interface TokenResponse {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 

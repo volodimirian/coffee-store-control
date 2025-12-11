@@ -6,6 +6,7 @@
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
+    "close": "Close",
     "delete": "Delete",
     "deleting": "Deleting...",
     "create": "Create",
@@ -76,6 +77,7 @@
     "createAndManage": "Create and manage your product listings",
     "createBusinessAccount": "Create Business Account",
     "signInDescription": "Enter your credentials to access your account",
+    "rememberMe": "Remember me",
     "invalidCredentials": "Invalid email or password",
     "sessionExpired": "Your session has expired. Please log in again.",
     "sessionExpiredTitle": "Session Expired"
@@ -122,11 +124,12 @@
     }
   },
   "errors": {
-    "_auth_title": "Authentication & Authorization Errors",
+    "_auth_title": "Authentication and Authorization Errors",
     "UNAUTHORIZED": "Invalid or expired token",
     "FORBIDDEN": "Access denied",
     "INVALID_CREDENTIALS": "Invalid email or password",
     "USER_NOT_FOUND": "User not found",
+    "RATE_LIMIT_EXCEEDED": "Too many requests, please try again later",
 
     "_registration_title": "Registration Errors", 
     "EMAIL_ALREADY_EXISTS": "Email already registered",
@@ -278,7 +281,9 @@
       "activeSections": "Active sections",
       "inactiveSections": "Inactive sections",
       "activateSection": "Activate section",
-      "deactivateSection": "Deactivate section"
+      "deactivateSection": "Deactivate section",
+      "noPermissionToCreate": "You don't have permission to create sections",
+      "noPermissionToCreateCategory": "You don't have permission to create categories"
     },
     "sections": {
       "add": "Add Section"
@@ -527,17 +532,20 @@
       "statuses": {
         "pending": "Pending Payment",
         "paid": "Paid",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "overdue": "Overdue"
       },
       "actions": {
+        "view": "View",
         "edit": "Edit",
         "delete": "Delete",
         "markAsPaid": "Mark as Paid",
         "markAsCancelled": "Cancel"
       },
       "modal": {
-        "createTitle": "Create Invoice",
+        "createTitle": "New Invoice",
         "editTitle": "Edit Invoice",
+        "viewTitle": "View Invoice",
         "supplier": "Supplier",
         "selectSupplier": "Select supplier...",
         "searchSupplier": "Search supplier...",
@@ -854,6 +862,21 @@
       "delete_invoices": "Delete Invoices",
       "approve_invoices": "Approve Invoices",
       "reject_invoices": "Reject Invoices"
+    },
+    "dependencies": {
+      "required": "Required for:",
+      "affectsLabel": "Will stop working:",
+      "willBeRevoked": "Will be automatically revoked:",
+      "needsPermissions": "Requires permissions:",
+      "warning": "Warning: has dependencies",
+      "info": "Requires other permissions",
+      "features": {
+        "createInvoices": "Creating invoices",
+        "editInvoices": "Editing invoices",
+        "inventoryTracking": "Inventory tracking",
+        "expenseReports": "Expense reports",
+        "expenseDetails": "Expense details"
+      }
     }
   },
   "billing": {

@@ -20,6 +20,8 @@ import {
 import { ru, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { can } from '~/shared/utils/permissions';
 import {
   suppliersApi,
   invoicesApi,
@@ -46,7 +48,10 @@ export default function InvoiceCalendarTab() {
   const [error, setError] = useState<string | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [invoiceMode, setInvoiceMode] = useState<'create' | 'edit' | 'view'>('create');
   const [copiedTaxId, setCopiedTaxId] = useState<number | null>(null);
+  
+  const { permissions, isLoading: isLoadingPermissions } = usePermissions();
 
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
 
@@ -70,6 +75,11 @@ export default function InvoiceCalendarTab() {
 
   const handleInvoiceClick = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
+    // Check if user has edit permission AND view_suppliers permission
+    const canEdit = !isLoadingPermissions && 
+                    can.edit(permissions, 'invoices') && 
+                    can.view(permissions, 'suppliers');
+    setInvoiceMode(canEdit ? 'edit' : 'view');
     setIsInvoiceModalOpen(true);
   };
 
@@ -276,7 +286,11 @@ export default function InvoiceCalendarTab() {
 
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => setIsInvoiceModalOpen(true)}
+            onClick={() => {
+              setSelectedInvoice(null);
+              setInvoiceMode('create');
+              setIsInvoiceModalOpen(true);
+            }}
             className="flex items-center px-3 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
             <PlusIcon className="h-4 w-4 mr-1" />
@@ -417,6 +431,7 @@ export default function InvoiceCalendarTab() {
         onClose={handleCloseModal}
         onSuccess={handleInvoiceAdded}
         invoice={selectedInvoice}
+        mode={invoiceMode}
       />
     </div>
   );

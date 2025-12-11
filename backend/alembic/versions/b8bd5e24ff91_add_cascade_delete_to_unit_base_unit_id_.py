@@ -18,19 +18,39 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema - add CASCADE to base_unit_id foreign key."""
-    # Drop existing foreign key constraint (if exists)
-    op.drop_constraint('units_base_unit_id_fkey', 'units', type_='foreignkey')
+    """Upgrade schema - add CASCADE to base_unit_id foreign key (idempotent)."""
+    # Get connection to check existing state
+    import sqlalchemy as sa
+    conn = op.get_bind()
     
-    # Recreate foreign key constraint with CASCADE on delete
-    op.create_foreign_key(
-        'units_base_unit_id_fkey',
-        'units',
-        'units',
-        ['base_unit_id'],
-        ['id'],
-        ondelete='CASCADE'
-    )
+    # Check if the constraint exists
+    result = conn.execute(sa.text("""
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name='units' AND constraint_name='units_base_unit_id_fkey'
+    """))
+    
+    if result.fetchone() is not None:
+        # Drop existing foreign key constraint
+        op.drop_constraint('units_base_unit_id_fkey', 'units', type_='foreignkey')
+    
+    # Check if constraint still doesn't exist (to avoid duplicate creation)
+    result = conn.execute(sa.text("""
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name='units' AND constraint_name='units_base_unit_id_fkey'
+    """))
+    
+    if result.fetchone() is None:
+        # Recreate foreign key constraint with CASCADE on delete
+        op.create_foreign_key(
+            'units_base_unit_id_fkey',
+            'units',
+            'units',
+            ['base_unit_id'],
+            ['id'],
+            ondelete='CASCADE'
+        )
 
 
 def downgrade() -> None:
