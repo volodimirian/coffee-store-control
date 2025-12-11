@@ -124,11 +124,12 @@
     }
   },
   "errors": {
-    "_auth_title": "Authentication & Authorization Errors",
+    "_auth_title": "Authentication and Authorization Errors",
     "UNAUTHORIZED": "Invalid or expired token",
     "FORBIDDEN": "Access denied",
     "INVALID_CREDENTIALS": "Invalid email or password",
     "USER_NOT_FOUND": "User not found",
+    "RATE_LIMIT_EXCEEDED": "Too many requests, please try again later",
 
     "_registration_title": "Registration Errors", 
     "EMAIL_ALREADY_EXISTS": "Email already registered",

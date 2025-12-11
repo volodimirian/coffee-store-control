@@ -1,5 +1,5 @@
 """Auth router."""
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +9,7 @@ from app.auth.schemas import RegisterIn, LoginIn, TokenOut
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
 from app.core.error_codes import ErrorCode, create_error_response
 from app.core.permissions import check_user_permission
+from app.core.rate_limiter import refresh_rate_limiter, login_rate_limiter
 from app.deps import get_db_dep
 from app.deps import get_current_user_id
 from app.core_models import User, Role
@@ -56,7 +57,12 @@ async def register(data: RegisterIn, db: AsyncSession = Depends(get_db_dep)):
     return TokenOut(access_token=token)
 
 @router.post("/login", response_model=TokenOut)
-async def login(data: LoginIn, db: AsyncSession = Depends(get_db_dep)):
+async def login(
+    request: Request,
+    data: LoginIn,
+    db: AsyncSession = Depends(get_db_dep),
+    _: None = Depends(login_rate_limiter.check_rate_limit)
+):
     user = await db.scalar(select(User).where(User.email == data.email))
     if not user or not verify_password(data.password, user.password_hash):
         return JSONResponse(
@@ -80,7 +86,12 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db_dep)):
     return TokenOut(access_token=access_token, refresh_token=refresh_token)
 
 @router.post("/refresh", response_model=TokenOut)
-async def refresh(refresh_token: str, db: AsyncSession = Depends(get_db_dep)):
+async def refresh(
+    request: Request,
+    refresh_token: str,
+    db: AsyncSession = Depends(get_db_dep),
+    _: None = Depends(refresh_rate_limiter.check_rate_limit)
+):
     """Refresh access token using refresh token."""
     from datetime import datetime, timedelta, timezone
     from app.core.security import decode_token

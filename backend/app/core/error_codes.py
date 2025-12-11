@@ -17,6 +17,7 @@ class ErrorCode(str, Enum):
     EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS"  # "Email already registered"
     USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"  # "Username already taken"
     INVALID_ROLE = "INVALID_ROLE"  # "Invalid role specified"
+    RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"  # "Too many requests, please try again later"
     
     # Permissions
     PERMISSION_DENIED = "PERMISSION_DENIED"  # "You don't have permission to perform this action"

@@ -131,6 +131,7 @@
     "FORBIDDEN": "Доступ запрещён",
     "INVALID_CREDENTIALS": "Неверный email или пароль",
     "USER_NOT_FOUND": "Пользователь не найден",
+    "RATE_LIMIT_EXCEEDED": "Слишком много запросов, попробуйте позже",
 
     "_registration_title": "Ошибки регистрации", 
     "EMAIL_ALREADY_EXISTS": "Email уже зарегистрирован",
