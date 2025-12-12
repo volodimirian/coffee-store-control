@@ -13,7 +13,7 @@ export default function Home() {
     if (hasToken() && !user) return;
 
     if (user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/locations', { replace: true });
     } else {
       navigate('/login', { replace: true });
     }

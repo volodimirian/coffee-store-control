@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { /*useState,*/ useMemo } from 'react';
 import { USER_ROLES } from '~/shared/api/authentication';
 import {
-  HomeIcon,
+  // HomeIcon,
   // UserIcon,
   // CubeIcon,
   // ShoppingCartIcon,
@@ -49,12 +49,12 @@ const menuSections: MenuSection[] = [
     icon: BuildingOfficeIcon,
     defaultExpanded: true,
     items: [
-      {
-        id: 'dashboard',
-        path: '/dashboard',
-        icon: HomeIcon,
-        labelKey: 'navigation.dashboard',
-      },
+      // {
+      //   id: 'dashboard',
+      //   path: '/dashboard',
+      //   icon: HomeIcon,
+      //   labelKey: 'navigation.dashboard',
+      // },
       {
         id: 'locations',
         path: '/locations',
@@ -180,8 +180,8 @@ function LocationSelectorWrapper() {
 export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
   const { t } = useTranslation();
   const { permissions } = usePermissions();
-  const { logout } = useAppContext();
-  
+  const { user, logout } = useAppContext();
+
   // const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
   //   menuSections.reduce((acc, section) => ({
   //     ...acc,
@@ -356,7 +356,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
             className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors duration-200"
           >
             <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-3" />
-            <span>{t('navigation.logOut')}</span>
+            <span>{t('navigation.logOut')} { user?.username }</span>
           </button>
         )}
       </div>
