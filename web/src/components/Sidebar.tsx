@@ -11,6 +11,7 @@ import {
   // CogIcon,
   Bars3Icon,
   XMarkIcon,
+  ChevronLeftIcon,
   // ChevronRightIcon,
   CurrencyDollarIcon,
   BanknotesIcon,
@@ -252,14 +253,14 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
           )}
         </div>
         
-        {/* Desktop close button - only when expanded */}
+        {/* Desktop collapse button - only when expanded */}
         {!isCollapsed && (
           <button
             onClick={onToggle}
             className="hidden lg:block p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
-            aria-label={t('navigation.closeSidebar')}
+            aria-label={t('navigation.collapseSidebar')}
           >
-            <XMarkIcon className="w-5 h-5" />
+            <ChevronLeftIcon className="w-5 h-5" />
           </button>
         )}
 
