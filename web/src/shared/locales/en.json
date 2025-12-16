@@ -695,6 +695,8 @@
       "accessSettings": "Access Settings"
     },
     "overview": {
+      "title": "Expenses Overview",
+      "addExpense": "Add Expense",
       "totalExpenses": "Total Expenses",
       "thisMonth": "This Month",
       "categoriesCount": "Categories", 

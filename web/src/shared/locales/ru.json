@@ -849,6 +849,8 @@
       "accessSettings": "Настройки доступа"
     },
     "overview": {
+      "title": "Обзор расходов",
+      "addExpense": "Внести расход",
       "totalExpenses": "Общие расходы",
       "thisMonth": "Этот месяц", 
       "categoriesCount": "Категории",
