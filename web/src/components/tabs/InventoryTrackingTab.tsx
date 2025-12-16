@@ -29,6 +29,8 @@ import {
 } from '~/shared/api/expenses';
 import CategoryModal from '~/components/modals/CategoryModal';
 import AddSectionModal from '~/components/modals/AddSectionModal';
+import InvoiceModal from '~/components/modals/InvoiceModal';
+import { Protected } from '~/shared/ui';
 import { formatCurrencyCompact } from '~/shared/lib/helpers';
 import type { 
   ExpenseSection,
@@ -78,6 +80,7 @@ export default function InventoryTrackingTab() {
   const [error, setError] = useState<string | null>(null);
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
 
   // Get locale for date-fns
@@ -126,6 +129,11 @@ export default function InventoryTrackingTab() {
     setIsAddCategoryModalOpen(false);
     setSelectedSectionId(null);
     loadData();
+  };
+
+  const handleInvoiceSuccess = () => {
+    setIsInvoiceModalOpen(false);
+    loadData(); // Reload data after creating invoice
   };
 
   // Load all data for the current month
@@ -358,9 +366,18 @@ export default function InventoryTrackingTab() {
         </div>
 
         <div className="flex items-center space-x-2">
+          <Protected permission={{ resource: 'invoices', action: 'create' }}>
+            <button
+              onClick={() => setIsInvoiceModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              {t('expenses.overview.addExpense')}
+            </button>
+          </Protected>
           <button 
             onClick={() => setIsAddSectionModalOpen(true)}
-            className="flex items-center px-3 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             <PlusIcon className="h-4 w-4 mr-1" />
             {t('expenses.sections.add')}
@@ -685,6 +702,15 @@ export default function InventoryTrackingTab() {
           mode="create"
           sectionId={selectedSectionId}
           onCategoryAdded={handleCategoryAdded}
+        />
+      )}
+
+      {isInvoiceModalOpen && (
+        <InvoiceModal
+          isOpen={isInvoiceModalOpen}
+          onClose={() => setIsInvoiceModalOpen(false)}
+          onSuccess={handleInvoiceSuccess}
+          mode="create"
         />
       )}
     </div>

@@ -3,7 +3,6 @@ import {
   ChartBarIcon, 
   CurrencyDollarIcon,
   ClipboardDocumentListIcon,
-  PlusIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -14,8 +13,6 @@ import {
 } from '~/shared/api/expenses';
 import { formatCurrency } from '~/shared/lib/helpers';
 import type { Invoice } from '~/shared/api/types';
-import InvoiceModal from '~/components/modals/InvoiceModal';
-import { Protected } from '~/shared/ui';
 
 export default function OverviewTab() {
   const { t, i18n } = useTranslation();
@@ -26,9 +23,6 @@ export default function OverviewTab() {
     thisMonthTotal: '0',
     pendingInvoicesCount: 0,
   });
-  
-  // Modal state
-  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
 
@@ -81,26 +75,8 @@ export default function OverviewTab() {
     }
   };
 
-  const handleInvoiceSuccess = () => {
-    setIsInvoiceModalOpen(false);
-    loadData(); // Reload data after creating invoice
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header with Add Button */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">{t('expenses.overview.title')}</h2>
-        <Protected permission={{ resource: 'invoices', action: 'create' }}>
-          <button
-            onClick={() => setIsInvoiceModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-            {t('expenses.overview.addExpense')}
-          </button>
-        </Protected>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -219,16 +195,6 @@ export default function OverviewTab() {
           </div>
         </div>
       </div>
-
-      {/* Invoice Modal */}
-      {isInvoiceModalOpen && (
-        <InvoiceModal
-          isOpen={isInvoiceModalOpen}
-          onClose={() => setIsInvoiceModalOpen(false)}
-          onSuccess={handleInvoiceSuccess}
-          mode="create"
-        />
-      )}
     </div>
   );
 }
