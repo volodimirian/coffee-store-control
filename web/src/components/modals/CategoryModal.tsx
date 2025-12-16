@@ -98,9 +98,14 @@ export default function CategoryModal({
     }
   }, [isOpen, currentLocation?.id, loadUnits]);
 
-  const handleUnitCreated = () => {
+  const handleUnitCreated = async (createdUnit?: Unit) => {
     setIsUnitModalOpen(false);
-    loadUnits(); // Reload units list
+    await loadUnits(); // Reload units list
+    
+    // Auto-select the newly created unit
+    if (createdUnit?.id) {
+      setFormData(prev => ({ ...prev, default_unit_id: createdUnit.id }));
+    }
   };
 
   const handleClose = () => {
