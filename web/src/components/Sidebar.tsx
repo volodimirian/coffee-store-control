@@ -57,18 +57,6 @@ const menuSections: MenuSection[] = [
       //   labelKey: 'navigation.dashboard',
       // },
       {
-        id: 'locations',
-        path: '/locations',
-        icon: MapPinIcon,
-        labelKey: 'navigation.locations',
-      },
-      {
-        id: 'employees',
-        path: '/employees',
-        icon: UsersIcon,
-        labelKey: 'navigation.employees',
-      },
-      {
         id: 'expenses',
         path: '/expenses',
         icon: CurrencyDollarIcon,
@@ -109,6 +97,18 @@ const menuSections: MenuSection[] = [
         path: '/analytics',
         icon: ChartBarIcon,
         labelKey: 'navigation.analytics',
+      },
+      {
+        id: 'locations',
+        path: '/locations',
+        icon: MapPinIcon,
+        labelKey: 'navigation.locations',
+      },
+      {
+        id: 'employees',
+        path: '/employees',
+        icon: UsersIcon,
+        labelKey: 'navigation.employees',
       },
     ],
   },
