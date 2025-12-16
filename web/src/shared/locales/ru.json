@@ -443,6 +443,17 @@
       "add": "Добавить раздел"
     },
     "modals": {
+      "createExpense": {
+        "title": "Создать",
+        "createButton": "Создать",
+        "createSection": "Создать раздел",
+        "createSectionDescription": "Группа категорий (например: Кофе, Молоко)",
+        "createCategory": "Создать категорию",
+        "createCategoryDescription": "Товар внутри раздела (например: Арабика)",
+        "createSectionFirst": "Сначала создайте раздел",
+        "selectSection": "Выберите раздел",
+        "noSectionsWarning": "Сначала создайте раздел, чтобы добавлять категории"
+      },
       "addSection": {
         "title": "Добавить раздел расходов",
         "nameLabel": "Название раздела",

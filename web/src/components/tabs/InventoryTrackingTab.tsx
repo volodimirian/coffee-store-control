@@ -27,8 +27,7 @@ import {
   invoiceItemsApi,
   unitsApi,
 } from '~/shared/api/expenses';
-import CategoryModal from '~/components/modals/CategoryModal';
-import AddSectionModal from '~/components/modals/AddSectionModal';
+import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
 import InvoiceModal from '~/components/modals/InvoiceModal';
 import { Protected } from '~/shared/ui';
 import { formatCurrencyCompact } from '~/shared/lib/helpers';
@@ -78,10 +77,8 @@ export default function InventoryTrackingTab() {
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
-  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
 
   // Get locale for date-fns
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -116,18 +113,12 @@ export default function InventoryTrackingTab() {
   };
 
   const handleAddCategory = (sectionId: number) => {
-    setSelectedSectionId(sectionId);
-    setIsAddCategoryModalOpen(true);
+    // This function can be removed or kept for backward compatibility
+    console.log('Add category for section:', sectionId);
   };
 
-  const handleSectionAdded = () => {
-    setIsAddSectionModalOpen(false);
-    loadData();
-  };
-
-  const handleCategoryAdded = () => {
-    setIsAddCategoryModalOpen(false);
-    setSelectedSectionId(null);
+  const handleCreateSuccess = () => {
+    setIsCreateModalOpen(false);
     loadData();
   };
 
@@ -376,11 +367,11 @@ export default function InventoryTrackingTab() {
             </button>
           </Protected>
           <button 
-            onClick={() => setIsAddSectionModalOpen(true)}
+            onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             <PlusIcon className="h-4 w-4 mr-1" />
-            {t('expenses.sections.add')}
+            {t('expenses.modals.createExpense.createButton')}
           </button>
         </div>
       </div>
@@ -686,24 +677,12 @@ export default function InventoryTrackingTab() {
       )}
 
       {/* Modals */}
-      <AddSectionModal
-        isOpen={isAddSectionModalOpen}
-        onClose={() => setIsAddSectionModalOpen(false)}
-        onSectionAdded={handleSectionAdded}
+      <CreateExpenseModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+        sections={tableSections.map(ts => ({ id: ts.section.id, name: ts.section.name }))}
       />
-
-      {selectedSectionId && (
-        <CategoryModal
-          isOpen={isAddCategoryModalOpen}
-          onClose={() => {
-            setIsAddCategoryModalOpen(false);
-            setSelectedSectionId(null);
-          }}
-          mode="create"
-          sectionId={selectedSectionId}
-          onCategoryAdded={handleCategoryAdded}
-        />
-      )}
 
       {isInvoiceModalOpen && (
         <InvoiceModal

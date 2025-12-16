@@ -289,6 +289,17 @@
       "add": "Add Section"
     },
     "modals": {
+      "createExpense": {
+        "title": "Create",
+        "createButton": "Create",
+        "createSection": "Create Section",
+        "createSectionDescription": "Group of categories (e.g.: Coffee, Milk)",
+        "createCategory": "Create Category",
+        "createCategoryDescription": "Item within a section (e.g.: Arabica)",
+        "createSectionFirst": "Create a section first",
+        "selectSection": "Select Section",
+        "noSectionsWarning": "Please create a section first to add categories"
+      },
       "addSection": {
         "title": "Add Expense Section",
         "nameLabel": "Section Name",
