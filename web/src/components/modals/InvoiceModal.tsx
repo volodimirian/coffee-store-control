@@ -7,6 +7,7 @@ import {
   invoiceItemsApi,
   suppliersApi,
   expenseCategoriesApi,
+  expenseSectionsApi,
   unitsApi,
   type Invoice,
   type InvoiceCreate,
@@ -14,8 +15,10 @@ import {
   type InvoiceItemCreate,
   type Supplier,
   type ExpenseCategory,
+  type ExpenseSection,
   type Unit,
 } from '~/shared/api';
+import CreateExpenseModal from './CreateExpenseModal';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
 import { formatCurrency as formatCurrencyDisplay, formatNumber } from '~/shared/lib/helpers';
@@ -73,8 +76,12 @@ export default function InvoiceModal({
   // Data for dropdowns
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [sections, setSections] = useState<ExpenseSection[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+
+  // Create expense modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Load invoice items when editing
   useEffect(() => {
@@ -131,13 +138,15 @@ export default function InvoiceModal({
 
     setLoadingData(true);
     try {
-      const [suppliersRes, categoriesRes, unitsRes] = await Promise.all([
+      const [suppliersRes, categoriesRes, sectionsRes, unitsRes] = await Promise.all([
         suppliersApi.list({ business_id: currentLocation.id, is_active: true, limit: 1000 }),
         expenseCategoriesApi.listByBusiness(currentLocation.id, { is_active: true, limit: 1000 }),
+        expenseSectionsApi.list({ business_id: currentLocation.id, is_active: true, limit: 1000 }),
         unitsApi.list({ business_id: currentLocation.id, is_active: true, limit: 1000 }),
       ]);
       setSuppliers(suppliersRes.suppliers);
       setCategories(categoriesRes.categories);
+      setSections(sectionsRes.sections);
       setUnits(unitsRes.units);
     } catch (err) {
       console.error('Failed to load dropdown data:', err);
@@ -200,6 +209,11 @@ export default function InvoiceModal({
     });
     
     return options;
+  };
+
+  const handleCreateSuccess = async () => {
+    await loadDropdownData();
+    setIsCreateModalOpen(false);
   };
 
   const handleLineItemChange = (index: number, field: keyof LineItem, value: string | number) => {
@@ -335,6 +349,7 @@ export default function InvoiceModal({
   };
 
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
@@ -439,14 +454,24 @@ export default function InvoiceModal({
                           {t('expenses.invoices.modal.lineItems')} <span className="text-red-500">*</span>
                         </label>
                         {!isViewing && (
-                          <button
-                            type="button"
-                            onClick={handleAddLineItem}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
-                          >
-                            <PlusIcon className="h-4 w-4 mr-1" />
-                            {t('expenses.invoices.modal.addItem')}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsCreateModalOpen(true)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                            >
+                              <PlusIcon className="h-4 w-4 mr-1" />
+                              {t('expenses.categories.addCategory')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleAddLineItem}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                            >
+                              <PlusIcon className="h-4 w-4 mr-1" />
+                              {t('expenses.invoices.modal.addItem')}
+                            </button>
+                          </div>
                         )}
                       </div>
 
@@ -617,5 +642,14 @@ export default function InvoiceModal({
         </div>
       </Dialog>
     </Transition>
+
+    {/* Create Expense Modal (Section or Category) */}
+    <CreateExpenseModal
+      isOpen={isCreateModalOpen}
+      onClose={() => setIsCreateModalOpen(false)}
+      onSuccess={handleCreateSuccess}
+      sections={sections}
+    />
+    </>
   );
 }
