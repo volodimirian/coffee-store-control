@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   PlusIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { 
   format, 
@@ -29,6 +30,8 @@ import {
 } from '~/shared/api/expenses';
 import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
 import InvoiceModal from '~/components/modals/InvoiceModal';
+import CategoryModal from '~/components/modals/CategoryModal';
+import SectionModal from '~/components/modals/SectionModal';
 import { Protected } from '~/shared/ui';
 import { formatCurrencyCompact } from '~/shared/lib/helpers';
 import type { 
@@ -79,6 +82,11 @@ export default function InventoryTrackingTab() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
+  const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(null);
+  const [selectedSectionIdForCreate, setSelectedSectionIdForCreate] = useState<number | null>(null);
 
   // Get locale for date-fns
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -113,8 +121,8 @@ export default function InventoryTrackingTab() {
   };
 
   const handleAddCategory = (sectionId: number) => {
-    // This function can be removed or kept for backward compatibility
-    console.log('Add category for section:', sectionId);
+    setSelectedSectionIdForCreate(sectionId);
+    setIsEditCategoryModalOpen(true);
   };
 
   const handleCreateSuccess = () => {
@@ -125,6 +133,29 @@ export default function InventoryTrackingTab() {
   const handleInvoiceSuccess = () => {
     setIsInvoiceModalOpen(false);
     loadData(); // Reload data after creating invoice
+  };
+
+  const handleEditCategory = (category: ExpenseCategory) => {
+    setSelectedCategory(category);
+    setIsEditCategoryModalOpen(true);
+  };
+
+  const handleEditSection = (section: ExpenseSection) => {
+    setSelectedSection(section);
+    setIsEditSectionModalOpen(true);
+  };
+
+  const handleCategoryUpdated = () => {
+    setIsEditCategoryModalOpen(false);
+    setSelectedCategory(null);
+    setSelectedSectionIdForCreate(null);
+    loadData();
+  };
+
+  const handleSectionUpdated = () => {
+    setIsEditSectionModalOpen(false);
+    setSelectedSection(null);
+    loadData();
   };
 
   // Load all data for the current month
@@ -491,6 +522,18 @@ export default function InventoryTrackingTab() {
                           <div className="flex items-center justify-between w-full">
                             <span className="font-semibold">{tableSection.section.name}</span>
                             <div className="flex items-center space-x-2">
+                              <Protected permission={{ resource: 'categories', action: 'edit' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditSection(tableSection.section);
+                                  }}
+                                  className="p-1 hover:bg-blue-200 rounded transition-colors"
+                                  title={t('expenses.categories.editSection')}
+                                >
+                                  <PencilIcon className="h-4 w-4 text-blue-600" />
+                                </button>
+                              </Protected>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -581,9 +624,20 @@ export default function InventoryTrackingTab() {
                         const totalQty = totalPurchasesQty - totalUsageQty;
 
                         return (
-                          <tr key={`category-${tableCategory.category.id}`} className="hover:bg-gray-50 border-b border-gray-100">
+                          <tr key={`category-${tableCategory.category.id}`} className="group hover:bg-gray-50 border-b border-gray-100">
                             <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
-                              {tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}
+                              <div className="flex items-center justify-between">
+                                <span>{tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}</span>
+                                <Protected permission={{ resource: 'subcategories', action: 'edit' }}>
+                                  <button
+                                    onClick={() => handleEditCategory(tableCategory.category)}
+                                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title={t('expenses.categories.editCategory')}
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                </Protected>
+                              </div>
                             </td>
                             {monthDays.map((day) => {
                               const dateKey = format(day, 'yyyy-MM-dd');
@@ -690,6 +744,37 @@ export default function InventoryTrackingTab() {
           onClose={() => setIsInvoiceModalOpen(false)}
           onSuccess={handleInvoiceSuccess}
           mode="create"
+        />
+      )}
+
+      {/* Category Modal (Create or Edit) */}
+      {isEditCategoryModalOpen && (
+        <CategoryModal
+          isOpen={isEditCategoryModalOpen}
+          onClose={() => {
+            setIsEditCategoryModalOpen(false);
+            setSelectedCategory(null);
+            setSelectedSectionIdForCreate(null);
+          }}
+          mode={selectedCategory ? "edit" : "create"}
+          sectionId={selectedSectionIdForCreate || undefined}
+          category={selectedCategory || undefined}
+          onCategoryAdded={selectedCategory ? undefined : handleCategoryUpdated}
+          onCategoryUpdated={selectedCategory ? handleCategoryUpdated : undefined}
+        />
+      )}
+
+      {/* Edit Section Modal */}
+      {isEditSectionModalOpen && selectedSection && (
+        <SectionModal
+          isOpen={isEditSectionModalOpen}
+          onClose={() => {
+            setIsEditSectionModalOpen(false);
+            setSelectedSection(null);
+          }}
+          mode="edit"
+          section={selectedSection}
+          onSectionUpdated={handleSectionUpdated}
         />
       )}
     </div>
