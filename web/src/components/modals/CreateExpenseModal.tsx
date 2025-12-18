@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
+import { Protected } from '~/shared/ui';
 import AddSectionModal from './AddSectionModal';
 import CategoryModal from './CategoryModal';
 
@@ -137,10 +138,11 @@ export default function CreateExpenseModal({
 
                 <div className="mt-4 space-y-3">
                   {/* Create Section Button */}
-                  <button
-                    onClick={handleCreateSection}
-                    className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
-                  >
+                  <Protected permission={{ resource: 'categories', action: 'create' }}>
+                    <button
+                      onClick={handleCreateSection}
+                      className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+                    >
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200">
                         <PlusIcon className="h-5 w-5 text-blue-600" />
@@ -155,8 +157,10 @@ export default function CreateExpenseModal({
                       </div>
                     </div>
                   </button>
+                  </Protected>
 
                   {/* Create Category - with section selection if multiple sections */}
+                  <Protected permission={{ resource: 'subcategories', action: 'create' }}>
                   {sections.length === 0 ? (
                     <button
                       disabled
@@ -223,6 +227,7 @@ export default function CreateExpenseModal({
                       </div>
                     </div>
                   )}
+                  </Protected>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

@@ -20,6 +20,7 @@ import {
 } from '~/shared/api';
 import CreateExpenseModal from './CreateExpenseModal';
 import { useAppContext } from '~/shared/context/AppContext';
+import { Protected } from '~/shared/ui';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
 import { formatCurrency as formatCurrencyDisplay, formatNumber } from '~/shared/lib/helpers';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
@@ -455,14 +456,19 @@ export default function InvoiceModal({
                         </label>
                         {!isViewing && (
                           <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setIsCreateModalOpen(true)}
-                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
-                            >
-                              <PlusIcon className="h-4 w-4 mr-1" />
-                              {t('expenses.categories.addCategory')}
-                            </button>
+                            <Protected anyOf={[
+                              { resource: 'categories', action: 'create' },
+                              { resource: 'subcategories', action: 'create' }
+                            ]}>
+                              <button
+                                type="button"
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                              >
+                                <PlusIcon className="h-4 w-4 mr-1" />
+                                {t('expenses.categories.addCategory')}
+                              </button>
+                            </Protected>
                             <button
                               type="button"
                               onClick={handleAddLineItem}

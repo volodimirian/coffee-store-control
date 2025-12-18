@@ -397,13 +397,18 @@ export default function InventoryTrackingTab() {
               {t('expenses.overview.addExpense')}
             </button>
           </Protected>
-          <button 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            {t('expenses.modals.createExpense.createButton')}
-          </button>
+          <Protected anyOf={[
+            { resource: 'categories', action: 'create' },
+            { resource: 'subcategories', action: 'create' }
+          ]}>
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              {t('expenses.modals.createExpense.createButton')}
+            </button>
+          </Protected>
         </div>
       </div>
 
