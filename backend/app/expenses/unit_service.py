@@ -349,4 +349,126 @@ class UnitService:
             current_unit_id = getattr(unit, 'base_unit_id')
             
         return True, ""
+
+    @staticmethod
+    async def seed_default_units(
+        session: AsyncSession,
+        business_id: int,
+        language: str = "ru",
+    ) -> List[Unit]:
+        """
+        Create default measurement units for a new business.
+        Creates 5 units with names based on the specified language.
+        
+        Args:
+            session: Database session
+            business_id: ID of the business
+            language: Language code ('ru', 'en', etc.). Defaults to 'ru'.
+        
+        Returns:
+            List of created units.
+        """
+        # Unit definitions by language
+        units_data = {
+            "ru": {
+                "kilogram": {"name": "Килограмм", "symbol": "кг", "desc": "Базовая единица веса"},
+                "gram": {"name": "Грамм", "symbol": "г", "desc": "1 грамм = 0.001 килограмма"},
+                "liter": {"name": "Литр", "symbol": "л", "desc": "Базовая единица объема"},
+                "milliliter": {"name": "Миллилитр", "symbol": "мл", "desc": "1 миллилитр = 0.001 литра"},
+                "piece": {"name": "Штука", "symbol": "шт", "desc": "Единица для подсчета штучных товаров"},
+            },
+            "en": {
+                "kilogram": {"name": "Kilogram", "symbol": "kg", "desc": "Base weight unit"},
+                "gram": {"name": "Gram", "symbol": "g", "desc": "1 gram = 0.001 kilogram"},
+                "liter": {"name": "Liter", "symbol": "L", "desc": "Base volume unit"},
+                "milliliter": {"name": "Milliliter", "symbol": "mL", "desc": "1 milliliter = 0.001 liter"},
+                "piece": {"name": "Piece", "symbol": "pcs", "desc": "Unit for counting items"},
+            },
+        }
+        
+        # Fallback to Russian if language not supported
+        lang_data = units_data.get(language, units_data["ru"])
+        created_units = []
+        
+        # 1. Kilogram (base weight unit)
+        kilogram = Unit(
+            business_id=business_id,
+            name=lang_data["kilogram"]["name"],
+            symbol=lang_data["kilogram"]["symbol"],
+            unit_type="weight",
+            base_unit_id=None,
+            conversion_factor=Decimal("1.0"),
+            description=lang_data["kilogram"]["desc"],
+            is_active=True,
+        )
+        session.add(kilogram)
+        await session.flush()
+        await session.refresh(kilogram)
+        created_units.append(kilogram)
+        
+        # 2. Gram (derived from Kilogram)
+        gram = Unit(
+            business_id=business_id,
+            name=lang_data["gram"]["name"],
+            symbol=lang_data["gram"]["symbol"],
+            unit_type="weight",
+            base_unit_id=kilogram.id,
+            conversion_factor=Decimal("0.001"),
+            description=lang_data["gram"]["desc"],
+            is_active=True,
+        )
+        session.add(gram)
+        await session.flush()
+        await session.refresh(gram)
+        created_units.append(gram)
+        
+        # 3. Liter (base volume unit)
+        liter = Unit(
+            business_id=business_id,
+            name=lang_data["liter"]["name"],
+            symbol=lang_data["liter"]["symbol"],
+            unit_type="volume",
+            base_unit_id=None,
+            conversion_factor=Decimal("1.0"),
+            description=lang_data["liter"]["desc"],
+            is_active=True,
+        )
+        session.add(liter)
+        await session.flush()
+        await session.refresh(liter)
+        created_units.append(liter)
+        
+        # 4. Milliliter (derived from Liter)
+        milliliter = Unit(
+            business_id=business_id,
+            name=lang_data["milliliter"]["name"],
+            symbol=lang_data["milliliter"]["symbol"],
+            unit_type="volume",
+            base_unit_id=liter.id,
+            conversion_factor=Decimal("0.001"),
+            description=lang_data["milliliter"]["desc"],
+            is_active=True,
+        )
+        session.add(milliliter)
+        await session.flush()
+        await session.refresh(milliliter)
+        created_units.append(milliliter)
+        
+        # 5. Piece (count unit)
+        piece = Unit(
+            business_id=business_id,
+            name=lang_data["piece"]["name"],
+            symbol=lang_data["piece"]["symbol"],
+            unit_type="count",
+            base_unit_id=None,
+            conversion_factor=Decimal("1.0"),
+            description=lang_data["piece"]["desc"],
+            is_active=True,
+        )
+        session.add(piece)
+        await session.flush()
+        await session.refresh(piece)
+        created_units.append(piece)
+        
+        return created_units
     

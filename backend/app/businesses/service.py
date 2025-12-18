@@ -19,6 +19,7 @@ from app.businesses.schemas import (
     EmployeeCreateRequest,
     EmployeeOut,
 )
+from app.expenses.unit_service import UnitService
 
 
 class BusinessService:
@@ -54,6 +55,11 @@ class BusinessService:
             updated_at=datetime.utcnow(),
         )
         session.add(user_business)
+        
+        # Seed default measurement units for the new business
+        language = getattr(business_data, 'language', 'ru')
+        await UnitService.seed_default_units(session, db_business.id, language)
+        
         await session.commit()
         
         return db_business

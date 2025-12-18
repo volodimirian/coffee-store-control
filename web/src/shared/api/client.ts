@@ -1,7 +1,8 @@
 import axios, { AxiosError } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { getToken, logout, getRefreshToken, saveToken, hasRefreshToken, saveRefreshToken } from "~/shared/lib/helpers/storageHelpers";
-import type { ApiErrorResponse, TokenResponse } from "./types";
+import type { ApiErrorResponse, TokenResponse } from "~/shared/api/types";
+import i18n from "~/shared/lib/i18n";
 
 // Auto-logout functionality for 401 errors
 let logoutHandler: (() => void) | null = null;
@@ -58,14 +59,21 @@ export class ApiError extends Error {
   }
 }
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and language header
 api.interceptors.request.use((config) => {
+  config.headers = config.headers || {};
+  
+  // Add auth token if available
   const token = getToken();
   if (token) {
-    config.headers = config.headers || {};
     // Add Bearer prefix to the clean token from localStorage
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Add Accept-Language header based on current i18n language
+  const currentLanguage = i18n.language || 'ru';
+  config.headers['Accept-Language'] = currentLanguage;
+  
   return config;
 });
 

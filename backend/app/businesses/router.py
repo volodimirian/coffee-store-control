@@ -2,7 +2,7 @@
 
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_models import User
@@ -41,8 +41,18 @@ async def create_business(
     business_data: BusinessCreate,
     session: AsyncSession = Depends(get_db_dep),
     current_user: User = Depends(get_current_user),
+    accept_language: str = Header(default="ru"),
 ):
     """Create a new business. Current user becomes the owner."""
+    # Use language from body if provided, otherwise from Accept-Language header
+    if business_data.language is None:
+        # Extract primary language from Accept-Language header (e.g., "en-US" -> "en")
+        lang_code = accept_language.split(",")[0].split("-")[0].lower()
+        business_data.language = lang_code if lang_code in ["ru", "en"] else "ru"
+    else:
+        # Validate explicitly provided language
+        business_data.language = business_data.language if business_data.language in ["ru", "en"] else "ru"
+    
     business = await BusinessService.create_business(
         session=session,
         business_data=business_data,
