@@ -13,6 +13,7 @@
     "update": "Обновить",
     "yes": "Да",
     "no": "Нет",
+    "confirmDelete": "Подтвердить удаление",
     "continue": "Продолжить",
     "back": "Назад",
     "brandName": "Business Control",
@@ -742,7 +743,8 @@
         "totalAmount": "Общая сумма",
         "loadDataError": "Ошибка загрузки данных",
         "createError": "Ошибка создания счета",
-        "updateError": "Ошибка обновления счета"
+        "updateError": "Ошибка обновления счета",
+        "deleteError": "Ошибка удаления счета"
       }
     },
     "invoiceCalendar": {

@@ -13,6 +13,7 @@
     "update": "Update",
     "yes": "Yes",
     "no": "No",
+    "confirmDelete": "Confirm delete",
     "continue": "Continue",
     "back": "Back",
     "brandName": "Business Control",
@@ -588,7 +589,8 @@
         "totalAmount": "Total Amount",
         "loadDataError": "Error loading data",
         "createError": "Error creating invoice",
-        "updateError": "Error updating invoice"
+        "updateError": "Error updating invoice",
+        "deleteError": "Error deleting invoice"
       }
     },
     "invoiceCalendar": {
