@@ -226,6 +226,14 @@ export default function InvoiceModal({
     setIsSupplierModalOpen(false);
   };
 
+  // Handler for decimal input fields (quantity, unit_price)
+  const handleDecimalFieldChange = (index: number, field: keyof LineItem, value: string) => {
+    // Allow only empty string or positive decimal numbers
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      handleLineItemChange(index, field, value);
+    }
+  };
+
   const handleLineItemChange = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
@@ -509,10 +517,23 @@ export default function InvoiceModal({
                               </label>
                               <div className="mt-1">
                                 <SearchableSelect
-                                  options={categories.map((cat) => ({ id: cat.id, name: cat.name }))}
-                                  value={categories.find((cat) => cat.id === item.category_id) 
-                                    ? { id: item.category_id, name: categories.find((cat) => cat.id === item.category_id)!.name }
-                                    : null
+                                  options={categories.map((cat) => {
+                                    const section = sections.find((sec) => sec.id === cat.section_id);
+                                    return {
+                                      id: cat.id,
+                                      name: cat.name,
+                                      subtitle: section?.name
+                                    };
+                                  })}
+                                  value={item.category_id ? (() => {
+                                    const category = categories.find((cat) => cat.id === item.category_id);
+                                    const section = sections.find((sec) => sec.id === category?.section_id);
+                                    return category ? {
+                                      id: category.id,
+                                      name: category.name,
+                                      subtitle: section?.name
+                                    } : null;
+                                  })() : null
                                   }
                                   onChange={(selected: SelectOption | null) => 
                                     handleLineItemChange(index, 'category_id', selected ? Number(selected.id) : 0)
@@ -531,10 +552,10 @@ export default function InvoiceModal({
                               </label>
                               <div className="mt-1">
                                 <Input
-                                  type="number"
-                                  step="0.001"
+                                  type="text"
+                                  inputMode="decimal"
                                   value={item.quantity}
-                                  onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'quantity', e.target.value)}
                                   placeholder="0"
                                   disabled={isViewing}
                                 />
@@ -571,10 +592,10 @@ export default function InvoiceModal({
                               </label>
                               <div className="mt-1">
                                 <Input
-                                  type="number"
-                                  step="0.01"
+                                  type="text"
+                                  inputMode="decimal"
                                   value={item.unit_price}
-                                  onChange={(e) => handleLineItemChange(index, 'unit_price', e.target.value)}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'unit_price', e.target.value)}
                                   placeholder="0.00"
                                   disabled={isViewing}
                                 />

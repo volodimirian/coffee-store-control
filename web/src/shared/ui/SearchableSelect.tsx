@@ -36,12 +36,14 @@ export default function SearchableSelect({
   const filteredOptions =
     query === ''
       ? options
-      : options.filter((option) =>
-          option.name
-            .toLowerCase()
-            .replace(/\s+/g, '')
-            .includes(query.toLowerCase().replace(/\s+/g, ''))
-        );
+      : options.filter((option) => {
+          const searchText = query.toLowerCase().replace(/\s+/g, '');
+          const nameMatch = option.name.toLowerCase().replace(/\s+/g, '').includes(searchText);
+          const subtitleMatch = option.subtitle 
+            ? String(option.subtitle).toLowerCase().replace(/\s+/g, '').includes(searchText)
+            : false;
+          return nameMatch || subtitleMatch;
+        });
 
   return (
     <div className={className}>
@@ -94,14 +96,25 @@ export default function SearchableSelect({
                   >
                     {({ selected, active }) => (
                       <>
-                        <span
-                          className={`block ${truncateOptions ? 'truncate' : ''} ${
-                            selected ? 'font-medium' : 'font-normal'
-                          }`}
-                          title={truncateOptions ? option.name : undefined}
-                        >
-                          {option.name}
-                        </span>
+                        <div className="flex flex-col">
+                          <span
+                            className={`block ${truncateOptions ? 'truncate' : ''} ${
+                              selected ? 'font-medium' : 'font-normal'
+                            }`}
+                            title={truncateOptions ? option.name : undefined}
+                          >
+                            {option.name}
+                          </span>
+                          {option.subtitle && (
+                            <span
+                              className={`text-xs ${
+                                active ? 'text-blue-100' : 'text-gray-500'
+                              }`}
+                            >
+                              {option.subtitle}
+                            </span>
+                          )}
+                        </div>
                         {selected ? (
                           <span
                             className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
