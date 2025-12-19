@@ -8,6 +8,7 @@ import {
   type SupplierUpdate, 
   type Supplier 
 } from '~/shared/api';
+import { PhoneInput } from '~/shared/ui';
 
 interface SupplierModalProps {
   isOpen: boolean;
@@ -353,14 +354,12 @@ export default function SupplierModal({
                         <label className="block text-sm font-medium text-gray-700">
                           {t('billing.suppliers.phone')}
                         </label>
-                        <input
-                          type="tel"
+                        <PhoneInput
                           value={formData.contact_info.phone}
-                          onChange={(e) => setFormData(prev => ({ 
+                          onChange={(value) => setFormData(prev => ({ 
                             ...prev, 
-                            contact_info: { ...prev.contact_info, phone: e.target.value }
+                            contact_info: { ...prev.contact_info, phone: value }
                           }))}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                           placeholder={t('billing.suppliers.phonePlaceholder')}
                           disabled={isLoading}
                         />
