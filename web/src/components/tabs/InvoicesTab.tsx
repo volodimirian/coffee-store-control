@@ -215,6 +215,20 @@ export default function InvoicesTab() {
     setIsInvoiceModalOpen(true);
   };
 
+  const handleRowClick = (invoice: Invoice, e: React.MouseEvent) => {
+    // Ignore clicks on buttons (action column)
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // Open invoice based on permissions
+    if (can.edit(permissions, 'invoices')) {
+      handleEditInvoice(invoice);
+    } else if (can.view(permissions, 'invoices')) {
+      handleViewInvoice(invoice);
+    }
+  };
+
   const handleDeleteInvoice = (invoice: Invoice) => {
     setInvoiceToDelete(invoice);
     setIsDeleteModalOpen(true);
@@ -506,7 +520,11 @@ export default function InvoicesTab() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
+                  <tr 
+                    key={invoice.id} 
+                    onClick={(e) => handleRowClick(invoice, e)}
+                    className="hover:bg-gray-100 cursor-pointer transition-colors"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(invoice.invoice_date).toLocaleDateString()}
                     </td>
