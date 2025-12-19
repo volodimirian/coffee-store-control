@@ -617,12 +617,12 @@ export default function InvoiceModal({
                             </div>
 
                             {!isViewing && (
-                              <div className="col-span-1 flex items-end">
+                              <div className="col-span-1 flex items-end justify-center h-full">
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveLineItem(index)}
                                   disabled={lineItems.length === 1}
-                                  className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="p-2 mb-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                   title={t('expenses.invoices.modal.removeItem')}
                                 >
                                   <TrashIcon className="h-5 w-5" />

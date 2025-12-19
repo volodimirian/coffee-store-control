@@ -5,6 +5,7 @@ import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 export interface SelectOption {
   id: string | number;
   name: string;
+  subtitle?: string;
   [key: string]: unknown; // Allow additional properties
 }
 
@@ -40,7 +41,7 @@ export default function SearchableSelect({
           const searchText = query.toLowerCase().replace(/\s+/g, '');
           const nameMatch = option.name.toLowerCase().replace(/\s+/g, '').includes(searchText);
           const subtitleMatch = option.subtitle 
-            ? String(option.subtitle).toLowerCase().replace(/\s+/g, '').includes(searchText)
+            ? option.subtitle.toLowerCase().replace(/\s+/g, '').includes(searchText)
             : false;
           return nameMatch || subtitleMatch;
         });
