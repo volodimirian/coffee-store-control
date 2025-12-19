@@ -19,6 +19,7 @@ import {
   type Unit,
 } from '~/shared/api';
 import CreateExpenseModal from './CreateExpenseModal';
+import SupplierModal from '~/components/modals/SupplierModal';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Protected } from '~/shared/ui';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
@@ -83,6 +84,9 @@ export default function InvoiceModal({
 
   // Create expense modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // Create supplier modal state
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
 
   // Load invoice items when editing
   useEffect(() => {
@@ -215,6 +219,11 @@ export default function InvoiceModal({
   const handleCreateSuccess = async () => {
     await loadDropdownData();
     setIsCreateModalOpen(false);
+  };
+
+  const handleSupplierCreated = async () => {
+    await loadDropdownData();
+    setIsSupplierModalOpen(false);
   };
 
   const handleLineItemChange = (index: number, field: keyof LineItem, value: string | number) => {
@@ -456,6 +465,16 @@ export default function InvoiceModal({
                         </label>
                         {!isViewing && (
                           <div className="flex items-center gap-2">
+                            <Protected permission={{ resource: 'suppliers', action: 'create' }}>
+                              <button
+                                type="button"
+                                onClick={() => setIsSupplierModalOpen(true)}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                              >
+                                <PlusIcon className="h-4 w-4 mr-1" />
+                                {t('billing.suppliers.create')}
+                              </button>
+                            </Protected>
                             <Protected anyOf={[
                               { resource: 'categories', action: 'create' },
                               { resource: 'subcategories', action: 'create' }
@@ -655,6 +674,14 @@ export default function InvoiceModal({
       onClose={() => setIsCreateModalOpen(false)}
       onSuccess={handleCreateSuccess}
       sections={sections}
+    />
+
+    {/* Create Supplier Modal */}
+    <SupplierModal
+      isOpen={isSupplierModalOpen}
+      onClose={() => setIsSupplierModalOpen(false)}
+      onSave={handleSupplierCreated}
+      businessId={currentLocation?.id}
     />
     </>
   );
