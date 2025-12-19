@@ -958,6 +958,7 @@
       "deleteWithoutInvoicesMessage": "This supplier has no invoices. The supplier will be permanently deleted without possibility of recovery.",
       "basicInfo": "Basic Information",
       "contactInfo": "Contact Information",
+      "additionalInfo": "Additional Information",
       "isActive": "Active supplier",
       "validation": {
         "nameRequired": "Supplier name is required",
