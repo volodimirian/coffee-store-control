@@ -648,7 +648,6 @@ export default function InvoiceModal({
                                   searchPlaceholder={t('expenses.invoices.modal.searchUnit')}
                                   noResultsText={t('expenses.invoices.modal.noUnitsFound')}
                                   disabled={isViewing || loadingData || !item.category_id}
-                                  truncateOptions={false}
                                 />
                               </div>
                             </div>

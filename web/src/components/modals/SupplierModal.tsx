@@ -94,7 +94,7 @@ export default function SupplierModal({
       newErrors.tax_id = t('billing.suppliers.validation.taxIdRequired');
     }
 
-    if (formData.payment_terms_days < 1 || formData.payment_terms_days > 365) {
+    if (formData.payment_terms_days < 0 || formData.payment_terms_days > 365) {
       newErrors.payment_terms_days = t('billing.suppliers.validation.paymentTermsRange');
     }
 
@@ -292,12 +292,12 @@ export default function SupplierModal({
                       <div className="mt-1 flex items-center">
                         <input
                           type="number"
-                          min="1"
+                          min="0"
                           max="365"
                           value={formData.payment_terms_days}
                           onChange={(e) => setFormData(prev => ({ 
                             ...prev, 
-                            payment_terms_days: parseInt(e.target.value) || 1 
+                            payment_terms_days: parseInt(e.target.value) || 0 
                           }))}
                           className={`block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
                             errors.payment_terms_days ? 'border-red-300' : ''
