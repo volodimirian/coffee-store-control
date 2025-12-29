@@ -445,7 +445,7 @@ export default function InvoiceModal({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-4xl transform rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
-                <div className="p-6 max-h-[90vh]">
+                <div className="p-6">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
                     <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
@@ -569,7 +569,8 @@ export default function InvoiceModal({
                         )}
                       </div>
 
-                      <div className="space-y-3">
+                      {/* Scrollable Line Items Container */}
+                      <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2">
                         {lineItems.map((item, index) => (
                           <div key={index} className="grid grid-cols-12 gap-2 items-start p-3 border rounded-lg bg-gray-50">
                             <div className="col-span-3">
