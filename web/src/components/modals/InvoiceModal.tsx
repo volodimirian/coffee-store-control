@@ -109,10 +109,10 @@ export default function InvoiceModal({
               items.map((item) => ({
                 id: item.id,
                 category_id: item.category_id,
-                quantity: parseFloat(item.quantity).toFixed(3), // Ensure max 3 decimals
+                quantity: String(parseFloat(item.quantity)), // Keep natural decimal display
                 unit_id: item.unit_id,
-                unit_price: parseFloat(item.unit_price).toFixed(2), // Ensure max 2 decimals
-                total_price: parseFloat(item.total_price).toFixed(2), // Ensure max 2 decimals
+                unit_price: String(parseFloat(item.unit_price)), // Keep natural decimal display
+                total_price: String(parseFloat(item.total_price)), // Keep natural decimal display
                 notes: item.notes,
               }))
             );
