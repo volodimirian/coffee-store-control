@@ -109,10 +109,10 @@ export default function InvoiceModal({
               items.map((item) => ({
                 id: item.id,
                 category_id: item.category_id,
-                quantity: item.quantity,
+                quantity: parseFloat(item.quantity).toFixed(3), // Ensure max 3 decimals
                 unit_id: item.unit_id,
-                unit_price: item.unit_price,
-                total_price: item.total_price,
+                unit_price: parseFloat(item.unit_price).toFixed(2), // Ensure max 2 decimals
+                total_price: parseFloat(item.total_price).toFixed(2), // Ensure max 2 decimals
                 notes: item.notes,
               }))
             );
@@ -230,11 +230,25 @@ export default function InvoiceModal({
   };
 
   // Handler for decimal input fields (quantity, unit_price)
-  const handleDecimalFieldChange = (index: number, field: keyof LineItem, value: string) => {
+  const handleDecimalFieldChange = (index: number, field: keyof LineItem, value: string, maxDecimals: number = 2) => {
     // Allow only empty string or positive decimal numbers
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+    if (value === '') {
       handleLineItemChange(index, field, value);
+      return;
     }
+    
+    // Check if it matches decimal pattern
+    if (!/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    // Check decimal places limit
+    const parts = value.split('.');
+    if (parts.length === 2 && parts[1].length > maxDecimals) {
+      return; // Don't allow more decimal places than limit
+    }
+    
+    handleLineItemChange(index, field, value);
   };
 
   const handleLineItemChange = (index: number, field: keyof LineItem, value: string | number) => {
@@ -245,7 +259,19 @@ export default function InvoiceModal({
     if (field === 'quantity' || field === 'unit_price') {
       const quantity = parseFloat(field === 'quantity' ? (value as string) : updated[index].quantity) || 0;
       const unitPrice = parseFloat(field === 'unit_price' ? (value as string) : updated[index].unit_price) || 0;
+      // Always keep 2 decimal places for total_price
       updated[index].total_price = (quantity * unitPrice).toFixed(2);
+    }
+
+    // Auto-calculate unit_price when total_price changes
+    if (field === 'total_price') {
+      const quantity = parseFloat(updated[index].quantity) || 0;
+      const totalPrice = parseFloat(value as string) || 0;
+      if (quantity > 0) {
+        // Always keep 2 decimal places for unit_price
+        const calculatedPrice = totalPrice / quantity;
+        updated[index].unit_price = calculatedPrice.toFixed(2);
+      }
     }
 
     setLineItems(updated);
@@ -444,9 +470,19 @@ export default function InvoiceModal({
                         </label>
                         <div className="mt-1">
                           <SearchableSelect
-                            options={suppliers.map((s) => ({ id: s.id, name: s.name }))}
+                            options={suppliers.map((s) => ({ 
+                              id: s.id, 
+                              name: s.name,
+                              subtitle: s.tax_id ? `ИНН: ${s.tax_id}` : undefined
+                            }))}
                             value={suppliers.find((s) => s.id === supplierId)
-                              ? { id: supplierId!, name: suppliers.find((s) => s.id === supplierId)!.name }
+                              ? { 
+                                  id: supplierId!, 
+                                  name: suppliers.find((s) => s.id === supplierId)!.name,
+                                  subtitle: suppliers.find((s) => s.id === supplierId)!.tax_id 
+                                    ? `ИНН: ${suppliers.find((s) => s.id === supplierId)!.tax_id}` 
+                                    : undefined
+                                }
                               : null
                             }
                             onChange={(selected: SelectOption | null) =>
@@ -580,7 +616,7 @@ export default function InvoiceModal({
                                   type="text"
                                   inputMode="decimal"
                                   value={item.quantity}
-                                  onChange={(e) => handleDecimalFieldChange(index, 'quantity', e.target.value)}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'quantity', e.target.value, 3)}
                                   placeholder="0"
                                   disabled={isViewing}
                                 />
@@ -620,7 +656,7 @@ export default function InvoiceModal({
                                   type="text"
                                   inputMode="decimal"
                                   value={item.unit_price}
-                                  onChange={(e) => handleDecimalFieldChange(index, 'unit_price', e.target.value)}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'unit_price', e.target.value, 2)}
                                   placeholder="0.00"
                                   disabled={isViewing}
                                 />
@@ -634,9 +670,12 @@ export default function InvoiceModal({
                               <div className="mt-1">
                                 <Input
                                   type="text"
-                                  value={formatCurrencyDisplay(item.total_price)}
-                                  disabled
-                                  className="bg-gray-100 font-medium text-gray-900"
+                                  inputMode="decimal"
+                                  value={item.total_price}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'total_price', e.target.value, 2)}
+                                  placeholder="0.00"
+                                  disabled={isViewing}
+                                  className="font-medium text-gray-900"
                                 />
                               </div>
                             </div>
