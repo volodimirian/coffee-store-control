@@ -242,6 +242,11 @@ export default function InvoiceModal({
       return;
     }
     
+    // Prevent leading zeros (except for "0" or "0.X")
+    if (value.length > 1 && value[0] === '0' && value[1] !== '.') {
+      return;
+    }
+    
     // Check decimal places limit
     const parts = value.split('.');
     if (parts.length === 2 && parts[1].length > maxDecimals) {
