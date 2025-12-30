@@ -8,7 +8,7 @@ import { useAppContext } from '~/shared/context/AppContext';
 interface UnitModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (createdUnit?: Unit) => void;
   unit?: Unit | null; // If provided, we're editing; otherwise, creating
 }
 
@@ -97,6 +97,8 @@ export default function UnitModal({
     setError(null);
 
     try {
+      let createdOrUpdatedUnit: Unit | undefined;
+      
       if (isEditing && unit) {
         // Update existing unit
         const updateData: UnitUpdate = {
@@ -109,7 +111,7 @@ export default function UnitModal({
           is_active: isActive,
         };
         
-        await unitsApi.update(unit.id, updateData);
+        createdOrUpdatedUnit = await unitsApi.update(unit.id, updateData);
       } else {
         // Create new unit
         const createData: UnitCreate = {
@@ -123,10 +125,10 @@ export default function UnitModal({
           is_active: true,
         };
         
-        await unitsApi.create(createData);
+        createdOrUpdatedUnit = await unitsApi.create(createData);
       }
 
-      onSuccess();
+      onSuccess(createdOrUpdatedUnit);
       onClose();
     } catch (err: unknown) {
       console.error('Failed to save unit:', err);

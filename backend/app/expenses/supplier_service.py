@@ -23,7 +23,9 @@ class SupplierService:
         """Create a new supplier."""
         db_supplier = Supplier(
             name=supplier_data.name,
+            tax_id=supplier_data.tax_id,
             contact_info=supplier_data.contact_info,
+            payment_terms_days=supplier_data.payment_terms_days,
             business_id=supplier_data.business_id,
             created_by=created_by_user_id,
             is_active=supplier_data.is_active,
@@ -92,6 +94,17 @@ class SupplierService:
 
         setattr(supplier, 'is_active', False)
         setattr(supplier, 'updated_at', datetime.utcnow())
+        await session.flush()
+        return True
+
+    @staticmethod
+    async def hard_delete_supplier(session: AsyncSession, supplier_id: int) -> bool:
+        """Permanently delete supplier from database."""
+        supplier = await SupplierService.get_supplier_by_id(session, supplier_id)
+        if not supplier:
+            return False
+
+        await session.delete(supplier)
         await session.flush()
         return True
 

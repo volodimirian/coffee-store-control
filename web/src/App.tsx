@@ -9,13 +9,20 @@ import Orders from "~/pages/Orders";
 import Analytics from "~/pages/Analytics";
 import Settings from "~/pages/Settings";
 import Locations from "~/pages/Locations";
+import Employees from "~/pages/Employees";
 import Expenses from "~/pages/Expenses";
+import Billing from "~/pages/Billing";
 import Overview from "~/pages/expenses/Overview";
 import InventoryTracking from "~/pages/expenses/InventoryTracking";
 import Categories from "~/pages/expenses/Categories";
 import Units from "~/pages/expenses/Units";
 import Invoices from "~/pages/expenses/Invoices";
 import Reports from "~/pages/expenses/Reports";
+import BillingInvoices from "~/pages/billing/Invoices";
+import BillingInvoiceCalendar from "~/pages/billing/InvoiceCalendar";
+import BillingSuppliers from "~/pages/billing/Suppliers";
+import BillingCategories from "~/pages/billing/Categories";
+import BillingUnits from "~/pages/billing/Units";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
 import Register from "~/pages/Register";
@@ -25,7 +32,7 @@ import { fetchMe } from "~/shared/api/authentication";
 import { hasToken } from "~/shared/lib/helpers/storageHelpers";
 
 export default function App() {
-  const { setUser, setIsInitialized } = useAppContext();
+  const { setUser } = useAppContext();
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -38,17 +45,14 @@ export default function App() {
       fetchMe()
         .then(user => {
           setUser(user);
-          setIsInitialized(true);
         })
         .catch(() => {
           setUser(null);
-          setIsInitialized(true);
         });
     } else {
       setUser(null);
-      setIsInitialized(true);
     }
-  }, [setUser, setIsInitialized]);
+  }, [setUser]);
 
   return (
     <BrowserRouter>
@@ -67,6 +71,7 @@ export default function App() {
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
             <Route path="locations" element={<Locations />} />
+            <Route path="employees" element={<Employees />} />
             
             {/* Expenses with nested routes */}
             <Route path="expenses" element={<Expenses />}>
@@ -74,8 +79,17 @@ export default function App() {
               <Route path="inventory-tracking" element={<InventoryTracking />} />
               <Route path="categories" element={<Categories />} />
               <Route path="units" element={<Units />} />
-              <Route path="invoices" element={<Invoices />} />
               <Route path="reports" element={<Reports />} />
+            </Route>
+            
+            {/* Billing with nested routes */}
+            <Route path="billing" element={<Billing />}>
+              <Route index element={<BillingInvoices />} />
+              <Route path="invoices" element={<Invoices />} />
+              <Route path="invoice-calendar" element={<BillingInvoiceCalendar />} />
+              <Route path="categories" element={<BillingCategories />} />
+              <Route path="units" element={<BillingUnits />} />
+              <Route path="suppliers" element={<BillingSuppliers />} />
             </Route>
           </Route>
 

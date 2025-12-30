@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,8 @@ import {
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { groupUnits } from '~/shared/lib/helpers/unitHelpers';
+import { formatNumber } from '~/shared/lib/helpers';
+import UnitModal from '~/components/modals/UnitModal';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -44,6 +46,7 @@ export default function CategoryModal({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [units, setUnits] = useState<Unit[]>([]);
+  const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const { currentLocation } = useAppContext();
 
   const isEditMode = mode === 'edit';
@@ -70,30 +73,40 @@ export default function CategoryModal({
   }, [category, isEditMode, isOpen]);
 
   // Load units when modal opens
+  const loadUnits = useCallback(async () => {
+    if (!currentLocation?.id) return;
+
+    setIsLoadingUnits(true);
+    try {
+      const response = await unitsApi.list({
+        business_id: currentLocation.id,
+        is_active: true,
+        limit: 100,
+      });
+      setUnits(response.units);
+    } catch (err) {
+      console.error('Error loading units:', err);
+      setError(t(`expenses.modals.${modalKey}.unitsLoadError`));
+    } finally {
+      setIsLoadingUnits(false);
+    }
+  }, [currentLocation?.id, modalKey, t]);
+
   useEffect(() => {
-    const loadUnits = async () => {
-      if (!currentLocation?.id) return;
-
-      setIsLoadingUnits(true);
-      try {
-        const response = await unitsApi.list({
-          business_id: currentLocation.id,
-          is_active: true,
-          limit: 100,
-        });
-        setUnits(response.units);
-      } catch (err) {
-        console.error('Error loading units:', err);
-        setError(t(`expenses.modals.${modalKey}.unitsLoadError`));
-      } finally {
-        setIsLoadingUnits(false);
-      }
-    };
-
     if (isOpen && currentLocation?.id) {
       loadUnits();
     }
-  }, [isOpen, currentLocation?.id, t, modalKey]);
+  }, [isOpen, currentLocation?.id, loadUnits]);
+
+  const handleUnitCreated = async (createdUnit?: Unit) => {
+    setIsUnitModalOpen(false);
+    await loadUnits(); // Reload units list
+    
+    // Auto-select the newly created unit
+    if (createdUnit?.id) {
+      setFormData(prev => ({ ...prev, default_unit_id: createdUnit.id }));
+    }
+  };
 
   const handleClose = () => {
     setFormData({ name: '', default_unit_id: 0, order_index: 0, is_active: true });
@@ -208,7 +221,7 @@ export default function CategoryModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/25" />
+          <div className="fixed inset-0 bg-black/50" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -269,9 +282,19 @@ export default function CategoryModal({
 
                   {/* Default Unit */}
                   <div>
-                    <label htmlFor="default_unit_id" className="block text-sm font-medium text-gray-700">
-                      {t(`expenses.modals.${modalKey}.unitLabel`)} <span className="text-red-500">*</span>
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="default_unit_id" className="block text-sm font-medium text-gray-700">
+                        {t(`expenses.modals.${modalKey}.unitLabel`)} <span className="text-red-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setIsUnitModalOpen(true)}
+                        className="flex items-center text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        <PlusIcon className="h-4 w-4 mr-1" />
+                        {t('expenses.units.addUnit')}
+                      </button>
+                    </div>
                     <div className="mt-1">
                       <select
                         id="default_unit_id"
@@ -290,7 +313,7 @@ export default function CategoryModal({
                             </option>
                             {derived.map((derivedUnit) => (
                               <option key={derivedUnit.id} value={derivedUnit.id}>
-                                ↳ {derivedUnit.name} ({derivedUnit.symbol}) = {derivedUnit.conversion_factor} {baseUnit.symbol}
+                                ↳ {derivedUnit.name} ({derivedUnit.symbol}) = {formatNumber(derivedUnit.conversion_factor)} {baseUnit.symbol}
                               </option>
                             ))}
                           </optgroup>
@@ -392,6 +415,15 @@ export default function CategoryModal({
           </div>
         </div>
       </Dialog>
+
+      {/* Unit Creation Modal */}
+      {isUnitModalOpen && (
+        <UnitModal
+          isOpen={isUnitModalOpen}
+          onClose={() => setIsUnitModalOpen(false)}
+          onSuccess={handleUnitCreated}
+        />
+      )}
     </Transition>
   );
 }

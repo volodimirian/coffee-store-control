@@ -266,6 +266,43 @@ class InvoiceService:
         result = await session.execute(query)
         return result.scalar() or Decimal("0")
 
+    @staticmethod
+    async def update_overdue_statuses(session: AsyncSession, business_id: Optional[int] = None) -> int:
+        """
+        Update overdue statuses for pending invoices based on supplier payment terms.
+        
+        Args:
+            session: Database session
+            business_id: Optional business ID to filter invoices
+            
+        Returns:
+            Number of invoices updated to overdue status
+        """
+        from sqlalchemy import text
+        
+        # Build the WHERE clause
+        where_conditions = ["i.paid_status = 'pending'"]
+        if business_id:
+            where_conditions.append(f"i.business_id = {business_id}")
+        
+        where_clause = " AND ".join(where_conditions)
+        
+        # Update invoices to overdue status where payment is past due
+        query = text(f"""
+            UPDATE invoices i
+            SET paid_status = 'overdue', updated_at = NOW()
+            FROM suppliers s
+            WHERE i.supplier_id = s.id
+            AND {where_clause}
+            AND CURRENT_DATE > (i.invoice_date::date + INTERVAL '1 day' * s.payment_terms_days)
+        """)
+        
+        result = await session.execute(query)
+        await session.commit()
+        
+        # Return number of affected rows
+        return getattr(result, 'rowcount', 0)
+
 
 class InvoiceItemService:
     """Service class for invoice item operations."""

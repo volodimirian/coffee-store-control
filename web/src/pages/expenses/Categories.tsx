@@ -1,4 +1,4 @@
-import CategoriesTab from '~/components/expenses/tabs/CategoriesTab';
+import CategoriesTab from '~/components/tabs/CategoriesTab';
 
 export default function ExpensesCategories() {
   return <CategoriesTab />;

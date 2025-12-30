@@ -15,7 +15,7 @@ class BusinessBase(BaseModel):
 
 class BusinessCreate(BusinessBase):
     """Schema for creating a new business."""
-    pass
+    language: Optional[str] = None  # Language for default units (ru, en, etc.). If None, will use Accept-Language header
 
 
 class BusinessUpdate(BaseModel):
@@ -93,4 +93,75 @@ class BusinessMembersOut(BaseModel):
     """Schema for business members list."""
     members: list[BusinessMemberOut]
     total: int
+
+
+class EmployeeCreateRequest(BaseModel):
+    """Schema for creating new employee and adding to business."""
+    email: str
+    username: str
+    password: str
+    business_id: int
+    role_in_business: str = "employee"
+
+
+class PermissionOut(BaseModel):
+    """Schema for permission output."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    name: str
+    description: Optional[str] = None
+    resource: str
+    action: str
+    is_active: bool
+
+
+class EmployeeOut(BusinessMemberOut):
+    """Schema for employee information with permissions."""
+    permissions: list[PermissionOut] = []  # List of permission objects with resource info
+
+
+class OwnerEmployeesOut(BaseModel):
+    """Schema for listing all employees created by owner."""
+    employees: list[EmployeeOut]
+    total: int
+
+
+class PermissionGrantRequest(BaseModel):
+    """Schema for granting permissions to a single user."""
+    permission_names: list[str]  # Can grant multiple permissions at once
+    business_id: Optional[int] = None  # None for global permissions
+
+
+class PermissionRevokeRequest(BaseModel):
+    """Schema for revoking permissions from a single user."""
+    permission_names: list[str]  # Can revoke multiple permissions at once
+    business_id: Optional[int] = None
+
+
+class PermissionBatchRequest(BaseModel):
+    """Schema for batch permission operations on multiple users."""
+    user_ids: list[int]  # Multiple users
+    permission_names: list[str]  # Multiple permissions
+    business_id: Optional[int] = None
+
+
+class UserPermissionDetailOut(BaseModel):
+    """Schema for detailed user permission information."""
+    permission_name: str
+    resource: str  # Resource the permission applies to (users, business, categories, etc.)
+    action: str  # Action type (view, create, edit, delete, etc.)
+    has_permission: bool
+    source: str  # "role" or "user" or "both"
+    is_explicitly_granted: bool  # True if granted via UserPermission
+    is_explicitly_revoked: bool  # True if revoked via UserPermission (is_active=False)
+    business_id: Optional[int] = None
+
+
+class UserPermissionsDetailOut(BaseModel):
+    """Schema for user's complete permission details."""
+    user_id: int
+    business_id: Optional[int] = None
+    permissions: list[UserPermissionDetailOut]
+    
     

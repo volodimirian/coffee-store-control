@@ -7,10 +7,16 @@ interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  type: 'section' | 'category' | 'unit' | 'invoice';
+  // Option 1: Use predefined type with auto-generated translations
+  type?: 'section' | 'category' | 'unit' | 'invoice' | 'employee' | 'location';
+  // Option 2: Use custom title and message (overrides type-based translations)
+  title?: string;
+  message?: string;
   itemName?: string;
   isLoading?: boolean;
+  isRevocable?: boolean;
   additionalInfo?: string; // Additional warning or info message
+  confirmButtonText?: string; // Custom confirm button text
 }
 
 export default function ConfirmDeleteModal({
@@ -18,9 +24,13 @@ export default function ConfirmDeleteModal({
   onClose,
   onConfirm,
   type,
+  title,
+  message,
   itemName,
   isLoading = false,
+  isRevocable = false,
   additionalInfo,
+  confirmButtonText,
 }: ConfirmDeleteModalProps) {
   const { t } = useTranslation();
 
@@ -28,9 +38,22 @@ export default function ConfirmDeleteModal({
     onConfirm();
   };
 
-  const titleKey = `expenses.modals.confirmDelete.${type}.title`;
-  const messageKey = `expenses.modals.confirmDelete.${type}.message`;
-  const confirmButtonKey = `expenses.modals.confirmDelete.${type}.confirmButton`;
+  // Generate title and message based on type or use custom ones
+  let modalTitle: string;
+  let modalMessage: string;
+  let modalConfirmButtonText: string;
+
+  if (type && !title && !message) {
+    // Use type-based translations
+    modalTitle = t(`expenses.modals.confirmDelete.${type}.title`);
+    modalMessage = t(`expenses.modals.confirmDelete.${type}.message`, { name: itemName });
+    modalConfirmButtonText = confirmButtonText || t(`expenses.modals.confirmDelete.${type}.confirmButton`);
+  } else {
+    // Use custom title/message
+    modalTitle = title || t('common.confirmDeletion');
+    modalMessage = message || t('common.confirmDeletionMessage');
+    modalConfirmButtonText = confirmButtonText || t('common.delete');
+  }
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -68,22 +91,34 @@ export default function ConfirmDeleteModal({
                   <div className="flex-1">
                     {/* Title */}
                     <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-2">
-                      {t(titleKey)}
+                      {modalTitle}
                     </Dialog.Title>
                     
                     {/* Message */}
                     <div className="text-sm text-gray-500 mb-4">
                       <p>
-                        {t(messageKey, { name: itemName })}
+                        {modalMessage}
                       </p>
+                      
+                      {/* Item name display (when provided and not already in message) */}
+                      {itemName && (
+                        <div className="bg-gray-50 rounded-md p-3 mt-2 mb-2">
+                          <p className="text-sm font-medium text-gray-900">
+                            {itemName}
+                          </p>
+                        </div>
+                      )}
+                      
                       {additionalInfo && (
                         <p className="mt-2 text-sm font-medium text-amber-700 bg-amber-50 p-2 rounded">
                           {additionalInfo}
                         </p>
                       )}
-                      <p className="mt-2 text-xs text-red-600">
-                        {t('common.actionCannotBeUndone')}
-                      </p>
+                      {!isRevocable && (
+                        <p className="mt-2 text-xs text-red-600">
+                          {t('common.actionCannotBeUndone')}
+                        </p>
+                      )}
                     </div>
                     
                     {/* Buttons */}
@@ -113,7 +148,7 @@ export default function ConfirmDeleteModal({
                         ) : (
                           <>
                             <TrashIcon className="h-4 w-4 mr-2" />
-                            {t(confirmButtonKey)}
+                            {modalConfirmButtonText}
                           </>
                         )}
                       </button>

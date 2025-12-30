@@ -39,6 +39,23 @@ export type ErrorCode =
   | 'SUPPLIERS_ONLY'
   | 'ADMIN_ONLY'
   
+  // Business & Employees
+  | 'BUSINESS_NOT_FOUND'
+  | 'BUSINESS_ACCESS_DENIED'
+  | 'BUSINESS_ID_MISMATCH'
+  | 'USER_ALREADY_BUSINESS_MEMBER'
+  | 'CANNOT_REMOVE_BUSINESS_OWNER'
+  | 'ONLY_OWNER_CAN_DELETE'
+  | 'ONLY_OWNER_CAN_RESTORE'
+  | 'BUSINESS_OPERATION_FAILED'
+  | 'EMPLOYEE_CREATION_FAILED'
+  | 'EMPLOYEE_ROLE_NOT_FOUND'
+  | 'PERMISSION_NOT_FOUND'
+  | 'USER_NOT_BUSINESS_MEMBER'
+  | 'INSUFFICIENT_PERMISSIONS'
+  | 'ONLY_OWNER_CAN_CREATE_EMPLOYEES'
+  | 'ONLY_OWNER_CAN_MANAGE_PERMISSIONS'
+  
   // Validation
   | 'VALIDATION_ERROR'
   | 'REQUIRED_FIELD'
@@ -48,7 +65,14 @@ export type ErrorCode =
   | 'INTERNAL_ERROR'
   | 'NOT_FOUND'
   | 'CONFLICT'
-  | 'BAD_REQUEST';
+  | 'BAD_REQUEST'
+  
+  // Categories & Products
+  | 'CATEGORY_NOT_FOUND'
+  | 'SUBCATEGORY_NOT_FOUND'
+  | 'PRODUCT_NOT_FOUND'
+  | 'CATEGORY_NAME_EXISTS'
+  | 'SUBCATEGORY_NAME_EXISTS';
 
 // ============ User & Auth Types ============
 
@@ -76,10 +100,12 @@ export interface RegisterRequest {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember_me?: boolean;
 }
 
 export interface TokenResponse {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 
@@ -234,9 +260,11 @@ export interface SupplierContactInfo {
 export interface Supplier {
   id: number;
   name: string;
+  tax_id: string; // Tax identification number (ИНН)
   business_id: number;
   created_by: number;
   contact_info?: SupplierContactInfo;
+  payment_terms_days: number; // Payment due days after invoice date
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -244,14 +272,18 @@ export interface Supplier {
 
 export interface SupplierCreate {
   name: string;
+  tax_id: string; // Required tax identification number
   business_id: number;
   contact_info?: SupplierContactInfo;
+  payment_terms_days?: number; // Default will be 14 days
   is_active?: boolean;
 }
 
 export interface SupplierUpdate {
   name?: string;
+  tax_id?: string;
   contact_info?: SupplierContactInfo;
+  payment_terms_days?: number;
   is_active?: boolean;
 }
 
@@ -262,7 +294,7 @@ export interface SupplierListResponse {
 
 // ============ Invoice & InvoiceItem Types ============
 
-export type InvoiceStatus = 'pending' | 'paid' | 'cancelled';
+export type InvoiceStatus = 'pending' | 'paid' | 'cancelled' | 'overdue';
 
 export interface Invoice {
   id: number;
@@ -316,6 +348,13 @@ export interface InvoiceItem {
   notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface InvoiceItemWithConversion extends InvoiceItem {
+  converted_quantity?: string; // Decimal as string
+  original_unit_id?: number;
+  original_quantity?: string; // Decimal as string
+  invoice_number?: string;
 }
 
 export interface InvoiceItemCreate {

@@ -5,15 +5,20 @@ import {
   expenseSectionsApi,
   expenseCategoriesApi,
   monthPeriodsApi,
+  unitsApi,
   type ExpenseSection,
   type ExpenseCategory,
   type MonthPeriod,
+  type Unit,
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers/storageHelpers';
-import SectionModal from '~/components/expenses/modals/SectionModal';
-import CategoryModal from '~/components/expenses/modals/CategoryModal';
-import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { can } from '~/shared/utils/permissions';
+import { Protected } from '~/shared/ui';
+import SectionModal from '~/components/modals/SectionModal';
+import CategoryModal from '~/components/modals/CategoryModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
 
 interface SectionWithCategories extends ExpenseSection {
   categories: ExpenseCategory[];
@@ -31,6 +36,7 @@ interface SectionCardProps {
   onDeleteCategory: (categoryId: number, sectionId: number) => void;
   onToggleCategoryStatus: (categoryId: number, isActive: boolean) => void;
   isActive: boolean;
+  getUnitSymbol: (unitId: number) => string;
   t: (key: string, options?: Record<string, unknown>) => string;
 }
 
@@ -45,6 +51,7 @@ function SectionCard({
   onDeleteCategory,
   onToggleCategoryStatus,
   isActive,
+  getUnitSymbol,
   t
 }: SectionCardProps) {
   return (
@@ -68,47 +75,55 @@ function SectionCard({
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            {isActive ? (
+            <Protected permission={{ resource: 'categories', action: 'activate_deactivate' }}>
+              {isActive ? (
+                <button
+                  onClick={() => onToggleSectionStatus(section.id, true)}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
+                  title={t('expenses.categories.deactivateSection')}
+                >
+                  <EyeSlashIcon className="h-3 w-3 mr-1" />
+                  {t('expenses.categories.deactivate')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => onToggleSectionStatus(section.id, false)}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
+                  title={t('expenses.categories.activateSection')}
+                >
+                  <EyeIcon className="h-3 w-3 mr-1" />
+                  {t('expenses.categories.activate')}
+                </button>
+              )}
+            </Protected>
+            <Protected permission={{ resource: 'subcategories', action: 'create' }}>
               <button
-                onClick={() => onToggleSectionStatus(section.id, true)}
-                className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
-                title={t('expenses.categories.deactivateSection')}
+                onClick={() => onAddCategory(section.id)}
+                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
               >
-                <EyeSlashIcon className="h-3 w-3 mr-1" />
-                {t('expenses.categories.deactivate')}
+                <PlusIcon className="h-3 w-3 mr-1" />
+                {t('expenses.categories.addCategory')}
               </button>
-            ) : (
-              <button
-                onClick={() => onToggleSectionStatus(section.id, false)}
-                className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
-                title={t('expenses.categories.activateSection')}
-              >
-                <EyeIcon className="h-3 w-3 mr-1" />
-                {t('expenses.categories.activate')}
-              </button>
-            )}
-            <button
-              onClick={() => onAddCategory(section.id)}
-              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
-            >
-              <PlusIcon className="h-3 w-3 mr-1" />
-              {t('expenses.categories.addCategory')}
-            </button>
+            </Protected>
             {isActive && (
-              <button 
-                onClick={() => onEditSection(section)}
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
-                title={t('expenses.categories.editSection')}
-              >
-                <PencilIcon className="h-4 w-4" />
-              </button>
+              <Protected permission={{ resource: 'categories', action: 'edit' }}>
+                <button 
+                  onClick={() => onEditSection(section)}
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                  title={t('expenses.categories.editSection')}
+                >
+                  <PencilIcon className="h-4 w-4" />
+                </button>
+              </Protected>
             )}
-            <button 
-              onClick={() => onDeleteSection(section.id)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
+            <Protected permission={{ resource: 'categories', action: 'delete' }}>
+              <button 
+                onClick={() => onDeleteSection(section.id)}
+                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            </Protected>
           </div>
         </div>
       </div>
@@ -130,35 +145,46 @@ function SectionCard({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        {category.name}
-                      </h4>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          {category.name}
+                        </h4>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          {getUnitSymbol(category.default_unit_id)}
+                        </span>
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
                         {t('common.order')}: {category.order_index}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => onToggleCategoryStatus(category.id, true)}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
-                        title={t('expenses.categories.deactivate')}
-                      >
-                        <EyeSlashIcon className="h-3 w-3 mr-1" />
-                        {t('expenses.categories.deactivate')}
-                      </button>
-                      <button 
-                        onClick={() => onEditCategory(category)}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                        title={t('expenses.categories.editCategory')}
-                      >
-                        <PencilIcon className="h-3 w-3" />
-                      </button>
-                      <button 
-                        onClick={() => onDeleteCategory(category.id, section.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <TrashIcon className="h-3 w-3" />
-                      </button>
+                      <Protected permission={{ resource: 'subcategories', action: 'activate_deactivate' }}>
+                        <button
+                          onClick={() => onToggleCategoryStatus(category.id, true)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-md transition-colors"
+                          title={t('expenses.categories.deactivate')}
+                        >
+                          <EyeSlashIcon className="h-3 w-3 mr-1" />
+                          {t('expenses.categories.deactivate')}
+                        </button>
+                      </Protected>
+                      <Protected permission={{ resource: 'subcategories', action: 'edit' }}>
+                        <button 
+                          onClick={() => onEditCategory(category)}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                          title={t('expenses.categories.editCategory')}
+                        >
+                          <PencilIcon className="h-3 w-3" />
+                        </button>
+                      </Protected>
+                      <Protected permission={{ resource: 'subcategories', action: 'delete' }}>
+                        <button 
+                          onClick={() => onDeleteCategory(category.id, section.id)}
+                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                        >
+                          <TrashIcon className="h-3 w-3" />
+                        </button>
+                      </Protected>
                     </div>
                   </div>
                 </div>
@@ -182,9 +208,14 @@ function SectionCard({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-600">
-                        {category.name}
-                      </h4>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-medium text-gray-600">
+                          {category.name}
+                        </h4>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                          {getUnitSymbol(category.default_unit_id)}
+                        </span>
+                      </div>
                       <p className="text-xs text-gray-400 mt-1">
                         {t('common.order')}: {category.order_index}
                       </p>
@@ -192,21 +223,25 @@ function SectionCard({
                     <div className="flex items-center space-x-2">
                       {/* Category activation button is only available in active sections */}
                       {isActive && (
-                        <button
-                          onClick={() => onToggleCategoryStatus(category.id, false)}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
-                          title={t('expenses.categories.activate')}
-                        >
-                          <EyeIcon className="h-3 w-3 mr-1" />
-                          {t('expenses.categories.activate')}
-                        </button>
+                        <Protected permission={{ resource: 'subcategories', action: 'activate_deactivate' }}>
+                          <button
+                            onClick={() => onToggleCategoryStatus(category.id, false)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
+                            title={t('expenses.categories.activate')}
+                          >
+                            <EyeIcon className="h-3 w-3 mr-1" />
+                            {t('expenses.categories.activate')}
+                          </button>
+                        </Protected>
                       )}
-                      <button 
-                        onClick={() => onDeleteCategory(category.id, section.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <TrashIcon className="h-3 w-3" />
-                      </button>
+                      <Protected permission={{ resource: 'subcategories', action: 'delete' }}>
+                        <button 
+                          onClick={() => onDeleteCategory(category.id, section.id)}
+                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                        >
+                          <TrashIcon className="h-3 w-3" />
+                        </button>
+                      </Protected>
                     </div>
                   </div>
                 </div>
@@ -235,9 +270,13 @@ function SectionCard({
 
 export default function CategoriesTab() {
   const { t } = useTranslation();
+  const { currentLocation } = useAppContext();
+  const { permissions, isLoading: isLoadingPermissions } = usePermissions();
+  
   const [activeSections, setActiveSections] = useState<SectionWithCategories[]>([]);
   const [inactiveSections, setInactiveSections] = useState<SectionWithCategories[]>([]);
   const [currentPeriod, setCurrentPeriod] = useState<MonthPeriod | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -256,9 +295,6 @@ export default function CategoriesTab() {
   const [deleteType, setDeleteType] = useState<'section' | 'category'>('section');
   const [deleteItemName, setDeleteItemName] = useState<string>('');
   const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => Promise<void>) | null>(null);
-
-
-  const { currentLocation } = useAppContext();
 
   // Sorting functions - match backend logic exactly
   // Backend SQL: ORDER BY order_index, name
@@ -293,7 +329,7 @@ export default function CategoriesTab() {
     setError(null);
 
     try {
-              // Get current active period
+      // Get current active period
       const periodsResponse = await monthPeriodsApi.list({
         business_id: currentLocation.id,
         status: 'active',
@@ -308,6 +344,14 @@ export default function CategoriesTab() {
 
       const period = periodsResponse.periods[0];
       setCurrentPeriod(period);
+
+      // Load units
+      const unitsResponse = await unitsApi.list({
+        business_id: currentLocation.id,
+        is_active: true,
+        limit: 100,
+      });
+      setUnits(unitsResponse.units);
 
       // Get sections for this period
       const sectionsResponse = await expenseSectionsApi.list({
@@ -359,10 +403,25 @@ export default function CategoriesTab() {
   }, [currentLocation?.id, t]);
 
   useEffect(() => {
-    if (currentLocation?.id) {
+    if (!isLoadingPermissions && currentLocation?.id && can.view(permissions, 'categories')) {
       loadData();
     }
-  }, [currentLocation?.id, t, loadData]);
+  }, [currentLocation?.id, t, loadData, isLoadingPermissions, permissions]);
+
+  // Helper function to get unit symbol
+  const getUnitSymbol = (unitId: number): string => {
+    const unit = units.find(u => u.id === unitId);
+    return unit ? unit.symbol : '';
+  };
+
+  // Check permissions before rendering
+  if (!isLoadingPermissions && !can.view(permissions, 'categories')) {
+    return (
+      <div className="rounded-md bg-red-50 p-4">
+        <div className="text-sm text-red-700">{t('common.noPermission')}</div>
+      </div>
+    );
+  }
 
   const handleSectionAdded = (newSection: ExpenseSection) => {
     setActiveSections(prev => sortSections([...prev, { ...newSection, categories: [], inactiveCategories: [] }]));
@@ -430,17 +489,36 @@ export default function CategoriesTab() {
         const section = inactiveSections.find(s => s.id === sectionId);
         if (section) {
           setInactiveSections(prev => prev.filter(s => s.id !== sectionId));
-          // When activating a section, need to properly distribute categories
-          const allSectionCategories = [...section.categories, ...section.inactiveCategories];
-          const updatedSection = {
-            ...section,
-            is_active: true,
-            // Active categories: only those that are actually active
-            categories: sortCategories(allSectionCategories.filter(cat => cat.is_active)),
-            // Inactive categories: only those that are actually inactive
-            inactiveCategories: sortCategories(allSectionCategories.filter(cat => !cat.is_active)),
-          };
-          setActiveSections(prev => sortSections([...prev, updatedSection]));
+          
+          // IMPORTANT: When activating a section, fetch the actual state of categories from server,
+          // because categories may have remained deactivated on the backend
+          try {
+            const categoriesResponse = await expenseCategoriesApi.listBySection(sectionId, {
+              is_active: undefined, // Get all categories
+            });
+            const allCategories = categoriesResponse.categories;
+            
+            const updatedSection = {
+              ...section,
+              is_active: true,
+              // Active categories: only those that are actually active on backend
+              categories: sortCategories(allCategories.filter(cat => cat.is_active)),
+              // Inactive categories: only those that are actually inactive on backend
+              inactiveCategories: sortCategories(allCategories.filter(cat => !cat.is_active)),
+            };
+            setActiveSections(prev => sortSections([...prev, updatedSection]));
+          } catch (err) {
+            console.error('Error reloading categories after section activation:', err);
+            // Fallback: if failed to load categories, show all as inactive
+            const allSectionCategories = [...section.categories, ...section.inactiveCategories];
+            const updatedSection = {
+              ...section,
+              is_active: true,
+              categories: [],
+              inactiveCategories: sortCategories(allSectionCategories.map(cat => ({ ...cat, is_active: false }))),
+            };
+            setActiveSections(prev => sortSections([...prev, updatedSection]));
+          }
         }
       }
     } catch (error) {
@@ -706,13 +784,15 @@ export default function CategoriesTab() {
             )}
           </button>
           
-          <button
-            onClick={() => setIsAddSectionModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            {t('expenses.categories.addSection')}
-          </button>
+          <Protected permission={{ resource: 'categories', action: 'create' }}>
+            <button
+              onClick={() => setIsAddSectionModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              {t('expenses.categories.addSection')}
+            </button>
+          </Protected>
         </div>
       </div>
 
@@ -720,13 +800,15 @@ export default function CategoriesTab() {
       {activeSections.length === 0 && inactiveSections.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500">{t('expenses.categories.noSections')}</p>
-          <button
-            onClick={() => setIsAddSectionModalOpen(true)}
-            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            {t('expenses.categories.createFirstSection')}
-          </button>
+          <Protected permission={{ resource: 'categories', action: 'create' }}>
+            <button
+              onClick={() => setIsAddSectionModalOpen(true)}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              {t('expenses.categories.createFirstSection')}
+            </button>
+          </Protected>
         </div>
       ) : (
         <div className="space-y-6">
@@ -750,6 +832,7 @@ export default function CategoriesTab() {
                   onDeleteCategory={handleDeleteCategory}
                   onToggleCategoryStatus={handleToggleCategoryStatus}
                   isActive={true}
+                  getUnitSymbol={getUnitSymbol}
                   t={t}
                 />
               ))}
@@ -777,6 +860,7 @@ export default function CategoriesTab() {
                   onDeleteCategory={handleDeleteCategory}
                   onToggleCategoryStatus={handleToggleCategoryStatus}
                   isActive={false}
+                  getUnitSymbol={getUnitSymbol}
                   t={t}
                 />
                 ))}

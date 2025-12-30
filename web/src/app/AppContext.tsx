@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from '@tanstack/react-query';
 import { AppContext, type AppContextType } from "~/shared/context/AppContext";
 import { locationsApi } from "~/shared/api/locations";
+import { invoicesApi } from "~/shared/api/expenses";
 import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~/shared/types/locations";
 import { hasToken, logout as helperLogout } from "~/shared/lib/helpers/storageHelpers";
 import { setLogoutHandler } from "~/shared/api/client";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<AppContextType["user"]>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   
   // Location state
   const [currentLocation, setCurrentLocationState] = useState<Location | null>(null);
@@ -21,7 +23,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     console.log('Manually setting current location:', location);
     setCurrentLocationState(location);
     localStorage.setItem('currentLocation', JSON.stringify(location));
+    
+    // Invalidate permissions cache when business changes
+    queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
   };
+
+  const updateOverdueStatuses = useCallback(async (businessId: number): Promise<void> => {
+    try {
+      await invoicesApi.updateOverdueStatuses(businessId);
+      console.log('Updated overdue statuses for business:', businessId);
+    } catch (err) {
+      console.error('Failed to update overdue statuses:', err);
+      // Silently fail - this is not critical for the user experience
+    }
+  }, []);
 
   const fetchLocations = useCallback(async (): Promise<void> => {
     if (!hasToken()) return;
@@ -90,17 +105,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Update overdue statuses when current location changes
+  useEffect(() => {
+    if (currentLocation && hasToken()) {
+      console.log('Current location changed, updating overdue statuses for business:', currentLocation.id);
+      updateOverdueStatuses(currentLocation.id);
+    }
+  }, [currentLocation, updateOverdueStatuses]);
+
   // Fetch locations when user is authenticated
   useEffect(() => {
     if (user && hasToken()) {
       fetchLocations();
-    } else if (!user && isInitialized) {
-      // Only clear when user is definitely not present AND initialization is complete
+    } else if (!user) {
+      // Clear locations when user logs out
       setLocations([]);
       setCurrentLocationState(null);
       localStorage.removeItem('currentLocation');
     }
-  }, [user, fetchLocations, isInitialized]);
+  }, [user, fetchLocations]);
 
   const createLocation = async (data: LocationCreate): Promise<Location> => {
     const newLocation = await locationsApi.createLocation(data);
@@ -144,9 +167,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentLocationState(null);
     setLocations([]);
     
+    // Clear all React Query cache (including permissions)
+    queryClient.clear();
+    
     // Use helper logout function which handles localStorage cleanup and redirect
     helperLogout();
-  }, []);
+  }, [queryClient]);
 
   // Set up automatic logout handler for API client
   useEffect(() => {
@@ -167,7 +193,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteLocation,
     fetchLocations,
     fetchLocationMembers,
-    setIsInitialized,
+    updateOverdueStatuses,
   };
 
   return (

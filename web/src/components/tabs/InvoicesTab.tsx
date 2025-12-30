@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, FunnelIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { invoicesApi, suppliersApi, type Invoice, type InvoiceStatus, type Supplier } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
-import InvoiceModal from '~/components/expenses/modals/InvoiceModal';
-import ConfirmDeleteModal from '~/components/expenses/modals/ConfirmDeleteModal';
+import { Protected } from '~/shared/ui';
+import { usePermissions } from '~/shared/lib/usePermissions';
+import { can } from '~/shared/utils/permissions';
+import InvoiceModal from '~/components/modals/InvoiceModal';
+import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
+import { formatCurrency } from '~/shared/lib/helpers';
 
 export default function InvoicesTab() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
+  const { permissions, isLoading: isLoadingPermissions } = usePermissions();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -18,6 +23,7 @@ export default function InvoicesTab() {
   // Modal states
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [invoiceMode, setInvoiceMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -45,10 +51,14 @@ export default function InvoicesTab() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Load suppliers for filter
+  // Load suppliers for filter - only if user has permission
   useEffect(() => {
     const loadSuppliers = async () => {
       if (!currentLocation) return;
+      // Only load suppliers if user has permission to view them
+      if (!isLoadingPermissions && !can.view(permissions, 'suppliers')) {
+        return;
+      }
       try {
         const response = await suppliersApi.list({
           business_id: currentLocation.id,
@@ -61,7 +71,24 @@ export default function InvoicesTab() {
       }
     };
     loadSuppliers();
-  }, [currentLocation]);
+  }, [currentLocation, isLoadingPermissions, permissions]);
+
+  // Helper to determine if invoice is overdue
+  const isOverdue = useCallback((invoice: Invoice): boolean => {
+    if (invoice.paid_status !== 'pending') return false;
+    
+    // Get supplier payment terms
+    const supplier = suppliers.find(s => s.id === invoice.supplier_id);
+    const paymentTerms = supplier?.payment_terms_days || 14; // Default to 14 days if supplier not found
+    
+    const invoiceDate = new Date(invoice.invoice_date);
+    const paymentDueDate = new Date(invoiceDate);
+    paymentDueDate.setDate(invoiceDate.getDate() + paymentTerms);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+    paymentDueDate.setHours(0, 0, 0, 0);
+    return today > paymentDueDate;
+  }, [suppliers]);
 
   // Load invoices
   const loadInvoices = useCallback(async () => {
@@ -90,15 +117,23 @@ export default function InvoicesTab() {
         // Use regular list API with filters
         const response = await invoicesApi.list({
           business_id: currentLocation.id,
-          paid_status: statusFilter === 'all' ? undefined : statusFilter,
+          paid_status: statusFilter === 'all' || statusFilter === 'overdue' ? undefined : statusFilter,
           supplier_id: supplierFilter === 'all' ? undefined : supplierFilter,
           date_from: dateFromFilter || undefined,
           date_to: dateToFilter || undefined,
           skip,
           limit: pageSize,
         });
-        setInvoices(response.invoices);
-        setTotalInvoices(response.total);
+        
+        let filteredInvoices = response.invoices;
+        
+        // Apply overdue filter on frontend
+        if (statusFilter === 'overdue') {
+          filteredInvoices = response.invoices.filter(invoice => isOverdue(invoice));
+        }
+        
+        setInvoices(filteredInvoices);
+        setTotalInvoices(statusFilter === 'overdue' ? filteredInvoices.length : response.total);
       }
     } catch (err) {
       console.error('Failed to load invoices:', err);
@@ -106,16 +141,46 @@ export default function InvoicesTab() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentLocation, statusFilter, supplierFilter, dateFromFilter, dateToFilter, debouncedSearchQuery, currentPage, pageSize, t]);
+  }, [currentLocation, statusFilter, supplierFilter, dateFromFilter, dateToFilter, debouncedSearchQuery, currentPage, pageSize, t, isOverdue]);
 
   useEffect(() => {
-    loadInvoices();
-  }, [loadInvoices]);
+    // Only load invoices if user has permission
+    if (!isLoadingPermissions && can.view(permissions, 'invoices')) {
+      loadInvoices();
+    }
+  }, [loadInvoices, isLoadingPermissions, permissions]);
 
   // Helper to get supplier name
-  const getSupplierName = (supplierId: number): string => {
+  const getSupplierName = (supplierId: number) => {
+    // If user doesn't have permission to view suppliers, show generic name
+    if (!can.view(permissions, 'suppliers')) {
+      return `Supplier #${supplierId}`;
+    }
     const supplier = suppliers.find(s => s.id === supplierId);
-    return supplier ? supplier.name : `Supplier #${supplierId}`;
+    return supplier ? supplier.name : t('expenses.invoices.unknownSupplier');
+  };  // Helper to get payment date
+  const getPaymentDate = (invoice: Invoice): string => {
+    if (invoice.paid_status === 'paid' && invoice.paid_date) {
+      return new Date(invoice.paid_date).toLocaleDateString();
+    }
+    
+    // Get supplier payment terms
+    const supplier = suppliers.find(s => s.id === invoice.supplier_id);
+    const paymentTerms = supplier?.payment_terms_days || 14; // Default to 14 days if supplier not found
+    
+    // For pending/cancelled/overdue, add payment terms to invoice_date
+    const invoiceDate = new Date(invoice.invoice_date);
+    const paymentDate = new Date(invoiceDate);
+    paymentDate.setDate(invoiceDate.getDate() + paymentTerms);
+    return paymentDate.toLocaleDateString();
+  };
+
+  // Helper to get display status
+  const getDisplayStatus = (invoice: Invoice): string => {
+    if (isOverdue(invoice)) {
+      return 'overdue';
+    }
+    return invoice.paid_status;
   };
 
   // Reset to first page when filters change
@@ -134,12 +199,34 @@ export default function InvoicesTab() {
 
   const handleAddInvoice = () => {
     setSelectedInvoice(null);
+    setInvoiceMode('create');
     setIsInvoiceModalOpen(true);
   };
 
   const handleEditInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
+    setInvoiceMode('edit');
     setIsInvoiceModalOpen(true);
+  };
+
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setInvoiceMode('view');
+    setIsInvoiceModalOpen(true);
+  };
+
+  const handleRowClick = (invoice: Invoice, e: React.MouseEvent) => {
+    // Ignore clicks on buttons (action column)
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // Open invoice based on permissions
+    if (can.edit(permissions, 'invoices')) {
+      handleEditInvoice(invoice);
+    } else if (can.view(permissions, 'invoices')) {
+      handleViewInvoice(invoice);
+    }
   };
 
   const handleDeleteInvoice = (invoice: Invoice) => {
@@ -204,14 +291,36 @@ export default function InvoicesTab() {
     );
   }
 
-  const getStatusBadge = (status: InvoiceStatus) => {
+  const getStatusBadge = (status: string) => {
     const badges = {
       pending: 'bg-yellow-100 text-yellow-800',
       paid: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
+      overdue: 'bg-red-100 text-red-800',
     };
-    return badges[status] || 'bg-gray-100 text-gray-800';
+    return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
   };
+
+  // Check permissions
+  if (isLoadingPermissions) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  if (!can.view(permissions, 'invoices')) {
+    return (
+      <div className="text-center py-12">
+        <div className="rounded-xl bg-yellow-50 p-8 inline-block">
+          <p className="text-sm text-yellow-800">
+            {t('errors.INSUFFICIENT_PERMISSIONS')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -230,13 +339,20 @@ export default function InvoicesTab() {
               <FunnelIcon className="h-5 w-5 mr-2" />
               {t('common.filters')}
             </button>
-            <button
-              onClick={handleAddInvoice}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            <Protected 
+              allOf={[
+                { resource: 'invoices', action: 'create' },
+                { resource: 'suppliers', action: 'view' }
+              ]}
             >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              {t('expenses.invoices.addInvoice')}
-            </button>
+              <button
+                onClick={handleAddInvoice}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                {t('expenses.invoices.addInvoice')}
+              </button>
+            </Protected>
           </div>
         </div>
 
@@ -258,6 +374,7 @@ export default function InvoicesTab() {
                   <option value="pending">{t('expenses.invoices.filters.pending')}</option>
                   <option value="paid">{t('expenses.invoices.filters.paid')}</option>
                   <option value="cancelled">{t('expenses.invoices.filters.cancelled')}</option>
+                  <option value="overdue">{t('expenses.invoices.filters.overdue')}</option>
                 </select>
               </div>
 
@@ -348,13 +465,20 @@ export default function InvoicesTab() {
         <div className="bg-white shadow rounded-lg p-12 text-center">
           <p className="text-gray-500 text-lg">{t('expenses.invoices.noInvoices')}</p>
           <p className="text-gray-400 text-sm mt-2">{t('expenses.invoices.noInvoicesDescription')}</p>
-          <button
-            onClick={handleAddInvoice}
-            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          <Protected 
+            allOf={[
+              { resource: 'invoices', action: 'create' },
+              { resource: 'suppliers', action: 'view' }
+            ]}
           >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            {t('expenses.invoices.createFirstInvoice')}
-          </button>
+            <button
+              onClick={handleAddInvoice}
+              className="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              {t('expenses.invoices.createFirstInvoice')}
+            </button>
+          </Protected>
         </div>
       ) : (
         <div className="bg-white shadow rounded-lg overflow-hidden relative">
@@ -367,89 +491,126 @@ export default function InvoicesTab() {
               </svg>
             </div>
           )}
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.invoiceNumber')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.supplier')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.date')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.totalAmount')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.status')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {invoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {invoice.invoice_number || `#${invoice.id}`}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getSupplierName(invoice.supplier_id)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(invoice.invoice_date).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₽{parseFloat(invoice.total_amount).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(invoice.paid_status)}`}>
-                      {t(`expenses.invoices.status.${invoice.paid_status}`)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      {invoice.paid_status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => handleMarkAsPaid(invoice)}
-                            className="text-green-600 hover:text-green-900"
-                            title={t('expenses.invoices.actions.markAsPaid')}
-                          >
-                            <CheckCircleIcon className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleMarkAsCancelled(invoice)}
-                            className="text-red-600 hover:text-red-900"
-                            title={t('expenses.invoices.actions.markAsCancelled')}
-                          >
-                            <XCircleIcon className="h-5 w-5" />
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleEditInvoice(invoice)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title={t('expenses.invoices.actions.edit')}
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteInvoice(invoice)}
-                        className="text-red-600 hover:text-red-900"
-                        title={t('expenses.invoices.actions.delete')}
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.createdDate')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.paymentDate')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.supplier')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.invoiceNumber')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.totalAmount')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.status')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.actions')}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {invoices.map((invoice) => (
+                  <tr 
+                    key={invoice.id} 
+                    onClick={(e) => handleRowClick(invoice, e)}
+                    className="hover:bg-gray-100 cursor-pointer transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(invoice.invoice_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getPaymentDate(invoice)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getSupplierName(invoice.supplier_id)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {invoice.invoice_number || `#${invoice.id}`}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCurrency(invoice.total_amount)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(getDisplayStatus(invoice))}`}>
+                        {t(`expenses.invoices.status.${getDisplayStatus(invoice)}`)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        {invoice.paid_status === 'pending' && (
+                          <>
+                            <Protected permission={{ resource: 'invoices', action: 'approve' }}>
+                              <button
+                                onClick={() => handleMarkAsPaid(invoice)}
+                                className="text-green-600 hover:text-green-900"
+                                title={t('expenses.invoices.actions.markAsPaid')}
+                              >
+                                <CheckCircleIcon className="h-5 w-5" />
+                              </button>
+                            </Protected>
+                            <Protected permission={{ resource: 'invoices', action: 'reject' }}>
+                              <button
+                                onClick={() => handleMarkAsCancelled(invoice)}
+                                className="text-red-600 hover:text-red-900"
+                                title={t('expenses.invoices.actions.markAsCancelled')}
+                              >
+                                <XCircleIcon className="h-5 w-5" />
+                              </button>
+                            </Protected>
+                          </>
+                        )}
+                        {/* Show eye icon only if has view permission but NOT edit permission */}
+                        {can.view(permissions, 'invoices') && 
+                        !can.edit(permissions, 'invoices') && (
+                          <button
+                            onClick={() => handleViewInvoice(invoice)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title={t('expenses.invoices.actions.view')}
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                        {/* Show edit icon only if has both edit and view_suppliers permissions */}
+                        <Protected 
+                          allOf={[
+                            { resource: 'invoices', action: 'edit' },
+                            { resource: 'suppliers', action: 'view' }
+                          ]}
+                        >
+                          <button
+                            onClick={() => handleEditInvoice(invoice)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title={t('expenses.invoices.actions.edit')}
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                        </Protected>
+                        <Protected permission={{ resource: 'invoices', action: 'delete' }}>
+                          <button
+                            onClick={() => handleDeleteInvoice(invoice)}
+                            className="text-red-600 hover:text-red-900"
+                            title={t('expenses.invoices.actions.delete')}
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </Protected>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
           {totalInvoices > pageSize && (
@@ -546,6 +707,7 @@ export default function InvoicesTab() {
         }}
         onSuccess={handleModalSuccess}
         invoice={selectedInvoice}
+        mode={invoiceMode}
       />
 
       <ConfirmDeleteModal

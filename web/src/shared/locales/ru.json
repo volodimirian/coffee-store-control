@@ -6,16 +6,20 @@
     "save": "Сохранить",
     "saving": "Сохранение...",
     "cancel": "Отмена",
+    "close": "Закрыть",
     "delete": "Удалить",
     "deleting": "Удаление...",
     "create": "Создать",
     "update": "Обновить",
     "yes": "Да",
     "no": "Нет",
+    "confirmDelete": "Подтвердить удаление",
     "continue": "Продолжить",
     "back": "Назад",
     "brandName": "Business Control",
     "actionCannotBeUndone": "Это действие нельзя отменить.",
+    "confirmDeletion": "Подтвердите удаление",
+    "confirmDeletionMessage": "Вы уверены, что хотите удалить этот элемент?",
     "order": "Порядок",
     "filters": "Фильтры",
     "clearFilters": "Очистить фильтры",
@@ -25,7 +29,11 @@
     "to": "до",
     "of": "из",
     "results": "результатов",
-    "today": "Сегодня"
+    "today": "Сегодня",
+    "original": "Изначально",
+    "converted": "Приведено к",
+    "quantity": "Количество",
+    "retry": "Повторить"
   },
   "navigation": {
     "home": "Главная",
@@ -45,7 +53,10 @@
     "business": "Бизнес",
     "personalAccount": "Личный кабинет",
     "expenses": "Расходы",
-    "expenseTracking": "Учет расходов"
+    "expenseTracking": "Учет расходов",
+    "billing": "Оплата",
+    "locations": "Локации",
+    "employees": "Сотрудники"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
@@ -71,7 +82,8 @@
     "signInDescription": "Введите ваши данные для доступа к аккаунту",
     "invalidCredentials": "Неверный email или пароль",
     "sessionExpired": "Ваша сессия истекла. Необходимо войти в систему заново.",
-    "sessionExpiredTitle": "Сессия истекла"
+    "sessionExpiredTitle": "Сессия истекла",
+    "rememberMe": "Запомнить меня"
   },
   "roles": {
     "admin": "Администратор",
@@ -91,7 +103,9 @@
     "passwordMaxLength": "Пароль должен быть не более {{max}} символов",
     "emailMaxLength": "Email должен быть не более {{max}} символов",
     "required": "{{field}} обязательно",
-    "minLength": "{{field}} должно быть не менее {{min}} символов"
+    "minLength": "{{field}} должно быть не менее {{min}} символов",
+    "invalidEmail": "Пожалуйста, введите корректный email",
+    "passwordMismatch": "Пароли не совпадают"
   },
   "pages": {
     "about": {
@@ -118,6 +132,7 @@
     "FORBIDDEN": "Доступ запрещён",
     "INVALID_CREDENTIALS": "Неверный email или пароль",
     "USER_NOT_FOUND": "Пользователь не найден",
+    "RATE_LIMIT_EXCEEDED": "Слишком много запросов, попробуйте позже",
 
     "_registration_title": "Ошибки регистрации", 
     "EMAIL_ALREADY_EXISTS": "Email уже зарегистрирован",
@@ -128,6 +143,25 @@
     "BUYERS_NOT_ALLOWED": "Эта операция недоступна для покупателей",
     "SUPPLIERS_ONLY": "Только поставщики могут выполнить эту операцию", 
     "ADMIN_ONLY": "Требуются административные права",
+
+    "_business_employees_title": "Ошибки управления бизнесом и сотрудниками",
+    "BUSINESS_NOT_FOUND": "Бизнес не найден",
+    "BUSINESS_ACCESS_DENIED": "Доступ к этому бизнесу запрещен",
+    "BUSINESS_ID_MISMATCH": "ID бизнеса в URL и в теле запроса должны совпадать",
+    "USER_ALREADY_BUSINESS_MEMBER": "Пользователь уже является членом этого бизнеса",
+    "CANNOT_REMOVE_BUSINESS_OWNER": "Невозможно удалить владельца бизнеса из бизнеса",
+    "ONLY_OWNER_CAN_DELETE": "Только владелец бизнеса может удалить бизнес",
+    "ONLY_OWNER_CAN_RESTORE": "Только владелец бизнеса может восстановить бизнес",
+    "BUSINESS_OPERATION_FAILED": "Операция с бизнесом не удалась",
+    "EMPLOYEE_CREATION_FAILED": "Не удалось получить созданного сотрудника",
+    "EMPLOYEE_ROLE_NOT_FOUND": "Роль сотрудника не найдена в системе",
+    "PERMISSION_NOT_FOUND": "Разрешение не найдено",
+    "USER_NOT_BUSINESS_MEMBER": "Пользователь не является членом этого бизнеса",
+    "INSUFFICIENT_PERMISSIONS": "Недостаточно прав для выполнения этого действия",
+    "ONLY_OWNER_CAN_CREATE_EMPLOYEES": "Только владелец бизнеса может создавать сотрудников",
+    "ONLY_OWNER_CAN_MANAGE_PERMISSIONS": "Только владелец бизнеса может управлять разрешениями",
+    "ONLY_OWNERS_CAN_SEARCH_USERS": "Только владельцы бизнеса могут искать пользователей",
+    "CANNOT_ASSIGN_BUSINESS_OWNER_ROLE": "Нельзя назначить роль владельца бизнеса сотрудникам",
 
     "_categories_title": "Ошибки управления категориями",
     "CATEGORY_NOT_FOUND": "Категория не найдена",
@@ -262,6 +296,115 @@
     "restoreLocation": "Восстановить локацию",
     "restore": "Восстановить"
   },
+  "employees": {
+    "title": "Сотрудники",
+    "description": "Управление сотрудниками в {{location}}",
+    "addEmployee": "Создать нового сотрудника",
+    "assignExisting": "Назначить существующего сотрудника",
+    "editEmployee": "Редактировать сотрудника",
+    "deactivateEmployee": "Деактивировать сотрудника",
+    "reactivateEmployee": "Реактивировать сотрудника",
+    "searchByEmail": "Поиск по email",
+    "globalRole": "Глобальная роль",
+    "roleInBusiness": "Роль в бизнесе",
+    "assignToBusiness": "Назначить на бизнес",
+    "noEmployees": "Пока нет сотрудников",
+    "getStarted": "Начните с добавления вашего первого сотрудника.",
+    "noLocationSelected": "Локация не выбрана",
+    "selectLocationFirst": "Пожалуйста, выберите локацию для управления сотрудниками",
+    "permissions": "Права доступа",
+    "role": {
+      "employee": "Сотрудник",
+      "manager": "Менеджер",
+      "owner": "Владелец"
+    },
+    "joinedAt": "Присоединился {{date}}",
+    "inactiveEmployees": "Неактивные сотрудники",
+    "inactiveEmployeesDescription": "Эти сотрудники были деактивированы, но могут быть реактивированы",
+    "reactivate": "Реактивировать",
+    "confirmDeactivateMessage": "Вы уверены, что хотите деактивировать этого сотрудника? Он потеряет доступ к этой локации.",
+    "employeeCreated": "Сотрудник успешно создан",
+    "employeeUpdated": "Сотрудник успешно обновлен",
+    "employeeDeactivated": "Сотрудник успешно деактивирован",
+    "employeeReactivated": "Сотрудник успешно реактивирован",
+    "failedToLoad": "Не удалось загрузить сотрудников",
+    "failedToCreate": "Не удалось создать сотрудника",
+    "failedToUpdate": "Не удалось обновить сотрудника",
+    "failedToDeactivate": "Не удалось деактивировать сотрудника",
+    "failedToReactivate": "Не удалось реактивировать сотрудника"
+  },
+  "permissions": {
+    "managePermissions": "Управление правами",
+    "managingFor": "Управление правами для {{name}}",
+    "selectAll": "Выбрать все",
+    "deselectAll": "Снять все",
+    "selectedCount": "Выбрано {{count}} из {{total}} прав",
+    "modificationsCount": "{{count}} прав(а) будет изменено",
+    "savePermissions": "Сохранить права",
+    "noPermissions": "Нет прав",
+    "badge": {
+      "modified": "Изменено",
+      "fromRole": "От роли",
+      "explicitlyGranted": "Явно предоставлено",
+      "explicitlyRevoked": "Явно отозвано"
+    },
+    "resource": {
+      "businesses": "Бизнес",
+      "categories": "Категории",
+      "subcategories": "Подкатегории",
+      "units": "Единицы измерения",
+      "suppliers": "Поставщики",
+      "invoices": "Накладные"
+    },
+    "names": {
+      "view_businesses": "Просмотр бизнеса и сотрудников",
+      "edit_businesses": "Редактирование бизнеса",
+      "activate_deactivate_businesses": "Активация/Деактивация бизнеса",
+      "manage_members_businesses": "Управление сотрудниками",
+      "grant_permissions_businesses": "Управление правами доступа",
+      "view_categories": "Просмотр категорий",
+      "create_categories": "Создание категорий",
+      "edit_categories": "Редактирование категорий",
+      "activate_deactivate_categories": "Активация/Деактивация категорий",
+      "delete_categories": "Удаление категорий",
+      "view_subcategories": "Просмотр подкатегорий",
+      "create_subcategories": "Создание подкатегорий",
+      "edit_subcategories": "Редактирование подкатегорий",
+      "activate_deactivate_subcategories": "Активация/Деактивация подкатегорий",
+      "delete_subcategories": "Удаление подкатегорий",
+      "view_units": "Просмотр единиц измерения",
+      "create_units": "Создание единиц измерения",
+      "edit_units": "Редактирование единиц измерения",
+      "activate_deactivate_units": "Активация/Деактивация единиц измерения",
+      "delete_units": "Удаление единиц измерения",
+      "view_suppliers": "Просмотр поставщиков",
+      "create_suppliers": "Создание поставщиков",
+      "edit_suppliers": "Редактирование поставщиков",
+      "activate_deactivate_suppliers": "Активация/Деактивация поставщиков",
+      "delete_suppliers": "Удаление поставщиков",
+      "view_invoices": "Просмотр накладных",
+      "create_invoices": "Создание накладных",
+      "edit_invoices": "Редактирование накладных",
+      "delete_invoices": "Удаление накладных",
+      "approve_invoices": "Утверждение накладных",
+      "reject_invoices": "Отклонение накладных"
+    },
+    "dependencies": {
+      "required": "Требуется для:",
+      "affectsLabel": "Перестанет работать:",
+      "willBeRevoked": "Будут автоматически сняты:",
+      "needsPermissions": "Для работы требуются:",
+      "warning": "Внимание: есть зависимости",
+      "info": "Требует другие права",
+      "features": {
+        "createInvoices": "Создание накладных",
+        "editInvoices": "Редактирование накладных",
+        "inventoryTracking": "Учет расходов",
+        "expenseReports": "Отчеты по расходам",
+        "expenseDetails": "Детализация расходов"
+      }
+    }
+  },
   "expenses": {
     "categories": {
       "title": "Управление категориями",
@@ -293,12 +436,25 @@
       "activeSections": "Активные разделы",
       "inactiveSections": "Неактивные разделы",
       "activateSection": "Активировать раздел",
-      "deactivateSection": "Деактивировать раздел"
+      "deactivateSection": "Деактивировать раздел",
+      "noPermissionToCreate": "У вас нет прав на создание разделов",
+      "noPermissionToCreateCategory": "У вас нет прав на создание категорий"
     },
     "sections": {
       "add": "Добавить раздел"
     },
     "modals": {
+      "createExpense": {
+        "title": "Создать",
+        "createButton": "Создать",
+        "createSection": "Создать раздел",
+        "createSectionDescription": "Группа категорий (например: Кофе, Молоко)",
+        "createCategory": "Создать категорию",
+        "createCategoryDescription": "Товар внутри раздела (например: Арабика)",
+        "createSectionFirst": "Сначала создайте раздел",
+        "selectSection": "Выберите раздел",
+        "noSectionsWarning": "Сначала создайте раздел, чтобы добавлять категории"
+      },
       "addSection": {
         "title": "Добавить раздел расходов",
         "nameLabel": "Название раздела",
@@ -408,6 +564,16 @@
           "title": "Удалить счет",
           "message": "Вы уверены, что хотите удалить счет \"{{name}}\"? Это действие нельзя отменить.",
           "confirmButton": "Удалить счет"
+        },
+        "employee": {
+          "title": "Деактивировать сотрудника",
+          "message": "Вы уверены, что хотите деактивировать сотрудника \"{{name}}\"?",
+          "confirmButton": "Деактивировать"
+        },
+        "location": {
+          "title": "Удалить локацию",
+          "message": "Вы уверены, что хотите удалить локацию \"{{name}}\"? Это действие нельзя отменить.",
+          "confirmButton": "Удалить локацию"
         }
       }
     },
@@ -437,7 +603,7 @@
       "baseUnit": "Базовая единица",
       "derivedUnit": "Производная единица",
       "conversionFactor": "Коэффициент конвертации",
-      "conversionInfo": "{{value}} {{fromSymbol}} = 1 {{toSymbol}}",
+      "conversionInfo": "1 {{fromSymbol}} = {{value}} {{toSymbol}}",
       "noBaseUnit": "Нет базовой единицы",
       "selectBaseUnit": "Выберите базовую единицу",
       "unitTypes": {
@@ -508,17 +674,20 @@
         "all": "Все счета",
         "pending": "Ожидают оплаты",
         "paid": "Оплачены",
-        "cancelled": "Отменены"
+        "cancelled": "Отменены",
+        "overdue": "Просрочены"
       },
       "status": {
         "pending": "Ожидает",
         "paid": "Оплачен",
-        "cancelled": "Отменен"
+        "cancelled": "Отменен",
+        "overdue": "Просрочен"
       },
       "table": {
         "invoiceNumber": "№ счета",
         "supplier": "Поставщик",
-        "date": "Дата",
+        "createdDate": "Дата создания",
+        "paymentDate": "Дата оплаты",
         "totalAmount": "Сумма",
         "status": "Статус",
         "actions": "Действия"
@@ -529,9 +698,11 @@
       "statuses": {
         "pending": "Ожидает оплаты",
         "paid": "Оплачен",
-        "cancelled": "Отменен"
+        "cancelled": "Отменен",
+        "overdue": "Просрочен"
       },
       "actions": {
+        "view": "Просмотр",
         "edit": "Редактировать",
         "delete": "Удалить",
         "markAsPaid": "Отметить оплаченным",
@@ -540,8 +711,11 @@
       "modal": {
         "createTitle": "Создать счет",
         "editTitle": "Редактировать счет",
+        "viewTitle": "Просмотр накладной",
         "supplier": "Поставщик",
         "selectSupplier": "Выберите поставщика...",
+        "searchSupplier": "Поиск поставщика...",
+        "noSuppliersFound": "Поставщики не найдены",
         "supplierRequired": "Поставщик обязателен",
         "invoiceNumber": "Номер счета",
         "invoiceNumberPlaceholder": "Необязательно",
@@ -553,11 +727,15 @@
         "removeItem": "Удалить",
         "category": "Категория",
         "selectCategory": "Выберите категорию...",
+        "searchCategory": "Поиск категории...",
+        "noCategoriesFound": "Категории не найдены",
         "categoryRequired": "Категория обязательна для строки {{line}}",
         "quantity": "Количество",
         "quantityRequired": "Количество обязательно для строки {{line}}",
         "unit": "Единица",
         "selectUnit": "Выберите единицу...",
+        "searchUnit": "Поиск единицы...",
+        "noUnitsFound": "Единицы не найдены",
         "unitRequired": "Единица измерения обязательна для строки {{line}}",
         "unitPrice": "Цена за единицу",
         "priceRequired": "Цена обязательна для строки {{line}}",
@@ -565,7 +743,35 @@
         "totalAmount": "Общая сумма",
         "loadDataError": "Ошибка загрузки данных",
         "createError": "Ошибка создания счета",
-        "updateError": "Ошибка обновления счета"
+        "updateError": "Ошибка обновления счета",
+        "deleteError": "Ошибка удаления счета"
+      }
+    },
+    "invoiceCalendar": {
+      "title": "Календарь счетов",
+      "description": "Просмотр и управление счетами по дням",
+      "selectLocation": "Выберите локацию для просмотра календаря счетов",
+      "loadingError": "Ошибка загрузки календаря счетов",
+      "noSuppliers": "Поставщики не найдены",
+      "noSuppliersDescription": "Добавьте поставщиков для начала работы со счетами",
+      "addInvoice": "Добавить счет",
+      "dueToday": "Срок сегодня",
+      "days": "дней",
+      "taxIdLabel": "ИНН",
+      "copyTaxId": "Скопировать ИНН",
+      "taxIdCopied": "ИНН скопирован",
+      "invoiceNumber": "Счет №",
+      "invoiceFrom": "от",
+      "table": {
+        "supplier": "Поставщик",
+        "paymentTerms": "Отсрочка"
+      },
+      "statuses": {
+        "paid": "Оплачен",
+        "pending": "Ожидает оплаты",
+        "overdue": "Просрочен",
+        "dueToday": "Срок сегодня",
+        "cancelled": "Отменен"
       }
     },
     "inventoryTracking": {
@@ -656,6 +862,8 @@
       "accessSettings": "Настройки доступа"
     },
     "overview": {
+      "title": "Обзор расходов",
+      "addExpense": "Внести расход",
       "totalExpenses": "Общие расходы",
       "thisMonth": "Этот месяц", 
       "categoriesCount": "Категории",
@@ -685,6 +893,83 @@
         "milk": "Молоко и молочные",
         "syrups": "Сиропы",
         "equipment": "Оборудование"
+      }
+    }
+  },
+  "billing": {
+    "navigation": {
+      "invoices": "Счета",
+      "suppliers": "Поставщики", 
+      "categories": "Категории",
+      "units": "Единицы измерения"
+    },
+    "page": {
+      "description": "Управление оплатами и финансовыми операциями для",
+      "defaultLocation": "вашей локации"
+    },
+    "suppliers": {
+      "title": "Поставщики",
+      "description": "Управление поставщиками и их контактной информацией",
+      "create": "Добавить поставщика",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "restore": "Восстановить",
+      "activate": "Активировать поставщика",
+      "deactivate": "Деактивировать поставщика",
+      "search": "Поиск поставщиков...",
+      "loading": "Загрузка...",
+      "loadingError": "Ошибка загрузки поставщиков",
+      "createError": "Ошибка создания поставщика",
+      "updateError": "Ошибка обновления поставщика",
+      "deleteError": "Ошибка удаления поставщика",
+      "restoreError": "Ошибка восстановления поставщика",
+      "empty": "Нет поставщиков",
+      "noResults": "Поставщики не найдены",
+      "active": "Активный",
+      "inactive": "Неактивный",
+      "filters": {
+        "all": "Все",
+        "active": "Активные",
+        "inactive": "Неактивные"
+      },
+      "name": "Название",
+      "namePlaceholder": "Введите название поставщика",
+      "taxId": "ИНН",
+      "taxIdPlaceholder": "1234567890123",
+      "paymentTerms": "Отсрочка платежа",
+      "days": "дней",
+      "phone": "Телефон",
+      "phonePlaceholder": "+7 (999) 123-45-67",
+      "email": "Email",
+      "emailPlaceholder": "email@example.com",
+      "website": "Веб-сайт",
+      "websitePlaceholder": "https://example.com",
+      "address": "Адрес",
+      "addressPlaceholder": "Введите адрес поставщика",
+      "notes": "Примечания",
+      "notesPlaceholder": "Дополнительная информация о поставщике",
+      "createTitle": "Добавить поставщика",
+      "editTitle": "Редактировать поставщика",
+      "deleteTitle": "Удалить поставщика",
+      "deleteMessage": "Вы уверены, что хотите удалить этого поставщика? Это действие можно будет отменить.",
+      "deleteHardTitle": "Полностью удалить поставщика",
+      "deleteHardMessage": "У этого поставщика нет счетов. Поставщик будет удален полностью без возможности восстановления.",
+      "deleteSoftMessage": "У этого поставщика есть {{count}} счетов. Поставщик будет деактивирован, но его можно будет восстановить.",
+      "deleteSoftTitle": "Деактивировать поставщика",
+      "deleteWithInvoicesTitle": "Деактивировать поставщика",
+      "deleteWithInvoicesMessage": "У этого поставщика есть {{count}} счетов. Поставщик будет деактивирован, но его можно будет восстановить.",
+      "deleteWithoutInvoicesTitle": "Полностью удалить поставщика",
+      "deleteWithoutInvoicesMessage": "У этого поставщика нет счетов. Поставщик будет удален полностью без возможности восстановления.",
+      "basicInfo": "Основная информация",
+      "contactInfo": "Контактная информация",
+      "additionalInfo": "Дополнительная информация",
+      "isActive": "Активный поставщик",
+      "validation": {
+        "nameRequired": "Название поставщика обязательно",
+        "taxIdRequired": "ИНН обязателен",
+        "paymentTermsRange": "Условия оплаты должны быть от 1 до 365 дней",
+        "emailInvalid": "Неверный формат email",
+        "businessRequired": "Бизнес не выбран"
       }
     }
   }

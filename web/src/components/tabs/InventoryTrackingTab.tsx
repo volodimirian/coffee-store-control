@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   PlusIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { 
   format, 
@@ -27,8 +28,12 @@ import {
   invoiceItemsApi,
   unitsApi,
 } from '~/shared/api/expenses';
-import CategoryModal from '~/components/expenses/modals/CategoryModal';
-import AddSectionModal from '~/components/expenses/modals/AddSectionModal';
+import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
+import InvoiceModal from '~/components/modals/InvoiceModal';
+import CategoryModal from '~/components/modals/CategoryModal';
+import SectionModal from '~/components/modals/SectionModal';
+import { Protected } from '~/shared/ui';
+import { formatCurrencyCompact } from '~/shared/lib/helpers';
 import type { 
   ExpenseSection,
   ExpenseCategory,
@@ -47,12 +52,23 @@ interface TableCategory {
   dailyData: Map<string, DayData>; // key: YYYY-MM-DD
 }
 
+// Purchase detail for tooltip
+interface PurchaseDetail {
+  invoiceNumber: string;
+  originalQuantity: number;
+  originalUnitId?: number;
+  originalUnitSymbol?: string;
+  convertedQuantity?: number;
+  wasConverted: boolean;
+}
+
 // Data for each day
 interface DayData {
   purchasesQty: number; // quantity from InvoiceItems (including PENDING)
   purchasesAmount: number; // money amount from InvoiceItems
   usageQty: number; // quantity from ExpenseRecords - TODO
   usageAmount: number; // money amount from ExpenseRecords - TODO
+  purchaseDetails: PurchaseDetail[]; // details for tooltip
 }
 
 export default function InventoryTrackingTab() {
@@ -64,9 +80,13 @@ export default function InventoryTrackingTab() {
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
-  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
-  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
+  const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(null);
+  const [selectedSectionIdForCreate, setSelectedSectionIdForCreate] = useState<number | null>(null);
 
   // Get locale for date-fns
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -101,18 +121,40 @@ export default function InventoryTrackingTab() {
   };
 
   const handleAddCategory = (sectionId: number) => {
-    setSelectedSectionId(sectionId);
-    setIsAddCategoryModalOpen(true);
+    setSelectedSectionIdForCreate(sectionId);
+    setIsEditCategoryModalOpen(true);
   };
 
-  const handleSectionAdded = () => {
-    setIsAddSectionModalOpen(false);
+  const handleCreateSuccess = () => {
+    setIsCreateModalOpen(false);
     loadData();
   };
 
-  const handleCategoryAdded = () => {
-    setIsAddCategoryModalOpen(false);
-    setSelectedSectionId(null);
+  const handleInvoiceSuccess = () => {
+    setIsInvoiceModalOpen(false);
+    loadData(); // Reload data after creating invoice
+  };
+
+  const handleEditCategory = (category: ExpenseCategory) => {
+    setSelectedCategory(category);
+    setIsEditCategoryModalOpen(true);
+  };
+
+  const handleEditSection = (section: ExpenseSection) => {
+    setSelectedSection(section);
+    setIsEditSectionModalOpen(true);
+  };
+
+  const handleCategoryUpdated = () => {
+    setIsEditCategoryModalOpen(false);
+    setSelectedCategory(null);
+    setSelectedSectionIdForCreate(null);
+    loadData();
+  };
+
+  const handleSectionUpdated = () => {
+    setIsEditSectionModalOpen(false);
+    setSelectedSection(null);
     loadData();
   };
 
@@ -204,7 +246,8 @@ export default function InventoryTrackingTab() {
               purchasesQty: 0, 
               purchasesAmount: 0, 
               usageQty: 0, 
-              usageAmount: 0 
+              usageAmount: 0,
+              purchaseDetails: []
             });
           });
 
@@ -212,16 +255,36 @@ export default function InventoryTrackingTab() {
           for (const invoice of monthInvoices) {
             const invDate = format(parseISO(invoice.invoice_date), 'yyyy-MM-dd');
             
-            // Get items for this invoice
-            const items = await invoiceItemsApi.list(invoice.id);
+            // Get items for this invoice WITH CONVERSION to category default unit
+            const items = await invoiceItemsApi.list(invoice.id, true); // true = convert to category unit
             
             // Sum up quantities and amounts for this category
             const categoryItems = items.filter(item => item.category_id === category.id);
             categoryItems.forEach(item => {
               const dayData = dailyData.get(invDate);
               if (dayData) {
-                dayData.purchasesQty += parseFloat(item.quantity);
+                // Use converted_quantity if available, otherwise use original quantity
+                const quantity = item.converted_quantity 
+                  ? parseFloat(item.converted_quantity) 
+                  : parseFloat(item.quantity);
+                  
+                dayData.purchasesQty += quantity;
                 dayData.purchasesAmount += parseFloat(item.quantity) * parseFloat(item.unit_price);
+                
+                // Save details for tooltip
+                const wasConverted = !!item.converted_quantity && item.original_unit_id !== undefined;
+                const originalUnitSymbol = wasConverted && item.original_unit_id 
+                  ? unitsMap.get(item.original_unit_id) 
+                  : undefined;
+                
+                dayData.purchaseDetails.push({
+                  invoiceNumber: item.invoice_number || `#${invoice.id}`,
+                  originalQuantity: item.original_quantity ? parseFloat(item.original_quantity) : parseFloat(item.quantity),
+                  originalUnitId: item.original_unit_id,
+                  originalUnitSymbol,
+                  convertedQuantity: item.converted_quantity ? parseFloat(item.converted_quantity) : undefined,
+                  wasConverted,
+                });
               }
             });
           }
@@ -325,13 +388,27 @@ export default function InventoryTrackingTab() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setIsAddSectionModalOpen(true)}
-            className="flex items-center px-3 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            {t('expenses.sections.add')}
-          </button>
+          <Protected permission={{ resource: 'invoices', action: 'create' }}>
+            <button
+              onClick={() => setIsInvoiceModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              {t('expenses.overview.addExpense')}
+            </button>
+          </Protected>
+          <Protected anyOf={[
+            { resource: 'categories', action: 'create' },
+            { resource: 'subcategories', action: 'create' }
+          ]}>
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              {t('expenses.modals.createExpense.createButton')}
+            </button>
+          </Protected>
         </div>
       </div>
 
@@ -356,23 +433,26 @@ export default function InventoryTrackingTab() {
                   {monthDays.map((day) => {
                     const isToday = isSameDay(day, new Date());
                     return (
-                      <th
-                        key={day.toISOString()}
-                        colSpan={2}
-                        className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-r ${
-                          isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
-                        }`}
-                      >
-                        <div className="font-semibold">{format(day, 'd')}</div>
-                        <div className="text-[10px] opacity-75">
-                          {format(day, 'EEE', { locale: dateLocale })}
-                        </div>
-                      </th>
+                      <React.Fragment key={day.toISOString()}>
+                        <th
+                          colSpan={2}
+                          className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-x ${
+                            isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
+                          }`}
+                        >
+                          <div className="font-semibold">{format(day, 'd')}</div>
+                          <div className="text-[10px] opacity-75">
+                            {format(day, 'EEE', { locale: dateLocale })}
+                          </div>
+                        </th>
+                        {/* Spacing column */}
+                        <th className="px-6 bg-gray-50"></th>
+                      </React.Fragment>
                     );
                   })}
                   <th 
                     colSpan={2}
-                    className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b"
+                    className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l"
                   >
                     {t('expenses.inventoryTracking.table.total')}
                   </th>
@@ -382,23 +462,25 @@ export default function InventoryTrackingTab() {
                     const isToday = isSameDay(day, new Date());
                     return (
                       <React.Fragment key={`${day.toISOString()}-sub`}>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-r ${
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[60px] ${
                           isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
                         }`}>
                           {t('expenses.inventoryTracking.table.qty')}
                         </th>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-r ${
+                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[80px] ${
                           isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
                         }`}>
                           {t('expenses.inventoryTracking.table.amount')}
                         </th>
+                        {/* Spacing column */}
+                        <th className="px-6 bg-gray-50"></th>
                       </React.Fragment>
                     );
                   })}
-                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-r">
+                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-x min-w-[60px]">
                     {t('expenses.inventoryTracking.table.qty')}
                   </th>
-                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400">
+                  <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 min-w-[80px]">
                     {t('expenses.inventoryTracking.table.amount')}
                   </th>
                 </tr>
@@ -432,7 +514,7 @@ export default function InventoryTrackingTab() {
                       {/* Spacing between sections */}
                       {sectionIndex > 0 && (
                         <tr className="bg-gray-100">
-                          <td colSpan={monthDays.length * 2 + 2} className="h-2"></td>
+                          <td colSpan={monthDays.length * 3 + 4} className="h-8"></td>
                         </tr>
                       )}
                       
@@ -445,6 +527,18 @@ export default function InventoryTrackingTab() {
                           <div className="flex items-center justify-between w-full">
                             <span className="font-semibold">{tableSection.section.name}</span>
                             <div className="flex items-center space-x-2">
+                              <Protected permission={{ resource: 'categories', action: 'edit' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditSection(tableSection.section);
+                                  }}
+                                  className="p-1 hover:bg-blue-200 rounded transition-colors"
+                                  title={t('expenses.categories.editSection')}
+                                >
+                                  <PencilIcon className="h-4 w-4 text-blue-600" />
+                                </button>
+                              </Protected>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -474,38 +568,40 @@ export default function InventoryTrackingTab() {
                           return (
                             <React.Fragment key={`${day.toISOString()}-section`}>
                               {/* Skip Quantity Column for section header */}
-                              <td className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                              <td className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
                                 <div className="text-blue-600 text-[10px]">—</div>
                               </td>
                               
                               {/* Amount Column - show section totals */}
-                              <td className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
+                              <td className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
                                 {dayTotals && (dayTotals.purchasesAmount !== 0 || dayTotals.usageAmount !== 0) ? (
                                   <div className="space-y-0.5">
                                     {dayTotals.purchasesAmount !== 0 && (
                                       <div className="text-green-600 font-semibold text-[10px]">
-                                        ₽{dayTotals.purchasesAmount.toFixed(0)}
+                                        {formatCurrencyCompact(dayTotals.purchasesAmount)}
                                       </div>
                                     )}
                                     {dayTotals.usageAmount !== 0 && (
                                       <div className="text-red-600 font-semibold text-[10px]">
-                                        ₽{dayTotals.usageAmount.toFixed(0)}
+                                        {formatCurrencyCompact(dayTotals.usageAmount)}
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="text-blue-600 text-[10px]">₽0</div>
+                                  <div className="text-blue-600 text-[10px]">{formatCurrencyCompact(0)}</div>
                                 )}
                               </td>
+                              {/* Spacing column between days */}
+                              <td className={`px-6 bg-gray-50`}></td>
                             </React.Fragment>
                           );
                         })}
-                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 border-r">
+                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 border-x whitespace-nowrap">
                           <div className="text-blue-600 text-[10px]">—</div>
                         </td>
-                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100">
+                        <td className="px-2 py-2 text-center text-xs bg-blue-50 hover:bg-blue-100 whitespace-nowrap">
                           <div className="font-bold text-blue-900">
-                            ₽{sectionGrandTotal.toFixed(0)}
+                            {formatCurrencyCompact(sectionGrandTotal)}
                           </div>
                         </td>
                       </tr>
@@ -533,9 +629,20 @@ export default function InventoryTrackingTab() {
                         const totalQty = totalPurchasesQty - totalUsageQty;
 
                         return (
-                          <tr key={`category-${tableCategory.category.id}`} className="hover:bg-gray-50 border-b border-gray-100">
+                          <tr key={`category-${tableCategory.category.id}`} className="group hover:bg-gray-50 border-b border-gray-100">
                             <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
-                              {tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}
+                              <div className="flex items-center justify-between">
+                                <span>{tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}</span>
+                                <Protected permission={{ resource: 'subcategories', action: 'edit' }}>
+                                  <button
+                                    onClick={() => handleEditCategory(tableCategory.category)}
+                                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title={t('expenses.categories.editCategory')}
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                </Protected>
+                              </div>
                             </td>
                             {monthDays.map((day) => {
                               const dateKey = format(day, 'yyyy-MM-dd');
@@ -546,12 +653,20 @@ export default function InventoryTrackingTab() {
                                 <React.Fragment key={`${day.toISOString()}-cat`}>
                                   {/* Quantity Column */}
                                   <td 
-                                    className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-50' : ''}`}
+                                    className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-50' : ''}`}
+                                    title={dayData && dayData.purchaseDetails.length > 0 ? 
+                                      dayData.purchaseDetails.map(detail => 
+                                        detail.wasConverted 
+                                          ? `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.original')}: ${formatQty(detail.originalQuantity)} ${detail.originalUnitSymbol || ''}\n${t('common.converted')}: ${formatQty(detail.convertedQuantity || 0)} ${tableCategory.unitSymbol}`
+                                          : `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.quantity')}: ${formatQty(detail.originalQuantity)} ${tableCategory.unitSymbol}`
+                                      ).join('\n---\n')
+                                      : undefined
+                                    }
                                   >
                                     {dayData ? (
                                       <div className="space-y-0.5">
                                         {dayData.purchasesQty !== 0 && (
-                                          <div className="text-green-600">
+                                          <div className="text-green-600 cursor-help">
                                             {formatQty(dayData.purchasesQty)}
                                           </div>
                                         )}
@@ -571,39 +686,41 @@ export default function InventoryTrackingTab() {
                                   
                                   {/* Amount Column */}
                                   <td 
-                                    className={`px-1 py-2 text-center text-xs border-r ${isToday ? 'bg-blue-50' : ''}`}
+                                    className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-50' : ''}`}
                                   >
                                     {dayData ? (
                                       <div className="space-y-0.5">
                                         {dayData.purchasesAmount !== 0 && (
                                           <div className="text-green-600 font-semibold">
-                                            ₽{dayData.purchasesAmount.toFixed(0)}
+                                            {formatCurrencyCompact(dayData.purchasesAmount)}
                                           </div>
                                         )}
                                         {dayData.usageAmount !== 0 && (
                                           <div className="text-red-600 font-semibold">
-                                            ₽{dayData.usageAmount.toFixed(0)}
+                                            {formatCurrencyCompact(dayData.usageAmount)}
                                           </div>
                                         )}
                                         {dayData.purchasesAmount === 0 && dayData.usageAmount === 0 && (
-                                          <div className="text-gray-400">₽0</div>
+                                          <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
                                         )}
                                       </div>
                                     ) : (
-                                      <div className="text-gray-400">₽0</div>
+                                      <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
                                     )}
                                   </td>
+                                  {/* Spacing column between days */}
+                                  <td className={`px-6 bg-gray-50`}></td>
                                 </React.Fragment>
                               );
                             })}
-                            <td className="px-2 py-2 text-center text-xs border-r">
+                            <td className="px-2 py-2 text-center text-xs border-x whitespace-nowrap">
                               <div className={totalQty > 0 ? 'text-green-600' : totalQty < 0 ? 'text-red-600' : 'text-gray-900'}>
                                 {formatQty(totalQty)}
                               </div>
                             </td>
-                            <td className="px-2 py-2 text-center text-xs">
+                            <td className="px-2 py-2 text-center text-xs whitespace-nowrap">
                               <div className={totalAmount > 0 ? 'text-green-600 font-bold' : totalAmount < 0 ? 'text-red-600 font-bold' : 'text-gray-900 font-bold'}>
-                                ₽{totalAmount.toFixed(0)}
+                                {formatCurrencyCompact(totalAmount)}
                               </div>
                             </td>
                           </tr>
@@ -619,22 +736,50 @@ export default function InventoryTrackingTab() {
       )}
 
       {/* Modals */}
-      <AddSectionModal
-        isOpen={isAddSectionModalOpen}
-        onClose={() => setIsAddSectionModalOpen(false)}
-        onSectionAdded={handleSectionAdded}
+      <CreateExpenseModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+        sections={tableSections.map(ts => ({ id: ts.section.id, name: ts.section.name }))}
       />
 
-      {selectedSectionId && (
-        <CategoryModal
-          isOpen={isAddCategoryModalOpen}
-          onClose={() => {
-            setIsAddCategoryModalOpen(false);
-            setSelectedSectionId(null);
-          }}
+      {isInvoiceModalOpen && (
+        <InvoiceModal
+          isOpen={isInvoiceModalOpen}
+          onClose={() => setIsInvoiceModalOpen(false)}
+          onSuccess={handleInvoiceSuccess}
           mode="create"
-          sectionId={selectedSectionId}
-          onCategoryAdded={handleCategoryAdded}
+        />
+      )}
+
+      {/* Category Modal (Create or Edit) */}
+      {isEditCategoryModalOpen && (
+        <CategoryModal
+          isOpen={isEditCategoryModalOpen}
+          onClose={() => {
+            setIsEditCategoryModalOpen(false);
+            setSelectedCategory(null);
+            setSelectedSectionIdForCreate(null);
+          }}
+          mode={selectedCategory ? "edit" : "create"}
+          sectionId={selectedSectionIdForCreate || undefined}
+          category={selectedCategory || undefined}
+          onCategoryAdded={selectedCategory ? undefined : handleCategoryUpdated}
+          onCategoryUpdated={selectedCategory ? handleCategoryUpdated : undefined}
+        />
+      )}
+
+      {/* Edit Section Modal */}
+      {isEditSectionModalOpen && selectedSection && (
+        <SectionModal
+          isOpen={isEditSectionModalOpen}
+          onClose={() => {
+            setIsEditSectionModalOpen(false);
+            setSelectedSection(null);
+          }}
+          mode="edit"
+          section={selectedSection}
+          onSectionUpdated={handleSectionUpdated}
         />
       )}
     </div>

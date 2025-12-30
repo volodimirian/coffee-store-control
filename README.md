@@ -167,6 +167,83 @@ See `.env.example` for full configuration options and examples.
 - ✅ Tests for auth and core modules
 - ✅ Frontend with authentication
 
+## Maintenance & Automation
+
+### Automated Overdue Invoice Status Updates
+
+The system includes automatic detection of overdue invoices based on individual supplier payment terms. To ensure invoices are marked as overdue in a timely manner, you should set up a cron job to run the status update process.
+
+#### Setup Cron Job
+
+Add the following entry to your crontab to run the overdue status update daily at 6:00 AM:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line to run daily at 6:00 AM
+0 6 * * * cd /path/to/your/project/backend && /path/to/uv run python -c "
+import asyncio
+from app.core.db import async_session_maker
+from app.expenses.invoice_service import InvoiceService
+
+async def update_overdue():
+    async with async_session_maker() as session:
+        updated_count = await InvoiceService.update_overdue_statuses(session)
+        print(f'Updated {updated_count} invoices to overdue status')
+
+asyncio.run(update_overdue())
+"
+```
+
+#### Alternative: Run for Specific Business
+
+If you need to update invoices for a specific business only:
+
+```bash
+# Replace BUSINESS_ID with actual business ID
+0 6 * * * cd /path/to/your/project/backend && /path/to/uv run python -c "
+import asyncio
+from app.core.db import async_session_maker
+from app.expenses.invoice_service import InvoiceService
+
+async def update_overdue():
+    async with async_session_maker() as session:
+        service = InvoiceService()
+        updated_count = await service.update_overdue_statuses(session, business_id=BUSINESS_ID)
+        print(f'Updated {updated_count} invoices to overdue status for business {BUSINESS_ID}')
+
+asyncio.run(update_overdue())
+"
+```
+
+#### Manual Execution
+
+You can also run the overdue status update manually:
+
+```bash
+cd backend
+uv run python -c "
+import asyncio
+from app.core.db import async_session_maker
+from app.expenses.invoice_service import InvoiceService
+
+async def update_overdue():
+    async with async_session_maker() as session:
+        updated_count = await InvoiceService.update_overdue_statuses(session)
+        print(f'Updated {updated_count} invoices to overdue status')
+
+asyncio.run(update_overdue())
+"
+```
+
+#### How It Works
+
+- The system compares the current date with each invoice's due date (invoice_date + supplier.payment_terms_days)
+- Only invoices with status 'pending' are eligible for overdue status
+- Each supplier can have individual payment terms (default: 14 days)
+- The update process is atomic and safe to run multiple times
+
 ## What Can Be Added
 
 - Business logic for specific domain
@@ -179,7 +256,10 @@ See `.env.example` for full configuration options and examples.
 У нас портал в котором на FE используется языковая модель для переключения языков поэтому мы не хардкодим яыковые строки. Так же в коде мы не используем русский язык, а только английский. Основной язык интерфейса у нас русский но мы еще поддерживаем английский на данный момент.
 у нас на бэкенде используется Python и PostgreSQL база данных. Перед внесением изменений в код сделай быстрый скан архитектуры той части в которой ты планируешь вносить измения BE or FE, что бы понимать, что и где используется и избежать дубликатов кода и более грамматно вноисить изменения в код. Так же у нас используются система прав доступа, если нужно что-то закрыть то предварительно спроси на сколько нужно добавлять права доступа на бэкенде и стоит ли функционл блокировать на фронтенде прежде чем вносить измения в код. Та кже мы испоьлзуем переменные окружения для глобальных настроек и поддерживаем их через .env.example для понимания какие нужно вносить на продакшене в .env - эта система работает и на бэкенде и на фронтенде. На фронтенде так же мы используем модальные окна и прежде чем добавлять новое окно - возможно стоит проверить можем ли мы с минимальными исправлениями переиспользывать уже созданное модальное окно.
 Еще имей ввиду что у меня всегда запущен бэкенд и фронтенд и не нужно их перезапускать и тратить токены на то что бы пытаться их запустить. Ты можешь сразу пытаться все проверять без дополнительного запуска. Во фронтенде есть еще папка shared где у меня и хранятся функции и контроллеры которые переиспользуются в том числе использование и организация API запросов, константы и структуры, функции помошники и т.д. Проверь эту папку прежде чем вносить изменения что бы построить более грамматную структуру внесения изменений. Так же имей ввиду что у нас есть приход и расход приход товаров идет через invoice подобные компоненты и расход идет через expense подобные компоненты. Если нужно сделать что-то с эим свзяанное проверь архитектуру как уже построены методы и модели прежде чем предлагать решение.
+Так же у нас же отдельная константы для сообщений об ошибках и на фронтенд мы пересылаем код сообщения об ошибке, где будет через транслейтер это прогоняться и сообщение будет на разных языках. А этот код в транслейшн файлах должен быть и использоваться на фронтенде.
 
 ------ ///// -------- //// вставить задачу ------ /// --------- /////
+
+Перед началом разработки проверь весь code base что уже реализовано и максимально переиспользуй уже созданные функции где это возможно расширяя их функционал с обратной зависимостью или ищи где они уже используются (эти функции) и аккуртно наблюдай за логикой.
 
 если есть какие то вопросы перед началом работ или нужны какие-то уточнения то сначала задай их прежде чем начинать работу и в течение работы над этим функционалом если возникют непонятные ситуации или вещи что нужно уточнить тоже задавай вопрос для уточнения прежде чем продолжать работу чтобы мы шли в одном русле.

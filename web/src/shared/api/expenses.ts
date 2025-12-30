@@ -29,6 +29,7 @@ import type {
   InvoiceUpdate,
   InvoiceListResponse,
   InvoiceItem,
+  InvoiceItemWithConversion,
   InvoiceItemCreate,
   InvoiceItemUpdate,
   InvoiceStatus,
@@ -443,10 +444,11 @@ export const suppliersApi = {
   },
 
   /**
-   * Delete supplier (soft delete)
+   * Delete supplier (soft delete by default, hard delete if permanent=true)
    */
-  delete: async (supplierId: number): Promise<void> => {
-    await api.delete(`/expenses/suppliers/${supplierId}`);
+  delete: async (supplierId: number, permanent: boolean = false): Promise<void> => {
+    const queryParams = permanent ? '?permanent=true' : '';
+    await api.delete(`/expenses/suppliers/${supplierId}${queryParams}`);
   },
 
   /**
@@ -454,6 +456,14 @@ export const suppliersApi = {
    */
   restore: async (supplierId: number): Promise<Supplier> => {
     const response = await api.post<Supplier>(`/expenses/suppliers/${supplierId}/restore`);
+    return response.data;
+  },
+
+  /**
+   * Check if supplier has invoices
+   */
+  hasInvoices: async (supplierId: number): Promise<{ has_invoices: boolean; invoice_count: number }> => {
+    const response = await api.get<{ has_invoices: boolean; invoice_count: number }>(`/expenses/suppliers/${supplierId}/has-invoices`);
     return response.data;
   },
 };
@@ -548,6 +558,19 @@ export const invoicesApi = {
     );
     return response.data;
   },
+
+  /**
+   * Update overdue statuses for pending invoices
+   */
+  updateOverdueStatuses: async (businessId?: number): Promise<{ message: string; updated_count: number }> => {
+    const params = businessId ? { business_id: businessId } : {};
+    const response = await api.post<{ message: string; updated_count: number }>(
+      '/expenses/invoices/update-overdue-statuses',
+      {},
+      { params }
+    );
+    return response.data;
+  },
 };
 
 // ============ Invoice Items API ============
@@ -556,8 +579,12 @@ export const invoiceItemsApi = {
   /**
    * Get all items for an invoice
    */
-  list: async (invoiceId: number): Promise<InvoiceItem[]> => {
-    const response = await api.get<InvoiceItem[]>(`/expenses/invoices/${invoiceId}/items`);
+  list: async (invoiceId: number, convertToCategoryUnit: boolean = false): Promise<InvoiceItemWithConversion[]> => {
+    const params = convertToCategoryUnit ? { convert_to_category_unit: true } : {};
+    const response = await api.get<InvoiceItemWithConversion[]>(
+      `/expenses/invoices/${invoiceId}/items`,
+      { params }
+    );
     return response.data;
   },
 

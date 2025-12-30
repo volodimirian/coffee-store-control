@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Outlet } from 'react-router-dom';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
-import ExpensesNavigation from '~/components/expenses/ExpensesNavigation';
-import AccessSettingsModal from '~/components/expenses/modals/AccessSettingsModal';
+import ExpensesNavigation from '~/components/ExpensesNavigation';
+import AccessSettingsModal from '~/components/modals/AccessSettingsModal';
 
 export default function Expenses() {
   const { t } = useTranslation();

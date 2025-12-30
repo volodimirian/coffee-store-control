@@ -19,15 +19,26 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
-    # Add created_by column to suppliers table
-    op.add_column('suppliers', sa.Column('created_by', sa.Integer(), nullable=False, server_default='1'))
+    """Upgrade schema - idempotent version."""
+    # Get connection to check existing state
+    conn = op.get_bind()
     
-    # Add foreign key constraint for created_by
-    op.create_foreign_key('suppliers_created_by_fkey', 'suppliers', 'users', ['created_by'], ['id'])
+    # Check if created_by column exists in suppliers table
+    result = conn.execute(sa.text("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='suppliers' AND column_name='created_by'
+    """))
     
-    # Remove server default after adding constraint
-    op.alter_column('suppliers', 'created_by', server_default=None)
+    if result.fetchone() is None:
+        # Add created_by column to suppliers table
+        op.add_column('suppliers', sa.Column('created_by', sa.Integer(), nullable=False, server_default='1'))
+        
+        # Add foreign key constraint for created_by
+        op.create_foreign_key('suppliers_created_by_fkey', 'suppliers', 'users', ['created_by'], ['id'])
+        
+        # Remove server default after adding constraint
+        op.alter_column('suppliers', 'created_by', server_default=None)
 
 
 def downgrade() -> None:

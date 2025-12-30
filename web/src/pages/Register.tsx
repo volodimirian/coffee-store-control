@@ -29,7 +29,7 @@ export default function Register() {
   
   const { setUser } = useAppContext();
   const navigate = useNavigate();
-  const to = "/dashboard";
+  const to = "/locations";
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

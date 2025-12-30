@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useLocation, type Location } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { fetchMe, login } from "~/shared/api/authentication"
 import type { AuthResponse, UserResponse } from "~/shared/api/types"
 import { useAppContext } from "~/shared/context/AppContext";
-import { saveToken } from "~/shared/lib/helpers/storageHelpers";
+import { saveToken, saveRefreshToken } from "~/shared/lib/helpers/storageHelpers";
 
 type FieldErrors = {
   email?: string;
@@ -13,8 +14,10 @@ type FieldErrors = {
 
 export default function Login() {
   const { t } = useTranslation();
-  const [email, setEmail] = useState("test@example.com");
-  const [password, setPassword] = useState("qwerty");
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState("test@test.com");
+  const [password, setPassword] = useState("12345678");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +25,7 @@ export default function Login() {
   const { setUser } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation() as Location;
-  const from = location.state?.from?.pathname || "/dashboard";
+  const from = location.state?.from?.pathname || "/locations";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,12 +34,20 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const data: AuthResponse = await login(email, password);
+      const data: AuthResponse = await login(email, password, rememberMe);
       // Store clean token using helper function
       saveToken(data.access_token);
       
+      // Store refresh token if remember me is enabled
+      if (data.refresh_token) {
+        saveRefreshToken(data.refresh_token);
+      }
+      
       const me: UserResponse = await fetchMe();
       setUser(me);
+      
+      // Clear all cached permissions when user logs in
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
       
       navigate(from, { replace: true });
     } catch (e: unknown) {
@@ -113,6 +124,20 @@ export default function Login() {
             {fieldErrors.password && fieldErrors.password.trim() && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
             )}
+          </div>
+
+          <div className="flex items-center">
+            <input
+              id="remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+              disabled={isLoading}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              {t('auth.rememberMe') || 'Remember me for 30 days'}
+            </label>
           </div>
 
           <button 

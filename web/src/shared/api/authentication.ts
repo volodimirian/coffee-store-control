@@ -21,10 +21,16 @@ export const USER_ROLE_LABELS = {
 
 export async function login(
   email: string,
-  password: string
+  password: string,
+  rememberMe: boolean = false
 ): Promise<TokenResponse> {
-  const payload: LoginRequest = { email, password };
+  const payload: LoginRequest = { email, password, remember_me: rememberMe };
   const { data } = await api.post<TokenResponse>('/auth/login', payload);
+  return data;
+}
+
+export async function refreshToken(refreshToken: string): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>('/auth/refresh', { refresh_token: refreshToken });
   return data;
 }
 
@@ -44,7 +50,11 @@ export async function fetchMe(): Promise<User> {
   return data;
 }
 
-/* TODO: invalidate refresh token on the server & create it on the backend */
 export async function logout(): Promise<void> {
-  await api.post('/auth/logout');
+  try {
+    await api.post('/auth/logout');
+  } catch (error) {
+    // Ignore errors - logout locally even if server call fails
+    console.warn('Logout API call failed:', error);
+  }
 }   

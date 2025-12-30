@@ -28,6 +28,22 @@ def create_access_token(
     token = jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)
     return token
 
+def create_refresh_token(
+    subject: str | int,
+    expires_days: Optional[int] = None,
+) -> str:
+    """Create a long-lived refresh token for remember me functionality."""
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=expires_days or settings.refresh_token_expire_days)
+    payload = {
+        "sub": str(subject), 
+        "iat": int(now.timestamp()), 
+        "exp": int(expire.timestamp()),
+        "type": "refresh"  # Mark as refresh token
+    }
+    token = jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)
+    return token
+
 def decode_token(token: str) -> dict[str, Any]:
     try:
         return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])

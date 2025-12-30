@@ -17,6 +17,15 @@ class ErrorCode(str, Enum):
     EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS"  # "Email already registered"
     USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"  # "Username already taken"
     INVALID_ROLE = "INVALID_ROLE"  # "Invalid role specified"
+    RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"  # "Too many requests, please try again later"
+    
+    # Permissions
+    PERMISSION_DENIED = "PERMISSION_DENIED"  # "You don't have permission to perform this action"
+    PERMISSION_VIEW_DENIED = "PERMISSION_VIEW_DENIED"  # "You don't have permission to view this resource"
+    PERMISSION_CREATE_DENIED = "PERMISSION_CREATE_DENIED"  # "You don't have permission to create this resource"
+    PERMISSION_EDIT_DENIED = "PERMISSION_EDIT_DENIED"  # "You don't have permission to edit this resource"
+    PERMISSION_DELETE_DENIED = "PERMISSION_DELETE_DENIED"  # "You don't have permission to delete this resource"
+    PERMISSION_ACTIVATE_DEACTIVATE_DENIED = "PERMISSION_ACTIVATE_DEACTIVATE_DENIED"  # "You don't have permission to activate/deactivate this resource"
     
     # Role-based access
     BUYERS_NOT_ALLOWED = "BUYERS_NOT_ALLOWED"  # "This operation is not allowed for buyers"
@@ -37,6 +46,25 @@ class ErrorCode(str, Enum):
     PRODUCT_NOT_OWNED = "PRODUCT_NOT_OWNED"  # "You can only modify your own products"
     INVALID_PRICE = "INVALID_PRICE"  # "Invalid price format"
     INVALID_CATEGORY = "INVALID_CATEGORY"  # "Invalid category or subcategory"
+    
+    # Business & Employees
+    BUSINESS_NOT_FOUND = "BUSINESS_NOT_FOUND"  # "Business not found"
+    BUSINESS_ACCESS_DENIED = "BUSINESS_ACCESS_DENIED"  # "Access denied to this business"
+    BUSINESS_ID_MISMATCH = "BUSINESS_ID_MISMATCH"  # "Business ID in URL and request body must match"
+    USER_ALREADY_BUSINESS_MEMBER = "USER_ALREADY_BUSINESS_MEMBER"  # "User is already a member of this business"
+    CANNOT_REMOVE_BUSINESS_OWNER = "CANNOT_REMOVE_BUSINESS_OWNER"  # "Cannot remove business owner from business"
+    ONLY_OWNER_CAN_DELETE = "ONLY_OWNER_CAN_DELETE"  # "Only business owner can delete business"
+    ONLY_OWNER_CAN_RESTORE = "ONLY_OWNER_CAN_RESTORE"  # "Only business owner can restore business"
+    BUSINESS_OPERATION_FAILED = "BUSINESS_OPERATION_FAILED"  # "Business operation failed"
+    EMPLOYEE_CREATION_FAILED = "EMPLOYEE_CREATION_FAILED"  # "Failed to retrieve created employee"
+    EMPLOYEE_ROLE_NOT_FOUND = "EMPLOYEE_ROLE_NOT_FOUND"  # "Employee role not found in system"
+    PERMISSION_NOT_FOUND = "PERMISSION_NOT_FOUND"  # "Permission not found"
+    USER_NOT_BUSINESS_MEMBER = "USER_NOT_BUSINESS_MEMBER"  # "User is not a member of this business"
+    INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS"  # "Insufficient permissions to perform this action"
+    ONLY_OWNER_CAN_CREATE_EMPLOYEES = "ONLY_OWNER_CAN_CREATE_EMPLOYEES"  # "Only business owner can create employees"
+    ONLY_OWNER_CAN_MANAGE_PERMISSIONS = "ONLY_OWNER_CAN_MANAGE_PERMISSIONS"  # "Only business owner can manage permissions"
+    ONLY_OWNERS_CAN_SEARCH_USERS = "ONLY_OWNERS_CAN_SEARCH_USERS"  # "Only business owners can search for users"
+    CANNOT_ASSIGN_BUSINESS_OWNER_ROLE = "CANNOT_ASSIGN_BUSINESS_OWNER_ROLE"  # "Cannot assign business owner role to employees"
     
     # Validation
     VALIDATION_ERROR = "VALIDATION_ERROR"  # "Validation failed"
@@ -62,6 +90,14 @@ class ErrorMessages:
     USERNAME_ALREADY_EXISTS = "Username already taken"
     INVALID_ROLE = "Invalid role specified"
     
+    # Permissions
+    PERMISSION_DENIED = "You don't have permission to perform this action"
+    PERMISSION_VIEW_DENIED = "You don't have permission to view this resource"
+    PERMISSION_CREATE_DENIED = "You don't have permission to create this resource"
+    PERMISSION_EDIT_DENIED = "You don't have permission to edit this resource"
+    PERMISSION_DELETE_DENIED = "You don't have permission to delete this resource"
+    PERMISSION_ACTIVATE_DEACTIVATE_DENIED = "You don't have permission to activate/deactivate this resource"
+    
     # Role-based access
     BUYERS_NOT_ALLOWED = "This operation is not allowed for buyers"
     SUPPLIERS_ONLY = "Only suppliers can perform this operation"
@@ -81,6 +117,25 @@ class ErrorMessages:
     PRODUCT_NOT_OWNED = "You can only modify your own products"
     INVALID_PRICE = "Invalid price format"
     INVALID_CATEGORY = "Invalid category or subcategory"
+    
+    # Business & Employees
+    BUSINESS_NOT_FOUND = "Business not found"
+    BUSINESS_ACCESS_DENIED = "Access denied to this business"
+    BUSINESS_ID_MISMATCH = "Business ID in URL and request body must match"
+    USER_ALREADY_BUSINESS_MEMBER = "User is already a member of this business"
+    CANNOT_REMOVE_BUSINESS_OWNER = "Cannot remove business owner from business"
+    ONLY_OWNER_CAN_DELETE = "Only business owner can delete business"
+    ONLY_OWNER_CAN_RESTORE = "Only business owner can restore business"
+    BUSINESS_OPERATION_FAILED = "Business operation failed"
+    EMPLOYEE_CREATION_FAILED = "Failed to retrieve created employee"
+    EMPLOYEE_ROLE_NOT_FOUND = "Employee role not found in system"
+    PERMISSION_NOT_FOUND = "Permission not found"
+    USER_NOT_BUSINESS_MEMBER = "User is not a member of this business"
+    INSUFFICIENT_PERMISSIONS = "Insufficient permissions to perform this action"
+    ONLY_OWNER_CAN_CREATE_EMPLOYEES = "Only business owner can create employees"
+    ONLY_OWNER_CAN_MANAGE_PERMISSIONS = "Only business owner can manage permissions"
+    ONLY_OWNERS_CAN_SEARCH_USERS = "Only business owners can search for users"
+    CANNOT_ASSIGN_BUSINESS_OWNER_ROLE = "Cannot assign business owner role to employees"
     
     # Validation
     VALIDATION_ERROR = "Validation failed"
