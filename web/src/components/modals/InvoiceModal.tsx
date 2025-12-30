@@ -7,6 +7,7 @@ import {
   invoiceItemsApi,
   suppliersApi,
   expenseCategoriesApi,
+  expenseSectionsApi,
   unitsApi,
   type Invoice,
   type InvoiceCreate,
@@ -14,9 +15,13 @@ import {
   type InvoiceItemCreate,
   type Supplier,
   type ExpenseCategory,
+  type ExpenseSection,
   type Unit,
 } from '~/shared/api';
+import CreateExpenseModal from './CreateExpenseModal';
+import SupplierModal from '~/components/modals/SupplierModal';
 import { useAppContext } from '~/shared/context/AppContext';
+import { Protected } from '~/shared/ui';
 import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
 import { formatCurrency as formatCurrencyDisplay, formatNumber } from '~/shared/lib/helpers';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
@@ -73,8 +78,18 @@ export default function InvoiceModal({
   // Data for dropdowns
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [sections, setSections] = useState<ExpenseSection[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+
+  // Create expense modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // Create supplier modal state
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Load invoice items when editing
   useEffect(() => {
@@ -94,10 +109,10 @@ export default function InvoiceModal({
               items.map((item) => ({
                 id: item.id,
                 category_id: item.category_id,
-                quantity: item.quantity,
+                quantity: String(parseFloat(item.quantity)), // Keep natural decimal display
                 unit_id: item.unit_id,
-                unit_price: item.unit_price,
-                total_price: item.total_price,
+                unit_price: String(parseFloat(item.unit_price)), // Keep natural decimal display
+                total_price: String(parseFloat(item.total_price)), // Keep natural decimal display
                 notes: item.notes,
               }))
             );
@@ -131,13 +146,15 @@ export default function InvoiceModal({
 
     setLoadingData(true);
     try {
-      const [suppliersRes, categoriesRes, unitsRes] = await Promise.all([
+      const [suppliersRes, categoriesRes, sectionsRes, unitsRes] = await Promise.all([
         suppliersApi.list({ business_id: currentLocation.id, is_active: true, limit: 1000 }),
         expenseCategoriesApi.listByBusiness(currentLocation.id, { is_active: true, limit: 1000 }),
+        expenseSectionsApi.list({ business_id: currentLocation.id, is_active: true, limit: 1000 }),
         unitsApi.list({ business_id: currentLocation.id, is_active: true, limit: 1000 }),
       ]);
       setSuppliers(suppliersRes.suppliers);
       setCategories(categoriesRes.categories);
+      setSections(sectionsRes.sections);
       setUnits(unitsRes.units);
     } catch (err) {
       console.error('Failed to load dropdown data:', err);
@@ -202,6 +219,43 @@ export default function InvoiceModal({
     return options;
   };
 
+  const handleCreateSuccess = async () => {
+    await loadDropdownData();
+    setIsCreateModalOpen(false);
+  };
+
+  const handleSupplierCreated = async () => {
+    await loadDropdownData();
+    setIsSupplierModalOpen(false);
+  };
+
+  // Handler for decimal input fields (quantity, unit_price)
+  const handleDecimalFieldChange = (index: number, field: keyof LineItem, value: string, maxDecimals: number = 2) => {
+    // Allow only empty string or positive decimal numbers
+    if (value === '') {
+      handleLineItemChange(index, field, value);
+      return;
+    }
+    
+    // Check if it matches decimal pattern
+    if (!/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    // Prevent leading zeros (except for "0" or "0.X")
+    if (value.length > 1 && value[0] === '0' && value[1] !== '.') {
+      return;
+    }
+    
+    // Check decimal places limit
+    const parts = value.split('.');
+    if (parts.length === 2 && parts[1].length > maxDecimals) {
+      return; // Don't allow more decimal places than limit
+    }
+    
+    handleLineItemChange(index, field, value);
+  };
+
   const handleLineItemChange = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
@@ -210,7 +264,19 @@ export default function InvoiceModal({
     if (field === 'quantity' || field === 'unit_price') {
       const quantity = parseFloat(field === 'quantity' ? (value as string) : updated[index].quantity) || 0;
       const unitPrice = parseFloat(field === 'unit_price' ? (value as string) : updated[index].unit_price) || 0;
+      // Always keep 2 decimal places for total_price
       updated[index].total_price = (quantity * unitPrice).toFixed(2);
+    }
+
+    // Auto-calculate unit_price when total_price changes
+    if (field === 'total_price') {
+      const quantity = parseFloat(updated[index].quantity) || 0;
+      const totalPrice = parseFloat(value as string) || 0;
+      if (quantity > 0) {
+        // Always keep 2 decimal places for unit_price
+        const calculatedPrice = totalPrice / quantity;
+        updated[index].unit_price = calculatedPrice.toFixed(2);
+      }
     }
 
     setLineItems(updated);
@@ -253,6 +319,28 @@ export default function InvoiceModal({
     }
 
     return true;
+  };
+
+  const handleDelete = async () => {
+    if (!invoice) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await invoicesApi.delete(invoice.id);
+      onSuccess();
+      onClose();
+    } catch (err: unknown) {
+      console.error('Failed to delete invoice:', err);
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      const regularError = err as Error;
+      const errorMessage = axiosError?.response?.data?.detail || regularError?.message || '';
+      setError(errorMessage || t('expenses.invoices.modal.deleteError'));
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -335,6 +423,7 @@ export default function InvoiceModal({
   };
 
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
@@ -361,7 +450,7 @@ export default function InvoiceModal({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-4xl transform rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
-                <div className="p-6 max-h-[90vh]">
+                <div className="p-6">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
                     <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
@@ -386,9 +475,19 @@ export default function InvoiceModal({
                         </label>
                         <div className="mt-1">
                           <SearchableSelect
-                            options={suppliers.map((s) => ({ id: s.id, name: s.name }))}
+                            options={suppliers.map((s) => ({ 
+                              id: s.id, 
+                              name: s.name,
+                              subtitle: s.tax_id ? `ИНН: ${s.tax_id}` : undefined
+                            }))}
                             value={suppliers.find((s) => s.id === supplierId)
-                              ? { id: supplierId!, name: suppliers.find((s) => s.id === supplierId)!.name }
+                              ? { 
+                                  id: supplierId!, 
+                                  name: suppliers.find((s) => s.id === supplierId)!.name,
+                                  subtitle: suppliers.find((s) => s.id === supplierId)!.tax_id 
+                                    ? `ИНН: ${suppliers.find((s) => s.id === supplierId)!.tax_id}` 
+                                    : undefined
+                                }
                               : null
                             }
                             onChange={(selected: SelectOption | null) =>
@@ -439,18 +538,44 @@ export default function InvoiceModal({
                           {t('expenses.invoices.modal.lineItems')} <span className="text-red-500">*</span>
                         </label>
                         {!isViewing && (
-                          <button
-                            type="button"
-                            onClick={handleAddLineItem}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
-                          >
-                            <PlusIcon className="h-4 w-4 mr-1" />
-                            {t('expenses.invoices.modal.addItem')}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <Protected permission={{ resource: 'suppliers', action: 'create' }}>
+                              <button
+                                type="button"
+                                onClick={() => setIsSupplierModalOpen(true)}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                              >
+                                <PlusIcon className="h-4 w-4 mr-1" />
+                                {t('billing.suppliers.create')}
+                              </button>
+                            </Protected>
+                            <Protected anyOf={[
+                              { resource: 'categories', action: 'create' },
+                              { resource: 'subcategories', action: 'create' }
+                            ]}>
+                              <button
+                                type="button"
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                              >
+                                <PlusIcon className="h-4 w-4 mr-1" />
+                                {t('expenses.categories.addCategory')}
+                              </button>
+                            </Protected>
+                            <button
+                              type="button"
+                              onClick={handleAddLineItem}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                            >
+                              <PlusIcon className="h-4 w-4 mr-1" />
+                              {t('expenses.invoices.modal.addItem')}
+                            </button>
+                          </div>
                         )}
                       </div>
 
-                      <div className="space-y-3">
+                      {/* Scrollable Line Items Container */}
+                      <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2">
                         {lineItems.map((item, index) => (
                           <div key={index} className="grid grid-cols-12 gap-2 items-start p-3 border rounded-lg bg-gray-50">
                             <div className="col-span-3">
@@ -459,10 +584,23 @@ export default function InvoiceModal({
                               </label>
                               <div className="mt-1">
                                 <SearchableSelect
-                                  options={categories.map((cat) => ({ id: cat.id, name: cat.name }))}
-                                  value={categories.find((cat) => cat.id === item.category_id) 
-                                    ? { id: item.category_id, name: categories.find((cat) => cat.id === item.category_id)!.name }
-                                    : null
+                                  options={categories.map((cat) => {
+                                    const section = sections.find((sec) => sec.id === cat.section_id);
+                                    return {
+                                      id: cat.id,
+                                      name: cat.name,
+                                      subtitle: section?.name
+                                    };
+                                  })}
+                                  value={item.category_id ? (() => {
+                                    const category = categories.find((cat) => cat.id === item.category_id);
+                                    const section = sections.find((sec) => sec.id === category?.section_id);
+                                    return category ? {
+                                      id: category.id,
+                                      name: category.name,
+                                      subtitle: section?.name
+                                    } : null;
+                                  })() : null
                                   }
                                   onChange={(selected: SelectOption | null) => 
                                     handleLineItemChange(index, 'category_id', selected ? Number(selected.id) : 0)
@@ -481,10 +619,10 @@ export default function InvoiceModal({
                               </label>
                               <div className="mt-1">
                                 <Input
-                                  type="number"
-                                  step="0.001"
+                                  type="text"
+                                  inputMode="decimal"
                                   value={item.quantity}
-                                  onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'quantity', e.target.value, 3)}
                                   placeholder="0"
                                   disabled={isViewing}
                                 />
@@ -510,7 +648,6 @@ export default function InvoiceModal({
                                   searchPlaceholder={t('expenses.invoices.modal.searchUnit')}
                                   noResultsText={t('expenses.invoices.modal.noUnitsFound')}
                                   disabled={isViewing || loadingData || !item.category_id}
-                                  truncateOptions={false}
                                 />
                               </div>
                             </div>
@@ -521,10 +658,10 @@ export default function InvoiceModal({
                               </label>
                               <div className="mt-1">
                                 <Input
-                                  type="number"
-                                  step="0.01"
+                                  type="text"
+                                  inputMode="decimal"
                                   value={item.unit_price}
-                                  onChange={(e) => handleLineItemChange(index, 'unit_price', e.target.value)}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'unit_price', e.target.value, 2)}
                                   placeholder="0.00"
                                   disabled={isViewing}
                                 />
@@ -538,20 +675,23 @@ export default function InvoiceModal({
                               <div className="mt-1">
                                 <Input
                                   type="text"
-                                  value={formatCurrencyDisplay(item.total_price)}
-                                  disabled
-                                  className="bg-gray-100 font-medium text-gray-900"
+                                  inputMode="decimal"
+                                  value={item.total_price}
+                                  onChange={(e) => handleDecimalFieldChange(index, 'total_price', e.target.value, 2)}
+                                  placeholder="0.00"
+                                  disabled={isViewing}
+                                  className="font-medium text-gray-900"
                                 />
                               </div>
                             </div>
 
                             {!isViewing && (
-                              <div className="col-span-1 flex items-end">
+                              <div className="col-span-1 flex items-end justify-center h-full">
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveLineItem(index)}
                                   disabled={lineItems.length === 1}
-                                  className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="p-2 mb-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                   title={t('expenses.invoices.modal.removeItem')}
                                 >
                                   <TrashIcon className="h-5 w-5" />
@@ -579,34 +719,72 @@ export default function InvoiceModal({
                     )}
 
                     {/* Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t">
-                      <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        disabled={isLoading}
-                      >
-                        {isViewing ? t('common.close') : t('common.cancel')}
-                      </button>
-                      {!isViewing && (
+                    <div className="flex justify-between items-center pt-4 border-t">
+                      <div>
+                        {isEditing && !isViewing && invoice && (
+                          <Protected permission={{ resource: 'invoices', action: 'delete' }}>
+                            {!showDeleteConfirm ? (
+                              <button
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(true)}
+                                className="px-4 py-2 border border-red-300 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+                                disabled={isLoading}
+                              >
+                                {t('common.delete')}
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-600">{t('common.confirmDelete')}?</span>
+                                <button
+                                  type="button"
+                                  onClick={handleDelete}
+                                  className="px-3 py-1 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+                                  disabled={isLoading}
+                                >
+                                  {t('common.yes')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowDeleteConfirm(false)}
+                                  className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                  disabled={isLoading}
+                                >
+                                  {t('common.no')}
+                                </button>
+                              </div>
+                            )}
+                          </Protected>
+                        )}
+                      </div>
+                      <div className="flex space-x-3">
                         <button
-                          type="submit"
-                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={isLoading || loadingData}
+                          type="button"
+                          onClick={onClose}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          disabled={isLoading}
                         >
-                          {isLoading ? (
-                            <span className="flex items-center">
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              {t('common.saving')}
-                            </span>
-                          ) : (
-                            t(isEditing ? 'common.update' : 'common.create')
-                          )}
+                          {isViewing ? t('common.close') : t('common.cancel')}
                         </button>
-                      )}
+                        {!isViewing && (
+                          <button
+                            type="submit"
+                            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isLoading || loadingData}
+                          >
+                            {isLoading ? (
+                              <span className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                {t('common.saving')}
+                              </span>
+                            ) : (
+                              t(isEditing ? 'common.update' : 'common.create')
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </form>
@@ -617,5 +795,22 @@ export default function InvoiceModal({
         </div>
       </Dialog>
     </Transition>
+
+    {/* Create Expense Modal (Section or Category) */}
+    <CreateExpenseModal
+      isOpen={isCreateModalOpen}
+      onClose={() => setIsCreateModalOpen(false)}
+      onSuccess={handleCreateSuccess}
+      sections={sections}
+    />
+
+    {/* Create Supplier Modal */}
+    <SupplierModal
+      isOpen={isSupplierModalOpen}
+      onClose={() => setIsSupplierModalOpen(false)}
+      onSave={handleSupplierCreated}
+      businessId={currentLocation?.id}
+    />
+    </>
   );
 }

@@ -10,18 +10,11 @@ import LocationIndicator from "~/components/LocationIndicator";
 
 export default function Layout() {
   const navigate = useNavigate();
-  const { user, setUser } = useAppContext();
+  const { user } = useAppContext();
   const { t } = useTranslation();
   
   // Check if user is authenticated (either has user data or valid token)
   const isAuthenticated = Boolean(user || hasToken());
-  
-  // Custom logout function that updates context
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    setUser(null);
-    navigate("/");
-  };
   
   // Sidebar state management
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -114,12 +107,12 @@ export default function Layout() {
             <div className="flex items-center space-x-4">
               <LanguageSelector />
               
-              {/* Separator */}
-              <div className="h-6 w-px bg-gray-200"></div>
-              
-              {/* Auth buttons */}
-              {!isAuthenticated ? (
+              {!isAuthenticated && (
                 <>
+                  {/* Separator */}
+                  <div className="h-6 w-px bg-gray-200"></div>
+                  
+                  {/* Auth buttons */}
                   <button
                     className="px-3 py-2 rounded transition-colors border border-blue-200 text-blue-600 hover:bg-blue-50"
                     onClick={() => navigate("/register")}
@@ -131,16 +124,6 @@ export default function Layout() {
                     onClick={() => navigate("/login")}
                   >
                     {t('navigation.signIn')}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="text-sm text-gray-600">{t('greetings.hi', { username: user?.username })}</div>
-                  <button
-                    className="px-3 py-2 rounded transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50"
-                    onClick={handleLogout}
-                  >
-                    {t('navigation.logOut')}
                   </button>
                 </>
               )}

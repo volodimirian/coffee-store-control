@@ -13,6 +13,7 @@ import {
 } from '~/shared/api/expenses';
 import { formatCurrency } from '~/shared/lib/helpers';
 import type { Invoice } from '~/shared/api/types';
+import InvoiceModal from '~/components/modals/InvoiceModal';
 
 export default function OverviewTab() {
   const { t, i18n } = useTranslation();
@@ -23,6 +24,8 @@ export default function OverviewTab() {
     thisMonthTotal: '0',
     pendingInvoicesCount: 0,
   });
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
 
@@ -74,8 +77,20 @@ export default function OverviewTab() {
       setLoading(false);
     }
   };
+
+  const handleInvoiceClick = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedInvoice(null);
+  };
+
   return (
     <div className="space-y-6">
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white overflow-hidden shadow rounded-lg border">
@@ -163,7 +178,11 @@ export default function OverviewTab() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {recentInvoices.map((invoice) => (
-                      <tr key={invoice.id} className="hover:bg-gray-50">
+                      <tr 
+                        key={invoice.id} 
+                        onClick={() => handleInvoiceClick(invoice)}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
                         <td className="px-3 py-2 text-sm text-gray-900">
                           {invoice.invoice_number || `#${invoice.id}`}
                         </td>
@@ -193,6 +212,15 @@ export default function OverviewTab() {
           </div>
         </div>
       </div>
+
+      {/* Invoice View Modal */}
+      <InvoiceModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={() => {}} // No-op for view mode
+        invoice={selectedInvoice}
+        mode="view"
+      />
     </div>
   );
 }

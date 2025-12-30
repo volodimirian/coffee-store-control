@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   PlusIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { 
   format, 
@@ -27,8 +28,11 @@ import {
   invoiceItemsApi,
   unitsApi,
 } from '~/shared/api/expenses';
+import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
+import InvoiceModal from '~/components/modals/InvoiceModal';
 import CategoryModal from '~/components/modals/CategoryModal';
-import AddSectionModal from '~/components/modals/AddSectionModal';
+import SectionModal from '~/components/modals/SectionModal';
+import { Protected } from '~/shared/ui';
 import { formatCurrencyCompact } from '~/shared/lib/helpers';
 import type { 
   ExpenseSection,
@@ -76,9 +80,13 @@ export default function InventoryTrackingTab() {
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
-  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
-  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
+  const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(null);
+  const [selectedSectionIdForCreate, setSelectedSectionIdForCreate] = useState<number | null>(null);
 
   // Get locale for date-fns
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -113,18 +121,40 @@ export default function InventoryTrackingTab() {
   };
 
   const handleAddCategory = (sectionId: number) => {
-    setSelectedSectionId(sectionId);
-    setIsAddCategoryModalOpen(true);
+    setSelectedSectionIdForCreate(sectionId);
+    setIsEditCategoryModalOpen(true);
   };
 
-  const handleSectionAdded = () => {
-    setIsAddSectionModalOpen(false);
+  const handleCreateSuccess = () => {
+    setIsCreateModalOpen(false);
     loadData();
   };
 
-  const handleCategoryAdded = () => {
-    setIsAddCategoryModalOpen(false);
-    setSelectedSectionId(null);
+  const handleInvoiceSuccess = () => {
+    setIsInvoiceModalOpen(false);
+    loadData(); // Reload data after creating invoice
+  };
+
+  const handleEditCategory = (category: ExpenseCategory) => {
+    setSelectedCategory(category);
+    setIsEditCategoryModalOpen(true);
+  };
+
+  const handleEditSection = (section: ExpenseSection) => {
+    setSelectedSection(section);
+    setIsEditSectionModalOpen(true);
+  };
+
+  const handleCategoryUpdated = () => {
+    setIsEditCategoryModalOpen(false);
+    setSelectedCategory(null);
+    setSelectedSectionIdForCreate(null);
+    loadData();
+  };
+
+  const handleSectionUpdated = () => {
+    setIsEditSectionModalOpen(false);
+    setSelectedSection(null);
     loadData();
   };
 
@@ -358,13 +388,27 @@ export default function InventoryTrackingTab() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setIsAddSectionModalOpen(true)}
-            className="flex items-center px-3 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            {t('expenses.sections.add')}
-          </button>
+          <Protected permission={{ resource: 'invoices', action: 'create' }}>
+            <button
+              onClick={() => setIsInvoiceModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              {t('expenses.overview.addExpense')}
+            </button>
+          </Protected>
+          <Protected anyOf={[
+            { resource: 'categories', action: 'create' },
+            { resource: 'subcategories', action: 'create' }
+          ]}>
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              {t('expenses.modals.createExpense.createButton')}
+            </button>
+          </Protected>
         </div>
       </div>
 
@@ -483,6 +527,18 @@ export default function InventoryTrackingTab() {
                           <div className="flex items-center justify-between w-full">
                             <span className="font-semibold">{tableSection.section.name}</span>
                             <div className="flex items-center space-x-2">
+                              <Protected permission={{ resource: 'categories', action: 'edit' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditSection(tableSection.section);
+                                  }}
+                                  className="p-1 hover:bg-blue-200 rounded transition-colors"
+                                  title={t('expenses.categories.editSection')}
+                                >
+                                  <PencilIcon className="h-4 w-4 text-blue-600" />
+                                </button>
+                              </Protected>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -573,9 +629,20 @@ export default function InventoryTrackingTab() {
                         const totalQty = totalPurchasesQty - totalUsageQty;
 
                         return (
-                          <tr key={`category-${tableCategory.category.id}`} className="hover:bg-gray-50 border-b border-gray-100">
+                          <tr key={`category-${tableCategory.category.id}`} className="group hover:bg-gray-50 border-b border-gray-100">
                             <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
-                              {tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}
+                              <div className="flex items-center justify-between">
+                                <span>{tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}</span>
+                                <Protected permission={{ resource: 'subcategories', action: 'edit' }}>
+                                  <button
+                                    onClick={() => handleEditCategory(tableCategory.category)}
+                                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title={t('expenses.categories.editCategory')}
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                </Protected>
+                              </div>
                             </td>
                             {monthDays.map((day) => {
                               const dateKey = format(day, 'yyyy-MM-dd');
@@ -669,22 +736,50 @@ export default function InventoryTrackingTab() {
       )}
 
       {/* Modals */}
-      <AddSectionModal
-        isOpen={isAddSectionModalOpen}
-        onClose={() => setIsAddSectionModalOpen(false)}
-        onSectionAdded={handleSectionAdded}
+      <CreateExpenseModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+        sections={tableSections.map(ts => ({ id: ts.section.id, name: ts.section.name }))}
       />
 
-      {selectedSectionId && (
-        <CategoryModal
-          isOpen={isAddCategoryModalOpen}
-          onClose={() => {
-            setIsAddCategoryModalOpen(false);
-            setSelectedSectionId(null);
-          }}
+      {isInvoiceModalOpen && (
+        <InvoiceModal
+          isOpen={isInvoiceModalOpen}
+          onClose={() => setIsInvoiceModalOpen(false)}
+          onSuccess={handleInvoiceSuccess}
           mode="create"
-          sectionId={selectedSectionId}
-          onCategoryAdded={handleCategoryAdded}
+        />
+      )}
+
+      {/* Category Modal (Create or Edit) */}
+      {isEditCategoryModalOpen && (
+        <CategoryModal
+          isOpen={isEditCategoryModalOpen}
+          onClose={() => {
+            setIsEditCategoryModalOpen(false);
+            setSelectedCategory(null);
+            setSelectedSectionIdForCreate(null);
+          }}
+          mode={selectedCategory ? "edit" : "create"}
+          sectionId={selectedSectionIdForCreate || undefined}
+          category={selectedCategory || undefined}
+          onCategoryAdded={selectedCategory ? undefined : handleCategoryUpdated}
+          onCategoryUpdated={selectedCategory ? handleCategoryUpdated : undefined}
+        />
+      )}
+
+      {/* Edit Section Modal */}
+      {isEditSectionModalOpen && selectedSection && (
+        <SectionModal
+          isOpen={isEditSectionModalOpen}
+          onClose={() => {
+            setIsEditSectionModalOpen(false);
+            setSelectedSection(null);
+          }}
+          mode="edit"
+          section={selectedSection}
+          onSectionUpdated={handleSectionUpdated}
         />
       )}
     </div>

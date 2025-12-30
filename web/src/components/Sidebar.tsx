@@ -1,22 +1,24 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useState, useMemo } from 'react';
+import { /*useState,*/ useMemo } from 'react';
 import { USER_ROLES } from '~/shared/api/authentication';
 import {
-  HomeIcon,
-  UserIcon,
+  // HomeIcon,
+  // UserIcon,
   // CubeIcon,
   // ShoppingCartIcon,
   ChartBarIcon,
-  CogIcon,
+  // CogIcon,
   Bars3Icon,
   XMarkIcon,
-  ChevronRightIcon,
+  ChevronLeftIcon,
+  // ChevronRightIcon,
   CurrencyDollarIcon,
   BanknotesIcon,
   BuildingOfficeIcon,
   MapPinIcon,
   UsersIcon,
+  ArrowLeftOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -48,24 +50,12 @@ const menuSections: MenuSection[] = [
     icon: BuildingOfficeIcon,
     defaultExpanded: true,
     items: [
-      {
-        id: 'dashboard',
-        path: '/dashboard',
-        icon: HomeIcon,
-        labelKey: 'navigation.dashboard',
-      },
-      {
-        id: 'locations',
-        path: '/locations',
-        icon: MapPinIcon,
-        labelKey: 'navigation.locations',
-      },
-      {
-        id: 'employees',
-        path: '/employees',
-        icon: UsersIcon,
-        labelKey: 'navigation.employees',
-      },
+      // {
+      //   id: 'dashboard',
+      //   path: '/dashboard',
+      //   icon: HomeIcon,
+      //   labelKey: 'navigation.dashboard',
+      // },
       {
         id: 'expenses',
         path: '/expenses',
@@ -108,28 +98,40 @@ const menuSections: MenuSection[] = [
         icon: ChartBarIcon,
         labelKey: 'navigation.analytics',
       },
-    ],
-  },
-  {
-    id: 'account',
-    labelKey: 'navigation.personalAccount',
-    icon: UserIcon,
-    defaultExpanded: true,
-    items: [
       {
-        id: 'account',
-        path: '/account',
-        icon: UserIcon,
-        labelKey: 'navigation.account',
+        id: 'locations',
+        path: '/locations',
+        icon: MapPinIcon,
+        labelKey: 'navigation.locations',
       },
       {
-        id: 'settings',
-        path: '/settings',
-        icon: CogIcon,
-        labelKey: 'navigation.settings',
+        id: 'employees',
+        path: '/employees',
+        icon: UsersIcon,
+        labelKey: 'navigation.employees',
       },
     ],
   },
+  // {
+  //   id: 'account',
+  //   labelKey: 'navigation.personalAccount',
+  //   icon: UserIcon,
+  //   defaultExpanded: true,
+  //   items: [
+  //     {
+  //       id: 'account',
+  //       path: '/account',
+  //       icon: UserIcon,
+  //       labelKey: 'navigation.account',
+  //     },
+  //     {
+  //       id: 'settings',
+  //       path: '/settings',
+  //       icon: CogIcon,
+  //       labelKey: 'navigation.settings',
+  //     },
+  //   ],
+  // },
 ];
 
 interface SidebarProps {
@@ -179,13 +181,14 @@ function LocationSelectorWrapper() {
 export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: SidebarProps) {
   const { t } = useTranslation();
   const { permissions } = usePermissions();
-  
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
-    menuSections.reduce((acc, section) => ({
-      ...acc,
-      [section.id]: section.defaultExpanded ?? false
-    }), {})
-  );
+  const { user, logout } = useAppContext();
+
+  // const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
+  //   menuSections.reduce((acc, section) => ({
+  //     ...acc,
+  //     [section.id]: section.defaultExpanded ?? false
+  //   }), {})
+  // );
 
   // Filter menu items based on permissions
   const filteredMenuSections = useMemo(() => {
@@ -203,12 +206,12 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
     })).filter(section => section.items.length > 0); // Remove empty sections
   }, [permissions]);
 
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }));
-  };
+  // const toggleSection = (sectionId: string) => {
+  //   setExpandedSections(prev => ({
+  //     ...prev,
+  //     [sectionId]: !prev[sectionId]
+  //   }));
+  // };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
@@ -222,10 +225,10 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
       isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
     }`;
 
-  const sectionHeaderClass = 'flex items-center justify-between w-full px-3 py-2 text-left text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors duration-200';
+  // const sectionHeaderClass = 'flex items-center justify-between w-full px-3 py-2 text-left text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors duration-200';
   
-  const chevronClass = (isExpanded: boolean) =>
-    `w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`;
+  // const chevronClass = (isExpanded: boolean) =>
+  //   `w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -250,14 +253,14 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
           )}
         </div>
         
-        {/* Desktop close button - only when expanded */}
+        {/* Desktop collapse button - only when expanded */}
         {!isCollapsed && (
           <button
             onClick={onToggle}
             className="hidden lg:block p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
-            aria-label={t('navigation.closeSidebar')}
+            aria-label={t('navigation.collapseSidebar')}
           >
-            <XMarkIcon className="w-5 h-5" />
+            <ChevronLeftIcon className="w-5 h-5" />
           </button>
         )}
 
@@ -304,67 +307,60 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen, onMobileC
             )}
           </>
         ) : (
-          // Expanded view - show sections
+          // Expanded view - show all items directly without collapsible sections
           <>
-            {filteredMenuSections.map((section) => (
-              <div key={section.id} className="space-y-1">
-                {/* Section Header */}
-                <button
-                  onClick={() => toggleSection(section.id)}
-                  className={sectionHeaderClass}
+            {filteredMenuSections.map((section) =>
+              section.items.map((item) => (
+                <NavLink
+                  key={item.id}
+                  to={item.path}
+                  className={linkClass}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onMobileClose();
+                    }
+                  }}
                 >
-                  <div className="flex items-center">
-                    <section.icon className="w-4 h-4 mr-2" />
-                    <span>{t(section.labelKey)}</span>
-                  </div>
-                  <ChevronRightIcon className={chevronClass(expandedSections[section.id])} />
-                </button>
-
-                {/* Section Items */}
-                {expandedSections[section.id] && (
-                  <div className="ml-6 space-y-1">
-                    {section.items.map((item) => (
-                      <NavLink
-                        key={item.id}
-                        to={item.path}
-                        className={linkClass}
-                        onClick={() => {
-                          if (window.innerWidth < 1024) {
-                            onMobileClose();
-                          }
-                        }}
-                      >
-                        {({ isActive }) => (
-                          <>
-                            <item.icon className={iconClass(isActive)} />
-                            <span className="ml-3 truncate">
-                              {t(item.labelKey)}
-                            </span>
-                            {item.badge && (
-                              <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                                {item.badge}
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                  {({ isActive }) => (
+                    <>
+                      <item.icon className={iconClass(isActive)} />
+                      <span className="ml-3 truncate">
+                        {t(item.labelKey)}
+                      </span>
+                      {item.badge && (
+                        <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              ))
+            )}
           </>
         )}
       </nav>
 
       {/* Footer */}
-      {!isCollapsed && (
-        <div className="p-4 border-t border-gray-200">
-          <div className="text-xs text-gray-500 text-center">
-            v0.1.0
-          </div>
-        </div>
-      )}
+      <div className="p-3 border-t border-gray-200">
+        {isCollapsed ? (
+          <button
+            onClick={logout}
+            className="w-full p-2 rounded-md text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+            title={t('navigation.logOut')}
+          >
+            <ArrowLeftOnRectangleIcon className="w-5 h-5 mx-auto" />
+          </button>
+        ) : (
+          <button
+            onClick={logout}
+            className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors duration-200"
+          >
+            <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-3" />
+            <span>{t('navigation.logOut')} { user?.username }</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 

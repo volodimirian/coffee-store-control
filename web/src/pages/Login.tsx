@@ -25,7 +25,7 @@ export default function Login() {
   const { setUser } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation() as Location;
-  const from = location.state?.from?.pathname || "/dashboard";
+  const from = location.state?.from?.pathname || "/locations";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

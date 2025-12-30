@@ -15,7 +15,7 @@ class BusinessBase(BaseModel):
 
 class BusinessCreate(BusinessBase):
     """Schema for creating a new business."""
-    pass
+    language: Optional[str] = None  # Language for default units (ru, en, etc.). If None, will use Accept-Language header
 
 
 class BusinessUpdate(BaseModel):

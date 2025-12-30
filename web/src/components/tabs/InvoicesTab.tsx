@@ -215,6 +215,20 @@ export default function InvoicesTab() {
     setIsInvoiceModalOpen(true);
   };
 
+  const handleRowClick = (invoice: Invoice, e: React.MouseEvent) => {
+    // Ignore clicks on buttons (action column)
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // Open invoice based on permissions
+    if (can.edit(permissions, 'invoices')) {
+      handleEditInvoice(invoice);
+    } else if (can.view(permissions, 'invoices')) {
+      handleViewInvoice(invoice);
+    }
+  };
+
   const handleDeleteInvoice = (invoice: Invoice) => {
     setInvoiceToDelete(invoice);
     setIsDeleteModalOpen(true);
@@ -477,120 +491,126 @@ export default function InvoicesTab() {
               </svg>
             </div>
           )}
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.createdDate')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.paymentDate')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.supplier')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.invoiceNumber')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.totalAmount')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.status')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('expenses.invoices.table.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {invoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(invoice.invoice_date).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getPaymentDate(invoice)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getSupplierName(invoice.supplier_id)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {invoice.invoice_number || `#${invoice.id}`}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(invoice.total_amount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(getDisplayStatus(invoice))}`}>
-                      {t(`expenses.invoices.status.${getDisplayStatus(invoice)}`)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      {invoice.paid_status === 'pending' && (
-                        <>
-                          <Protected permission={{ resource: 'invoices', action: 'approve' }}>
-                            <button
-                              onClick={() => handleMarkAsPaid(invoice)}
-                              className="text-green-600 hover:text-green-900"
-                              title={t('expenses.invoices.actions.markAsPaid')}
-                            >
-                              <CheckCircleIcon className="h-5 w-5" />
-                            </button>
-                          </Protected>
-                          <Protected permission={{ resource: 'invoices', action: 'reject' }}>
-                            <button
-                              onClick={() => handleMarkAsCancelled(invoice)}
-                              className="text-red-600 hover:text-red-900"
-                              title={t('expenses.invoices.actions.markAsCancelled')}
-                            >
-                              <XCircleIcon className="h-5 w-5" />
-                            </button>
-                          </Protected>
-                        </>
-                      )}
-                      {/* Show eye icon only if has view permission but NOT edit permission */}
-                      {can.view(permissions, 'invoices') && 
-                       !can.edit(permissions, 'invoices') && (
-                        <button
-                          onClick={() => handleViewInvoice(invoice)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title={t('expenses.invoices.actions.view')}
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                        </button>
-                      )}
-                      {/* Show edit icon only if has both edit and view_suppliers permissions */}
-                      <Protected 
-                        allOf={[
-                          { resource: 'invoices', action: 'edit' },
-                          { resource: 'suppliers', action: 'view' }
-                        ]}
-                      >
-                        <button
-                          onClick={() => handleEditInvoice(invoice)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title={t('expenses.invoices.actions.edit')}
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
-                      </Protected>
-                      <Protected permission={{ resource: 'invoices', action: 'delete' }}>
-                        <button
-                          onClick={() => handleDeleteInvoice(invoice)}
-                          className="text-red-600 hover:text-red-900"
-                          title={t('expenses.invoices.actions.delete')}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </Protected>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.createdDate')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.paymentDate')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.supplier')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.invoiceNumber')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.totalAmount')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.status')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('expenses.invoices.table.actions')}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {invoices.map((invoice) => (
+                  <tr 
+                    key={invoice.id} 
+                    onClick={(e) => handleRowClick(invoice, e)}
+                    className="hover:bg-gray-100 cursor-pointer transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(invoice.invoice_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getPaymentDate(invoice)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getSupplierName(invoice.supplier_id)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {invoice.invoice_number || `#${invoice.id}`}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCurrency(invoice.total_amount)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(getDisplayStatus(invoice))}`}>
+                        {t(`expenses.invoices.status.${getDisplayStatus(invoice)}`)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        {invoice.paid_status === 'pending' && (
+                          <>
+                            <Protected permission={{ resource: 'invoices', action: 'approve' }}>
+                              <button
+                                onClick={() => handleMarkAsPaid(invoice)}
+                                className="text-green-600 hover:text-green-900"
+                                title={t('expenses.invoices.actions.markAsPaid')}
+                              >
+                                <CheckCircleIcon className="h-5 w-5" />
+                              </button>
+                            </Protected>
+                            <Protected permission={{ resource: 'invoices', action: 'reject' }}>
+                              <button
+                                onClick={() => handleMarkAsCancelled(invoice)}
+                                className="text-red-600 hover:text-red-900"
+                                title={t('expenses.invoices.actions.markAsCancelled')}
+                              >
+                                <XCircleIcon className="h-5 w-5" />
+                              </button>
+                            </Protected>
+                          </>
+                        )}
+                        {/* Show eye icon only if has view permission but NOT edit permission */}
+                        {can.view(permissions, 'invoices') && 
+                        !can.edit(permissions, 'invoices') && (
+                          <button
+                            onClick={() => handleViewInvoice(invoice)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title={t('expenses.invoices.actions.view')}
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                        {/* Show edit icon only if has both edit and view_suppliers permissions */}
+                        <Protected 
+                          allOf={[
+                            { resource: 'invoices', action: 'edit' },
+                            { resource: 'suppliers', action: 'view' }
+                          ]}
+                        >
+                          <button
+                            onClick={() => handleEditInvoice(invoice)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title={t('expenses.invoices.actions.edit')}
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                        </Protected>
+                        <Protected permission={{ resource: 'invoices', action: 'delete' }}>
+                          <button
+                            onClick={() => handleDeleteInvoice(invoice)}
+                            className="text-red-600 hover:text-red-900"
+                            title={t('expenses.invoices.actions.delete')}
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </Protected>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
           {totalInvoices > pageSize && (

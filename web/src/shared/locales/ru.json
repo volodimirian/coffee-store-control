@@ -13,6 +13,7 @@
     "update": "Обновить",
     "yes": "Да",
     "no": "Нет",
+    "confirmDelete": "Подтвердить удаление",
     "continue": "Продолжить",
     "back": "Назад",
     "brandName": "Business Control",
@@ -443,6 +444,17 @@
       "add": "Добавить раздел"
     },
     "modals": {
+      "createExpense": {
+        "title": "Создать",
+        "createButton": "Создать",
+        "createSection": "Создать раздел",
+        "createSectionDescription": "Группа категорий (например: Кофе, Молоко)",
+        "createCategory": "Создать категорию",
+        "createCategoryDescription": "Товар внутри раздела (например: Арабика)",
+        "createSectionFirst": "Сначала создайте раздел",
+        "selectSection": "Выберите раздел",
+        "noSectionsWarning": "Сначала создайте раздел, чтобы добавлять категории"
+      },
       "addSection": {
         "title": "Добавить раздел расходов",
         "nameLabel": "Название раздела",
@@ -731,7 +743,8 @@
         "totalAmount": "Общая сумма",
         "loadDataError": "Ошибка загрузки данных",
         "createError": "Ошибка создания счета",
-        "updateError": "Ошибка обновления счета"
+        "updateError": "Ошибка обновления счета",
+        "deleteError": "Ошибка удаления счета"
       }
     },
     "invoiceCalendar": {
@@ -849,6 +862,8 @@
       "accessSettings": "Настройки доступа"
     },
     "overview": {
+      "title": "Обзор расходов",
+      "addExpense": "Внести расход",
       "totalExpenses": "Общие расходы",
       "thisMonth": "Этот месяц", 
       "categoriesCount": "Категории",
@@ -947,6 +962,7 @@
       "deleteWithoutInvoicesMessage": "У этого поставщика нет счетов. Поставщик будет удален полностью без возможности восстановления.",
       "basicInfo": "Основная информация",
       "contactInfo": "Контактная информация",
+      "additionalInfo": "Дополнительная информация",
       "isActive": "Активный поставщик",
       "validation": {
         "nameRequired": "Название поставщика обязательно",

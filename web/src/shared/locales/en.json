@@ -13,6 +13,7 @@
     "update": "Update",
     "yes": "Yes",
     "no": "No",
+    "confirmDelete": "Confirm delete",
     "continue": "Continue",
     "back": "Back",
     "brandName": "Business Control",
@@ -289,6 +290,17 @@
       "add": "Add Section"
     },
     "modals": {
+      "createExpense": {
+        "title": "Create",
+        "createButton": "Create",
+        "createSection": "Create Section",
+        "createSectionDescription": "Group of categories (e.g.: Coffee, Milk)",
+        "createCategory": "Create Category",
+        "createCategoryDescription": "Item within a section (e.g.: Arabica)",
+        "createSectionFirst": "Create a section first",
+        "selectSection": "Select Section",
+        "noSectionsWarning": "Please create a section first to add categories"
+      },
       "addSection": {
         "title": "Add Expense Section",
         "nameLabel": "Section Name",
@@ -577,7 +589,8 @@
         "totalAmount": "Total Amount",
         "loadDataError": "Error loading data",
         "createError": "Error creating invoice",
-        "updateError": "Error updating invoice"
+        "updateError": "Error updating invoice",
+        "deleteError": "Error deleting invoice"
       }
     },
     "invoiceCalendar": {
@@ -695,6 +708,8 @@
       "accessSettings": "Access Settings"
     },
     "overview": {
+      "title": "Expenses Overview",
+      "addExpense": "Add Expense",
       "totalExpenses": "Total Expenses",
       "thisMonth": "This Month",
       "categoriesCount": "Categories", 
@@ -945,6 +960,7 @@
       "deleteWithoutInvoicesMessage": "This supplier has no invoices. The supplier will be permanently deleted without possibility of recovery.",
       "basicInfo": "Basic Information",
       "contactInfo": "Contact Information",
+      "additionalInfo": "Additional Information",
       "isActive": "Active supplier",
       "validation": {
         "nameRequired": "Supplier name is required",

@@ -5,9 +5,11 @@ import {
   expenseSectionsApi,
   expenseCategoriesApi,
   monthPeriodsApi,
+  unitsApi,
   type ExpenseSection,
   type ExpenseCategory,
   type MonthPeriod,
+  type Unit,
 } from '~/shared/api';
 import { useAppContext } from '~/shared/context/AppContext';
 import { getShowInactivePreference, setShowInactivePreference } from '~/shared/lib/helpers/storageHelpers';
@@ -34,6 +36,7 @@ interface SectionCardProps {
   onDeleteCategory: (categoryId: number, sectionId: number) => void;
   onToggleCategoryStatus: (categoryId: number, isActive: boolean) => void;
   isActive: boolean;
+  getUnitSymbol: (unitId: number) => string;
   t: (key: string, options?: Record<string, unknown>) => string;
 }
 
@@ -48,6 +51,7 @@ function SectionCard({
   onDeleteCategory,
   onToggleCategoryStatus,
   isActive,
+  getUnitSymbol,
   t
 }: SectionCardProps) {
   return (
@@ -141,9 +145,14 @@ function SectionCard({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        {category.name}
-                      </h4>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          {category.name}
+                        </h4>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          {getUnitSymbol(category.default_unit_id)}
+                        </span>
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
                         {t('common.order')}: {category.order_index}
                       </p>
@@ -199,9 +208,14 @@ function SectionCard({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-600">
-                        {category.name}
-                      </h4>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-medium text-gray-600">
+                          {category.name}
+                        </h4>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                          {getUnitSymbol(category.default_unit_id)}
+                        </span>
+                      </div>
                       <p className="text-xs text-gray-400 mt-1">
                         {t('common.order')}: {category.order_index}
                       </p>
@@ -262,6 +276,7 @@ export default function CategoriesTab() {
   const [activeSections, setActiveSections] = useState<SectionWithCategories[]>([]);
   const [inactiveSections, setInactiveSections] = useState<SectionWithCategories[]>([]);
   const [currentPeriod, setCurrentPeriod] = useState<MonthPeriod | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -330,6 +345,14 @@ export default function CategoriesTab() {
       const period = periodsResponse.periods[0];
       setCurrentPeriod(period);
 
+      // Load units
+      const unitsResponse = await unitsApi.list({
+        business_id: currentLocation.id,
+        is_active: true,
+        limit: 100,
+      });
+      setUnits(unitsResponse.units);
+
       // Get sections for this period
       const sectionsResponse = await expenseSectionsApi.list({
         business_id: currentLocation.id,
@@ -384,6 +407,12 @@ export default function CategoriesTab() {
       loadData();
     }
   }, [currentLocation?.id, t, loadData, isLoadingPermissions, permissions]);
+
+  // Helper function to get unit symbol
+  const getUnitSymbol = (unitId: number): string => {
+    const unit = units.find(u => u.id === unitId);
+    return unit ? unit.symbol : '';
+  };
 
   // Check permissions before rendering
   if (!isLoadingPermissions && !can.view(permissions, 'categories')) {
@@ -803,6 +832,7 @@ export default function CategoriesTab() {
                   onDeleteCategory={handleDeleteCategory}
                   onToggleCategoryStatus={handleToggleCategoryStatus}
                   isActive={true}
+                  getUnitSymbol={getUnitSymbol}
                   t={t}
                 />
               ))}
@@ -830,6 +860,7 @@ export default function CategoriesTab() {
                   onDeleteCategory={handleDeleteCategory}
                   onToggleCategoryStatus={handleToggleCategoryStatus}
                   isActive={false}
+                  getUnitSymbol={getUnitSymbol}
                   t={t}
                 />
                 ))}
