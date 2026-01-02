@@ -77,7 +77,6 @@ async def list_tech_card_items(
     business_id: int,
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
-    category_id: Optional[int] = Query(None, description="Filter by category"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     approval_status: Optional[str] = Query(None, description="Filter by approval status"),
     session: AsyncSession = Depends(get_db_dep),
@@ -104,7 +103,6 @@ async def list_tech_card_items(
         business_id=business_id,
         page=page,
         page_size=page_size,
-        category_id=category_id,
         is_active=is_active,
         approval_status=approval_status,
     )

@@ -28,6 +28,10 @@
     "showing": "Показано",
     "to": "до",
     "of": "из",
+    "view": "Просмотр",
+    "actions": "Действия",
+    "search": "Поиск...",
+    "noResults": "Результаты не найдены",
     "results": "результатов",
     "today": "Сегодня",
     "original": "Изначально",
@@ -56,7 +60,8 @@
     "expenseTracking": "Учет расходов",
     "billing": "Оплата",
     "locations": "Локации",
-    "employees": "Сотрудники"
+    "employees": "Сотрудники",
+    "techCards": "Товары"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
@@ -970,6 +975,78 @@
         "paymentTermsRange": "Условия оплаты должны быть от 1 до 365 дней",
         "emailInvalid": "Неверный формат email",
         "businessRequired": "Бизнес не выбран"
+      }
+    }
+  },
+  "techCards": {
+    "title": "Технологические карты",
+    "description": "Управление рецептами и себестоимостью товаров",
+    "addItem": "Добавить товар",
+    "noItems": "Товары не найдены",
+    "filters": {
+      "search": "Поиск",
+      "searchPlaceholder": "Название товара...",
+      "category": "Категория",
+      "status": "Статус",
+      "active": "Активность"
+    },
+    "status": {
+      "draft": "Черновик",
+      "pending": "На согласовании",
+      "approved": "Согласовано",
+      "rejected": "Отклонено"
+    },
+    "fields": {
+      "name": "Название",
+      "description": "Описание",
+      "category": "Категория",
+      "sellingPrice": "Цена продажи",
+      "isActive": "Активный товар",
+      "ingredients": "Ингредиенты",
+      "cost": "Себестоимость",
+      "margin": "Маржа",
+      "marginPercent": "% маржи"
+    },
+    "ingredients": {
+      "title": "Состав",
+      "add": "Добавить ингредиент",
+      "ingredient": "Ингредиент",
+      "quantity": "Количество",
+      "unit": "Единица",
+      "notes": "Примечания",
+      "remove": "Удалить"
+    },
+    "actions": {
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "approve": "Согласовать",
+      "reject": "Отклонить"
+    },
+    "modal": {
+      "createTitle": "Создать товар",
+      "editTitle": "Редактировать товар",
+      "viewTitle": "Просмотр товара",
+      "selectCategory": "Выберите категорию",
+      "searchCategory": "Поиск категории...",
+      "noCategoriesFound": "Категории не найдены",
+      "selectIngredient": "Выберите ингредиент",
+      "searchIngredient": "Поиск ингредиента...",
+      "noIngredientsFound": "Ингредиенты не найдены",
+      "selectUnit": "Выберите единицу",
+      "searchUnit": "Поиск единицы...",
+      "noUnitsFound": "Единицы не найдены",
+      "optionalNotes": "Примечания (опционально)",
+      "noIngredients": "Добавьте ингредиенты в рецепт",
+      "loadDataError": "Ошибка загрузки данных",
+      "errors": {
+        "nameRequired": "Название обязательно",
+        "categoryRequired": "Категория обязательна",
+        "priceRequired": "Цена продажи обязательна и должна быть больше 0",
+        "ingredientsRequired": "Добавьте хотя бы один ингредиент",
+        "ingredientCategoryRequired": "Выберите ингредиент для всех позиций",
+        "ingredientQuantityRequired": "Укажите количество для всех ингредиентов",
+        "ingredientUnitRequired": "Выберите единицу измерения для всех ингредиентов",
+        "saveFailed": "Ошибка сохранения товара"
       }
     }
   }

@@ -29,7 +29,6 @@ class TechCardItem(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    category_id: Mapped[int] = mapped_column(ForeignKey("expense_categories.id", ondelete="RESTRICT"), nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     selling_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -43,7 +42,6 @@ class TechCardItem(Base):
 
     # Relationships
     business: Mapped["Business"] = relationship("Business", back_populates="tech_card_items")
-    category: Mapped["ExpenseCategory"] = relationship("ExpenseCategory")
     ingredients: Mapped[list["TechCardItemIngredient"]] = relationship("TechCardItemIngredient", back_populates="item", cascade="all, delete-orphan")
     created_by_user: Mapped["User"] = relationship("User", foreign_keys=[created_by])
     approved_by_user: Mapped["User | None"] = relationship("User", foreign_keys=[approved_by])

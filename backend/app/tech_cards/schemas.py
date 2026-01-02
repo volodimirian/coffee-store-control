@@ -52,7 +52,6 @@ class TechCardItemIngredientOut(TechCardItemIngredientBase):
 class TechCardItemBase(BaseModel):
     """Base schema for tech card item."""
     name: str = Field(..., min_length=1, max_length=200, description="Product name")
-    category_id: int = Field(..., description="Category this product belongs to")
     description: Optional[str] = Field(None, max_length=1000, description="Product description")
     selling_price: Decimal = Field(..., ge=0, max_digits=10, decimal_places=2, description="Selling price")
     is_active: bool = Field(default=True, description="Whether product is active")
@@ -66,7 +65,6 @@ class TechCardItemCreate(TechCardItemBase):
 class TechCardItemUpdate(BaseModel):
     """Schema for updating a tech card item."""
     name: Optional[str] = Field(None, min_length=1, max_length=200)
-    category_id: Optional[int] = None
     description: Optional[str] = Field(None, max_length=1000)
     selling_price: Optional[Decimal] = Field(None, ge=0, max_digits=10, decimal_places=2)
     is_active: Optional[bool] = None

@@ -38,7 +38,6 @@ class TechCardService:
         # Create the tech card item
         tech_item = TechCardItem(
             business_id=business_id,
-            category_id=item_data.category_id,
             name=item_data.name,
             description=item_data.description,
             selling_price=item_data.selling_price,
@@ -91,7 +90,6 @@ class TechCardService:
         business_id: int,
         page: int = 1,
         page_size: int = 50,
-        category_id: Optional[int] = None,
         is_active: Optional[bool] = None,
         approval_status: Optional[str] = None,
     ) -> tuple[list[TechCardItem], int]:
@@ -99,8 +97,6 @@ class TechCardService:
         # Build base query
         conditions = [TechCardItem.business_id == business_id]
 
-        if category_id is not None:
-            conditions.append(TechCardItem.category_id == category_id)
         if is_active is not None:
             conditions.append(TechCardItem.is_active == is_active)
         if approval_status is not None:

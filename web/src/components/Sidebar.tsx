@@ -19,6 +19,7 @@ import {
   MapPinIcon,
   UsersIcon,
   ArrowLeftOnRectangleIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -109,6 +110,15 @@ const menuSections: MenuSection[] = [
         path: '/employees',
         icon: UsersIcon,
         labelKey: 'navigation.employees',
+      },
+      {
+        id: 'tech-cards',
+        path: '/tech-cards',
+        icon: DocumentTextIcon,
+        labelKey: 'navigation.techCards',
+        requiredPermissions: [
+          { resource: 'tech_card_items', action: 'view' },
+        ],
       },
     ],
   },

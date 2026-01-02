@@ -26,6 +26,10 @@
     "showing": "Showing",
     "to": "to",
     "of": "of",
+    "view": "View",
+    "actions": "Actions",
+    "search": "Search...",
+    "noResults": "No results found",
     "results": "results",
     "today": "Today",
     "original": "Originally",
@@ -54,7 +58,8 @@
     "expenseTracking": "Expense Tracking",
     "billing": "Billing",
     "locations": "Locations",
-    "employees": "Employees"
+    "employees": "Employees",
+    "techCards": "Products"
   },
   "auth": {
     "createAccount": "Create Account",
@@ -968,6 +973,78 @@
         "paymentTermsRange": "Payment terms must be between 1 and 365 days",
         "emailInvalid": "Invalid email format",
         "businessRequired": "Business is not selected"
+      }
+    }
+  },
+  "techCards": {
+    "title": "Technology Cards",
+    "description": "Manage product recipes and costs",
+    "addItem": "Add Product",
+    "noItems": "No products found",
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Product name...",
+      "category": "Category",
+      "status": "Status",
+      "active": "Active"
+    },
+    "status": {
+      "draft": "Draft",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "category": "Category",
+      "sellingPrice": "Selling Price",
+      "isActive": "Active Product",
+      "ingredients": "Ingredients",
+      "cost": "Cost",
+      "margin": "Margin",
+      "marginPercent": "Margin %"
+    },
+    "ingredients": {
+      "title": "Recipe",
+      "add": "Add Ingredient",
+      "ingredient": "Ingredient",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "notes": "Notes",
+      "remove": "Remove"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "modal": {
+      "createTitle": "Create Product",
+      "editTitle": "Edit Product",
+      "viewTitle": "View Product",
+      "selectCategory": "Select category",
+      "searchCategory": "Search category...",
+      "noCategoriesFound": "No categories found",
+      "selectIngredient": "Select ingredient",
+      "searchIngredient": "Search ingredient...",
+      "noIngredientsFound": "No ingredients found",
+      "selectUnit": "Select unit",
+      "searchUnit": "Search unit...",
+      "noUnitsFound": "No units found",
+      "optionalNotes": "Notes (optional)",
+      "noIngredients": "Add ingredients to recipe",
+      "loadDataError": "Failed to load data",
+      "errors": {
+        "nameRequired": "Name is required",
+        "categoryRequired": "Category is required",
+        "priceRequired": "Selling price is required and must be greater than 0",
+        "ingredientsRequired": "Add at least one ingredient",
+        "ingredientCategoryRequired": "Select ingredient for all items",
+        "ingredientQuantityRequired": "Specify quantity for all ingredients",
+        "ingredientUnitRequired": "Select unit for all ingredients",
+        "saveFailed": "Failed to save product"
       }
     }
   }
