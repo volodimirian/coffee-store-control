@@ -9,7 +9,7 @@ import { unitsApi } from '~/shared/api/expenses';
 import type { ExpenseCategory, Unit } from '~/shared/api/types';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import { Input } from '~/shared/ui';
-import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
+import { getFilteredUnitsForCategory, limitDecimalInput } from '~/shared/lib/helpers';
 
 interface TechCardModalProps {
   isOpen: boolean;
@@ -287,6 +287,7 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                             min="0"
                             value={formData.selling_price}
                             onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
+                            onInput={(e) => limitDecimalInput(e, 2)}
                             className="mt-1"
                             disabled={isViewing || loadingData}
                           />
