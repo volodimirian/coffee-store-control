@@ -160,10 +160,10 @@ class TechCardService:
                 session.add(ingredient)
 
         # Reset approval if item was approved and is being edited
-        if cast(str, item.approval_status) == ApprovalStatus.APPROVED.value:
-            setattr(item, 'approval_status', ApprovalStatus.DRAFT.value)
-            setattr(item, 'approved_by', None)
-            setattr(item, 'approved_at', None)
+        if item.approval_status == ApprovalStatus.APPROVED.value:
+            item.approval_status = ApprovalStatus.DRAFT.value
+            item.approved_by = None
+            item.approved_at = None
 
         await session.commit()
         await session.refresh(item)
@@ -197,9 +197,9 @@ class TechCardService:
         if not item:
             return None
 
-        setattr(item, 'approval_status', approval_data.approval_status)
-        setattr(item, 'approved_by', user_id)
-        setattr(item, 'approved_at', datetime.utcnow())
+        item.approval_status = approval_data.approval_status
+        item.approved_by = user_id
+        item.approved_at = datetime.utcnow()
 
         await session.commit()
         await session.refresh(item)
@@ -339,8 +339,8 @@ class IngredientCostService:
             # Convert quantity to target unit
             converted_qty, error = await UnitService.convert_quantity(
                 session=session,
-                quantity=cast(Decimal, record.quantity_purchased),
-                from_unit_id=cast(int, record.unit_id),
+                quantity=record.quantity_purchased,
+                from_unit_id=record.unit_id,
                 to_unit_id=target_unit_id,
             )
 
@@ -349,7 +349,7 @@ class IngredientCostService:
                 continue
 
             total_quantity_in_target_unit += converted_qty
-            total_cost += cast(Decimal, record.total_cost)
+            total_cost += record.total_cost
 
         if total_quantity_in_target_unit == 0:
             return None
@@ -391,7 +391,7 @@ class IngredientCostService:
 
         # For now, use the most recent record's unit as base
         # In production, determine proper base unit
-        base_unit_id = cast(int, records[0].unit_id)
+        base_unit_id = records[0].unit_id
         base_unit = await session.get(Unit, base_unit_id)
         
         if not base_unit:
@@ -414,6 +414,6 @@ class IngredientCostService:
             base_unit_name=cast(str, base_unit.name),
             base_unit_symbol=cast(str, base_unit.symbol),
             invoices_analyzed=len(records),
-            date_range_from=min(cast(datetime, r.purchase_date) for r in records).date(),
-            date_range_to=max(cast(datetime, r.purchase_date) for r in records).date(),
+            date_range_from=min(r.purchase_date for r in records),
+            date_range_to=max(r.purchase_date for r in records),
         )
