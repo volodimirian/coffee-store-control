@@ -61,7 +61,7 @@ class TechCardService:
             session.add(ingredient)
 
         await session.commit()
-        await session.refresh(tech_item)
+        await session.refresh(tech_item, ["ingredients"])
         return tech_item
 
     @staticmethod
