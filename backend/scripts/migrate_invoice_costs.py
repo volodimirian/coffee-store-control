@@ -4,18 +4,19 @@ Migration script to populate ingredient_cost_history from existing paid invoices
 Run this once to backfill historical data for tech card cost calculations.
 
 Usage:
-    python migrate_invoice_costs.py
-    python migrate_invoice_costs.py --check
-    python migrate_invoice_costs.py --dry-run
+    python scripts/migrate_invoice_costs.py
+    python scripts/migrate_invoice_costs.py --check
+    python scripts/migrate_invoice_costs.py --dry-run
 """
 
 import asyncio
 import sys
 from pathlib import Path
 from typing import cast
+from collections import defaultdict
 
 # Add parent directory to path to import app modules
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select, func
 
@@ -59,7 +60,7 @@ async def migrate_invoice_costs():
                     existing_count = existing_result.scalar() or 0
                     
                     if existing_count > 0:
-                        print(f"⏭️  Invoice #{invoice.invoice_number} (ID: {invoice.id}) - already has {existing_count} cost records, skipping")
+                        print(f"⏭️  Invoice #{invoice.invoice_number} (ID: {invoice.id}, Business: {invoice.business_id}) - already has {existing_count} cost records, skipping")
                         skipped_count += 1
                         continue
                     
@@ -71,14 +72,14 @@ async def migrate_invoice_costs():
                     )
                     
                     if count > 0:
-                        print(f"✅ Invoice #{invoice.invoice_number} (ID: {invoice.id}) - migrated {count} items")
+                        print(f"✅ Invoice #{invoice.invoice_number} (ID: {invoice.id}, Business: {invoice.business_id}) - migrated {count} items")
                         migrated_count += 1
                     else:
-                        print(f"⚠️  Invoice #{invoice.invoice_number} (ID: {invoice.id}) - no items to migrate")
+                        print(f"⚠️  Invoice #{invoice.invoice_number} (ID: {invoice.id}, Business: {invoice.business_id}) - no items to migrate")
                         skipped_count += 1
                         
                 except Exception as e:
-                    print(f"❌ Error processing invoice #{invoice.invoice_number} (ID: {invoice.id}): {e}")
+                    print(f"❌ Error processing invoice #{invoice.invoice_number} (ID: {invoice.id}, Business: {invoice.business_id}): {e}")
                     error_count += 1
                     continue
             
@@ -107,20 +108,66 @@ async def check_migration_status():
     
     async with async_session_maker() as session:
         try:
-            # Count paid invoices
+            # Get all paid invoices
             paid_stmt = select(Invoice).where(Invoice.paid_status == InvoiceStatus.PAID)
             paid_result = await session.execute(paid_stmt)
-            paid_count = len(list(paid_result.scalars().all()))
+            paid_invoices = list(paid_result.scalars().all())
             
-            print(f"📊 Total paid invoices: {paid_count}")
+            print(f"📊 Total paid invoices in system: {len(paid_invoices)}")
             
-            if paid_count == 0:
+            if not paid_invoices:
                 print("✅ No paid invoices in the system.")
+                return
+            
+            # Count by business
+            business_counts: dict[int, int] = defaultdict(int)
+            for inv in paid_invoices:
+                business_counts[cast(int, inv.business_id)] += 1
+            
+            print("\n📋 Breakdown by business:")
+            for business_id, count in business_counts.items():
+                print(f"   Business ID {business_id}: {count} paid invoices")
+            
+            # Check which invoices already have cost history
+            invoices_to_migrate = []
+            invoices_already_migrated = []
+            
+            for invoice in paid_invoices:
+                existing_stmt = select(func.count()).select_from(IngredientCostHistory).where(
+                    IngredientCostHistory.invoice_id == invoice.id
+                )
+                existing_result = await session.execute(existing_stmt)
+                existing_count = existing_result.scalar() or 0
+                
+                if existing_count > 0:
+                    invoices_already_migrated.append(invoice)
+                else:
+                    invoices_to_migrate.append(invoice)
+            
+            print(f"\n✅ Already migrated: {len(invoices_already_migrated)} invoices")
+            if invoices_already_migrated:
+                business_migrated: dict[int, int] = defaultdict(int)
+                for inv in invoices_already_migrated:
+                    business_migrated[cast(int, inv.business_id)] += 1
+                for business_id, count in business_migrated.items():
+                    print(f"   Business ID {business_id}: {count} invoices")
+            
+            print(f"\n🔄 Need migration: {len(invoices_to_migrate)} invoices")
+            if invoices_to_migrate:
+                business_to_migrate: dict[int, int] = defaultdict(int)
+                for inv in invoices_to_migrate:
+                    business_to_migrate[cast(int, inv.business_id)] += 1
+                for business_id, count in business_to_migrate.items():
+                    print(f"   Business ID {business_id}: {count} invoices")
+                
+                print(f"\n💡 Run this script without --check to migrate {len(invoices_to_migrate)} invoices")
             else:
-                print(f"\n💡 Run this script to migrate {paid_count} invoices to ingredient_cost_history")
+                print("\n✨ All paid invoices already migrated!")
                 
         except Exception as e:
             print(f"❌ Error checking status: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
