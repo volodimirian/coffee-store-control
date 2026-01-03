@@ -120,6 +120,9 @@ class Business(Base):
     units = relationship("Unit", back_populates="business")
     expense_sections = relationship("ExpenseSection", back_populates="business")
     expense_categories = relationship("ExpenseCategory", back_populates="business")
+    
+    # Technology card relationships
+    tech_card_items = relationship("TechCardItem", back_populates="business")
 
 
 class UserBusiness(Base):

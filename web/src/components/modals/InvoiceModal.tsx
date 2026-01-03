@@ -22,7 +22,7 @@ import CreateExpenseModal from './CreateExpenseModal';
 import SupplierModal from '~/components/modals/SupplierModal';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Protected } from '~/shared/ui';
-import { getFilteredUnitsForCategory } from '~/shared/lib/helpers/unitHelpers';
+import { getFilteredUnitsForCategory, validateDecimalInput } from '~/shared/lib/helpers';
 import { formatCurrency as formatCurrencyDisplay, formatNumber } from '~/shared/lib/helpers';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import Input from '~/shared/ui/Input';
@@ -231,29 +231,10 @@ export default function InvoiceModal({
 
   // Handler for decimal input fields (quantity, unit_price)
   const handleDecimalFieldChange = (index: number, field: keyof LineItem, value: string, maxDecimals: number = 2) => {
-    // Allow only empty string or positive decimal numbers
-    if (value === '') {
-      handleLineItemChange(index, field, value);
-      return;
+    const validated = validateDecimalInput(value, maxDecimals);
+    if (validated !== null) {
+      handleLineItemChange(index, field, validated);
     }
-    
-    // Check if it matches decimal pattern
-    if (!/^\d*\.?\d*$/.test(value)) {
-      return;
-    }
-    
-    // Prevent leading zeros (except for "0" or "0.X")
-    if (value.length > 1 && value[0] === '0' && value[1] !== '.') {
-      return;
-    }
-    
-    // Check decimal places limit
-    const parts = value.split('.');
-    if (parts.length === 2 && parts[1].length > maxDecimals) {
-      return; // Don't allow more decimal places than limit
-    }
-    
-    handleLineItemChange(index, field, value);
   };
 
   const handleLineItemChange = (index: number, field: keyof LineItem, value: string | number) => {

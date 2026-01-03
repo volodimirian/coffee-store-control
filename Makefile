@@ -70,6 +70,8 @@ prod-deploy:
 	$(MAKE) web-build
 	@echo "🗄️  Running database migrations..."
 	cd backend && uv run alembic upgrade head
+	@echo "📊 Syncing invoice costs to history..."
+	cd backend && uv run python scripts/migrate_invoice_costs.py
 	@echo "🔄 Restarting API service..."
 	$(MAKE) prod-restart
 	@echo "✅ Deployment complete!"
@@ -81,6 +83,8 @@ prod-deploy-backend:
 	git pull origin permissions-setup
 	$(MAKE) install-deps
 	cd backend && uv run alembic upgrade head
+	@echo "📊 Syncing invoice costs to history..."
+	cd backend && uv run python scripts/migrate_invoice_costs.py
 	$(MAKE) prod-restart
 	@echo "✅ Backend deployed!"
 

@@ -20,7 +20,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [locationsError, setLocationsError] = useState<string | null>(null);
 
   const setCurrentLocation = (location: Location) => {
-    console.log('Manually setting current location:', location);
     setCurrentLocationState(location);
     localStorage.setItem('currentLocation', JSON.stringify(location));
     
@@ -31,7 +30,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateOverdueStatuses = useCallback(async (businessId: number): Promise<void> => {
     try {
       await invoicesApi.updateOverdueStatuses(businessId);
-      console.log('Updated overdue statuses for business:', businessId);
     } catch (err) {
       console.error('Failed to update overdue statuses:', err);
       // Silently fail - this is not critical for the user experience
@@ -48,20 +46,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const response = await locationsApi.getMyLocations();
       setLocations(response.businesses);
       
+      // ALWAYS read from localStorage first (don't rely on state which may not be updated yet)
+      const savedLocationJson = localStorage.getItem('currentLocation');
+      let targetLocationId: number | null = null;
+      
+      if (savedLocationJson) {
+        try {
+          const savedLocation = JSON.parse(savedLocationJson);
+          targetLocationId = savedLocation?.id || null;
+        } catch (error) {
+          console.error('Failed to parse saved location:', error);
+          localStorage.removeItem('currentLocation');
+        }
+      }
+      
       // Check current location
-      setCurrentLocationState(current => {
-        if (current) {
-          // If there's current location, check if it still exists
-          const locationExists = response.businesses.find(loc => loc.id === current.id);
+      setCurrentLocationState(() => {
+        if (targetLocationId) {
+          // Try to find the saved/current location in the response
+          const locationExists = response.businesses.find(loc => loc.id === targetLocationId);
           if (locationExists) {
-            console.log('Current location is still valid:', current);
             // Update location data in case something changed
-            const updatedLocation = locationExists;
-            localStorage.setItem('currentLocation', JSON.stringify(updatedLocation));
-            return updatedLocation;
+            localStorage.setItem('currentLocation', JSON.stringify(locationExists));
+            return locationExists;
           } else {
-            // Current location no longer exists
-            console.log('Current location no longer exists:', current);
+            // Location no longer exists
             localStorage.removeItem('currentLocation');
             // Select first available
             if (response.businesses.length > 0) {
@@ -72,10 +81,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             return null;
           }
         } else {
-          // If no current location, select first available
+          // No saved location, select first available
           if (response.businesses.length > 0) {
             const firstBusiness = response.businesses[0];
-            console.log('No current location, selecting first available:', firstBusiness);
             localStorage.setItem('currentLocation', JSON.stringify(firstBusiness));
             return firstBusiness;
           }
@@ -90,13 +98,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [t]);
 
-  // Restore location from localStorage on mount
+  // Restore location from localStorage on mount (before fetching)
   useEffect(() => {
     const saved = localStorage.getItem('currentLocation');
     if (saved) {
       try {
         const savedLocation = JSON.parse(saved);
-        console.log('Restoring location from localStorage:', savedLocation);
         setCurrentLocationState(savedLocation);
       } catch (error) {
         console.error('Failed to parse saved location:', error);
@@ -108,7 +115,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update overdue statuses when current location changes
   useEffect(() => {
     if (currentLocation && hasToken()) {
-      console.log('Current location changed, updating overdue statuses for business:', currentLocation.id);
       updateOverdueStatuses(currentLocation.id);
     }
   }, [currentLocation, updateOverdueStatuses]);
@@ -117,8 +123,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user && hasToken()) {
       fetchLocations();
-    } else if (!user) {
-      // Clear locations when user logs out
+    } else if (!user && !hasToken()) {
+      // Only clear locations when user is logged out (no token)
+      // Don't clear if user is just not loaded yet (has token but user is null)
       setLocations([]);
       setCurrentLocationState(null);
       localStorage.removeItem('currentLocation');

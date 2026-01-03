@@ -8,7 +8,8 @@ export type Resource =
   | 'subcategories'
   | 'units'
   | 'suppliers'
-  | 'invoices';
+  | 'invoices'
+  | 'tech_card_items';
 
 export type Action =
   | 'view'

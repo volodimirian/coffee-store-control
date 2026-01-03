@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.expenses.models import Invoice, InvoiceItem, InvoiceStatus
 from app.expenses.schemas import InvoiceCreate, InvoiceUpdate, InvoiceItemCreate, InvoiceItemUpdate
 from app.expenses.inventory_balance_service import InventoryBalanceService
+from app.tech_cards.service import IngredientCostService
 
 
 class InvoiceService:
@@ -150,6 +151,13 @@ class InvoiceService:
             await InvoiceItemService._update_inventory_balance_if_paid(
                 session, invoice_id, category_id
             )
+        
+        # Sync ingredient costs to cost history for tech card calculations
+        await IngredientCostService.sync_invoice_costs(
+            session=session,
+            invoice_id=invoice_id,
+            business_id=getattr(invoice, 'business_id'),
+        )
         
         return invoice
 

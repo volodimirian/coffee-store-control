@@ -237,7 +237,7 @@ export default function Suppliers() {
             onChange={(e) => setActiveFilter(e.target.value as 'all' | 'active' | 'inactive')}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
-            <option value="all">{t('billing.suppliers.filters.all')}</option>
+            <option value="all">{t('common.all')}</option>
             <option value="active">{t('billing.suppliers.filters.active')}</option>
             <option value="inactive">{t('billing.suppliers.filters.inactive')}</option>
           </select>
