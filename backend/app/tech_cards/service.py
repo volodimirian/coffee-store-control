@@ -299,6 +299,7 @@ class IngredientCostService:
         """
         Calculate weighted average cost for ingredient.
         Converts all costs to target unit before averaging.
+        Fetches more records if conversion fails to ensure we get the requested number.
         
         Args:
             session: Database session
@@ -310,40 +311,72 @@ class IngredientCostService:
         Returns:
             Average cost per target unit, or None if no data
         """
-        # Get recent cost records
-        stmt = (
-            select(IngredientCostHistory)
-            .where(
-                and_(
-                    IngredientCostHistory.category_id == category_id,
-                    IngredientCostHistory.business_id == business_id,
+        # Fetch more records than needed to account for conversion failures
+        # We'll keep fetching until we have enough successful conversions or run out of records
+        max_fetch_attempts = 3  # How many times to try fetching more records
+        records_per_fetch = num_invoices * 2  # Fetch 2x more to account for failures
+        offset = 0
+        successful_records: list[tuple[IngredientCostHistory, Decimal]] = []
+        
+        for attempt in range(max_fetch_attempts):
+            # Get recent cost records
+            stmt = (
+                select(IngredientCostHistory)
+                .where(
+                    and_(
+                        IngredientCostHistory.category_id == category_id,
+                        IngredientCostHistory.business_id == business_id,
+                    )
                 )
+                .order_by(desc(IngredientCostHistory.purchase_date))
+                .limit(records_per_fetch)
+                .offset(offset)
             )
-            .order_by(desc(IngredientCostHistory.purchase_date))
-            .limit(num_invoices)
-        )
-        result = await session.execute(stmt)
-        cost_records = list(result.scalars().all())
+            result = await session.execute(stmt)
+            cost_records = list(result.scalars().all())
 
-        if not cost_records:
+            if not cost_records:
+                # No more records available
+                break
+
+            # Try to convert each record
+            for record in cost_records:
+                if len(successful_records) >= num_invoices:
+                    # We have enough successful records
+                    break
+                    
+                # Convert quantity to target unit
+                converted_qty, error = await UnitService.convert_quantity(
+                    session=session,
+                    quantity=record.quantity_purchased,
+                    from_unit_id=record.unit_id,
+                    to_unit_id=target_unit_id,
+                )
+
+                if converted_qty is not None and not error:
+                    # Conversion successful - add to successful records
+                    successful_records.append((record, converted_qty))
+            
+            # Check if we have enough successful records
+            if len(successful_records) >= num_invoices:
+                break
+                
+            # If we fetched fewer records than requested, no point trying again
+            if len(cost_records) < records_per_fetch:
+                break
+                
+            # Prepare for next fetch
+            offset += records_per_fetch
+
+        # If no successful conversions, return None
+        if not successful_records:
             return None
 
+        # Calculate weighted average from successful records
         total_quantity_in_target_unit = Decimal("0")
         total_cost = Decimal("0")
 
-        for record in cost_records:
-            # Convert quantity to target unit
-            converted_qty, error = await UnitService.convert_quantity(
-                session=session,
-                quantity=record.quantity_purchased,
-                from_unit_id=record.unit_id,
-                to_unit_id=target_unit_id,
-            )
-
-            if converted_qty is None or error:
-                # Skip if conversion failed
-                continue
-
+        for record, converted_qty in successful_records:
             total_quantity_in_target_unit += converted_qty
             total_cost += record.total_cost
 
