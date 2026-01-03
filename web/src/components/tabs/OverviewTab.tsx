@@ -105,7 +105,7 @@ export default function OverviewTab() {
                     {t('expenses.overview.thisMonth')}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {loading ? '...' : `₽${stats.thisMonthTotal}`}
+                    {loading ? '...' : formatCurrency(stats.thisMonthTotal)}
                   </dd>
                 </dl>
               </div>
