@@ -32,6 +32,7 @@ export default function SearchableSelect({
 }: SearchableSelectProps) {
   const [query, setQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, openUpward: false });
+  const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
   const updatePosition = () => {
@@ -54,6 +55,14 @@ export default function SearchableSelect({
     }
   };
 
+  // Update position when dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+    }
+  }, [isOpen]);
+
+  // Listen for resize/scroll events
   useEffect(() => {
     updatePosition();
     window.addEventListener('resize', updatePosition);
@@ -80,9 +89,12 @@ export default function SearchableSelect({
     <div className={className}>
       <Combobox value={value} onChange={onChange} disabled={disabled}>
         {({ open }) => {
-          if (open) {
-            updatePosition();
+          // Track open state for useEffect (don't call setState here!)
+          if (open !== isOpen) {
+            // Use setTimeout to defer state update outside of render
+            setTimeout(() => setIsOpen(open), 0);
           }
+          
           return (
             <>
               <div ref={buttonRef} className="relative">
