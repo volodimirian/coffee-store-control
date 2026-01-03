@@ -104,7 +104,7 @@ export default function InvoiceCalendarTab() {
     if (invoice.paid_status === 'paid') return 'paid';
 
     const invoiceDate = parseISO(invoice.invoice_date);
-    const paymentTerms = supplier.payment_terms_days || 14;
+    const paymentTerms = supplier.payment_terms_days ?? 14;
     const dueDate = addDays(invoiceDate, paymentTerms);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -181,7 +181,7 @@ export default function InvoiceCalendarTab() {
 
         for (const invoice of supplierInvoices) {
           const invoiceDate = parseISO(invoice.invoice_date);
-          const paymentTerms = supplier.payment_terms_days || 14;
+          const paymentTerms = supplier.payment_terms_days ?? 14;
           const dueDate = addDays(invoiceDate, paymentTerms);
 
           // Only show invoices if due date is within the current month OR if already showing in month
@@ -366,7 +366,7 @@ export default function InvoiceCalendarTab() {
                         )}
                         <div className="text-xs text-red-600 mt-1">
                           {t('expenses.invoiceCalendar.table.paymentTerms')}:{' '}
-                          {row.supplier.payment_terms_days || 14} {t('expenses.invoiceCalendar.days')}
+                          {row.supplier.payment_terms_days ?? 14} {t('expenses.invoiceCalendar.days')}
                         </div>
                       </td>
                       {monthDays.map((day) => {
