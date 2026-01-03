@@ -155,8 +155,8 @@ class TechCardService:
                 )
                 session.add(ingredient)
 
-        # Reset approval if item was approved and is being edited
-        if item.approval_status == ApprovalStatus.APPROVED.value:
+        # Reset approval status to draft when editing (for both approved and rejected items)
+        if item.approval_status in (ApprovalStatus.APPROVED.value, ApprovalStatus.REJECTED.value):
             item.approval_status = ApprovalStatus.DRAFT.value
             item.approved_by = None
             item.approved_at = None
