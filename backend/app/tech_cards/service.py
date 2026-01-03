@@ -280,7 +280,7 @@ class IngredientCostService:
                 unit_id=item.unit_id,
                 purchase_date=invoice.invoice_date,
                 quantity_purchased=item.quantity,
-                total_cost=item.total,
+                total_cost=item.total_price,
             )
             session.add(cost_record)
             count += 1

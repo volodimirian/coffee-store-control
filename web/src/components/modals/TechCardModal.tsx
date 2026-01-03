@@ -9,7 +9,7 @@ import { unitsApi } from '~/shared/api/expenses';
 import type { ExpenseCategory, Unit } from '~/shared/api/types';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import { Input, Textarea } from '~/shared/ui';
-import { getFilteredUnitsForCategory, limitDecimalInput, formatNumber } from '~/shared/lib/helpers';
+import { getFilteredUnitsForCategory, limitDecimalInput, formatCurrency } from '~/shared/lib/helpers';
 import ConfirmModal from './ConfirmModal';
 
 interface TechCardModalProps {
@@ -324,7 +324,7 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                             </label>
                             <div className="mt-1 text-lg font-semibold text-gray-900">
                               {item.total_ingredient_cost && item.total_ingredient_cost > 0 
-                                ? `${formatNumber(item.total_ingredient_cost)} ₽`
+                                ? formatCurrency(item.total_ingredient_cost, 2)
                                 : '-'}
                             </div>
                           </div>
@@ -334,7 +334,7 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                             </label>
                             <div className="mt-1 text-lg font-semibold text-gray-900">
                               {item.profit_margin && item.profit_margin > 0
-                                ? `${formatNumber(item.profit_margin)} ₽`
+                                ? formatCurrency(item.profit_margin, 2)
                                 : '-'}
                             </div>
                           </div>
@@ -350,7 +350,7 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                                 : 'text-red-600'
                             }`}>
                               {item.profit_percentage && item.profit_percentage > 0
-                                ? `${formatNumber(item.profit_percentage)}%`
+                                ? `${formatCurrency(item.profit_percentage, 2, '')}%`
                                 : '-'}
                             </div>
                           </div>

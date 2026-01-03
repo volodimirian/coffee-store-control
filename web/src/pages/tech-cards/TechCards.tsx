@@ -6,7 +6,7 @@ import { Protected, Input } from '~/shared/ui';
 import { techCardsApi, type TechCardItem } from '~/shared/api/techCardsApi';
 import TechCardModal from '~/components/modals/TechCardModal';
 import ConfirmModal from '~/components/modals/ConfirmModal';
-import { formatNumber } from '~/shared/lib/helpers';
+import { formatCurrency } from '~/shared/lib/helpers';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 
 export default function TechCards() {
@@ -292,9 +292,9 @@ export default function TechCards() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredItems.map((item) => {
-                  const cost = item.total_ingredient_cost || 0;
-                  const margin = item.profit_margin || 0;
-                  const marginPercent = item.profit_percentage || 0;
+                  const cost = Number(item.total_ingredient_cost || 0);
+                  const margin = Number(item.profit_margin || 0);
+                  const marginPercent = Number(item.profit_percentage || 0);
 
                   return (
                     <tr 
@@ -313,17 +313,17 @@ export default function TechCards() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                        {formatNumber(item.selling_price)} ₽
+                        {formatCurrency(item.selling_price, 2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                        {cost > 0 ? `${formatNumber(cost)} ₽` : '-'}
+                        {cost > 0 ? formatCurrency(cost, 2) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                         {margin > 0 ? (
                           <div>
-                            <div className="font-medium text-gray-900">{formatNumber(margin)} ₽</div>
+                            <div className="font-medium text-gray-900">{formatCurrency(margin, 2)}</div>
                             <div className={`text-xs ${marginPercent > 30 ? 'text-green-600' : marginPercent > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
-                              {formatNumber(marginPercent)}%
+                              {formatCurrency(marginPercent, 2, '')}%
                             </div>
                           </div>
                         ) : (
