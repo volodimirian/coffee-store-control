@@ -38,7 +38,9 @@
     "converted": "Приведено к",
     "quantity": "Количество",
     "retry": "Повторить",
-    "all": "Все"
+    "all": "Все",
+    "active": "Активен",
+    "inactive": "Неактивен"
   },
   "navigation": {
     "home": "Главная",
