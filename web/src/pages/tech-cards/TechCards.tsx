@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '~/shared/context/AppContext';
 import { Protected, Input } from '~/shared/ui';
 import { techCardsApi, type TechCardItem } from '~/shared/api/techCardsApi';
 import TechCardModal from '~/components/modals/TechCardModal';
+import ConfirmModal from '~/components/modals/ConfirmModal';
 import { formatNumber } from '~/shared/lib/helpers';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 
@@ -26,6 +27,23 @@ export default function TechCards() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TechCardItem | null>(null);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create');
+
+  // Confirm Modal
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    type: 'warning' | 'success' | 'info' | 'danger';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    type: 'warning',
+    onConfirm: () => {},
+  });
 
   // Load data
   const loadData = useCallback(async () => {
@@ -81,15 +99,47 @@ export default function TechCards() {
 
   const handleDelete = async (item: TechCardItem) => {
     if (!currentLocation?.id) return;
-    if (!confirm(t('common.confirmDeletion'))) return;
+    
+    setConfirmModal({
+      isOpen: true,
+      title: t('common.confirmDeletion'),
+      message: t('techCards.confirmDelete', { name: item.name }),
+      confirmText: t('common.delete'),
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await techCardsApi.deleteItem(currentLocation.id, item.id);
+          await loadData();
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        } catch (err) {
+          console.error('Failed to delete item:', err);
+          // Show error in confirm modal or add error state
+        }
+      },
+    });
+  };
 
-    try {
-      await techCardsApi.deleteItem(currentLocation.id, item.id);
-      await loadData();
-    } catch (err) {
-      console.error('Failed to delete item:', err);
-      alert(t('common.error'));
-    }
+  const handleApprove = async (item: TechCardItem, status: 'approved' | 'rejected') => {
+    if (!currentLocation?.id) return;
+    
+    const isApprove = status === 'approved';
+    
+    setConfirmModal({
+      isOpen: true,
+      title: isApprove ? t('techCards.actions.approve') : t('techCards.actions.reject'),
+      message: isApprove ? t('techCards.confirmApprove') : t('techCards.confirmReject'),
+      confirmText: isApprove ? t('techCards.actions.approve') : t('techCards.actions.reject'),
+      type: isApprove ? 'success' : 'warning',
+      onConfirm: async () => {
+        try {
+          await techCardsApi.updateApproval(currentLocation.id, item.id, status);
+          await loadData();
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        } catch (err) {
+          console.error('Failed to update approval:', err);
+        }
+      },
+    });
   };
 
   const handleModalSuccess = () => {
@@ -216,106 +266,110 @@ export default function TechCards() {
         </div>
       ) : (
         <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('techCards.fields.name')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('techCards.fields.category')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('techCards.fields.sellingPrice')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('techCards.fields.cost')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('techCards.fields.margin')}
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('techCards.filters.status')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('common.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredItems.map((item) => {
-                const cost = item.total_ingredient_cost || 0;
-                const margin = item.profit_margin || 0;
-                const marginPercent = item.profit_percentage || 0;
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('techCards.fields.name')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('techCards.fields.sellingPrice')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('techCards.fields.cost')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('techCards.fields.margin')}
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('techCards.filters.status')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('common.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredItems.map((item) => {
+                  const cost = item.total_ingredient_cost || 0;
+                  const margin = item.profit_margin || 0;
+                  const marginPercent = item.profit_percentage || 0;
 
-                return (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                          {item.description && (
-                            <div className="text-sm text-gray-500 max-w-xs truncate">{item.description}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.category_name || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                      {formatNumber(item.selling_price)} ₽
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                      {cost > 0 ? `${formatNumber(cost)} ₽` : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                      {margin > 0 ? (
-                        <div>
-                          <div className="font-medium text-gray-900">{formatNumber(margin)} ₽</div>
-                          <div className={`text-xs ${marginPercent > 30 ? 'text-green-600' : marginPercent > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
-                            {formatNumber(marginPercent)}%
+                  return (
+                    <tr 
+                      key={item.id} 
+                      onClick={() => handleView(item)}
+                      className="hover:bg-gray-50 cursor-pointer"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                            {item.description && (
+                              <div className="text-sm text-gray-500 max-w-xs truncate">{item.description}</div>
+                            )}
                           </div>
                         </div>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {getStatusBadge(item.approval_status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleView(item)}
-                        className="text-gray-600 hover:text-gray-900"
-                        title={t('common.view')}
-                      >
-                        <EyeIcon className="h-5 w-5" />
-                      </button>
-                      <Protected permission={{ resource: 'tech_card_items', action: 'edit' }}>
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title={t('techCards.actions.edit')}
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
-                      </Protected>
-                      <Protected permission={{ resource: 'tech_card_items', action: 'delete' }}>
-                        <button
-                          onClick={() => handleDelete(item)}
-                          className="text-red-600 hover:text-red-900"
-                          title={t('techCards.actions.delete')}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </Protected>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                        {formatNumber(item.selling_price)} ₽
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                        {cost > 0 ? `${formatNumber(cost)} ₽` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        {margin > 0 ? (
+                          <div>
+                            <div className="font-medium text-gray-900">{formatNumber(margin)} ₽</div>
+                            <div className={`text-xs ${marginPercent > 30 ? 'text-green-600' : marginPercent > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {formatNumber(marginPercent)}%
+                            </div>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {getStatusBadge(item.approval_status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2" onClick={(e) => e.stopPropagation()}>
+                        {item.approval_status === 'draft' && (
+                          <Protected permission={{ resource: 'tech_card_items', action: 'approve' }}>
+                            <button
+                              onClick={() => handleApprove(item, 'approved')}
+                              className="text-green-600 hover:text-green-900"
+                              title={t('techCards.actions.approve')}
+                            >
+                              <CheckIcon className="h-5 w-5" />
+                            </button>
+                          </Protected>
+                        )}
+                        <Protected permission={{ resource: 'tech_card_items', action: 'edit' }}>
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title={t('techCards.actions.edit')}
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                        </Protected>
+                        <Protected permission={{ resource: 'tech_card_items', action: 'delete' }}>
+                          <button
+                            onClick={() => handleDelete(item)}
+                            className="text-red-600 hover:text-red-900"
+                            title={t('techCards.actions.delete')}
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </Protected>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -326,6 +380,18 @@ export default function TechCards() {
         onSuccess={handleModalSuccess}
         item={selectedItem}
         mode={modalMode}
+      />
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText={t('common.cancel')}
+        type={confirmModal.type}
       />
     </div>
   );

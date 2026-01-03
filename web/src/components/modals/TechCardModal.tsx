@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, TrashIcon, CheckIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
 import { techCardsApi, type TechCardItem, type TechCardItemCreate, type TechCardItemUpdate, type TechCardItemIngredient } from '~/shared/api/techCardsApi';
@@ -8,8 +8,9 @@ import { expenseCategoriesApi } from '~/shared/api/expenses';
 import { unitsApi } from '~/shared/api/expenses';
 import type { ExpenseCategory, Unit } from '~/shared/api/types';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
-import { Input } from '~/shared/ui';
-import { getFilteredUnitsForCategory, limitDecimalInput } from '~/shared/lib/helpers';
+import { Input, Textarea } from '~/shared/ui';
+import { getFilteredUnitsForCategory, limitDecimalInput, formatNumber } from '~/shared/lib/helpers';
+import ConfirmModal from './ConfirmModal';
 
 interface TechCardModalProps {
   isOpen: boolean;
@@ -48,6 +49,23 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
   // UI state
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Confirm Modal
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    type: 'warning' | 'success' | 'info' | 'danger';
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    type: 'warning',
+    onConfirm: async () => {},
+  });
 
   // Load dropdown data
   const loadDropdownData = useCallback(async () => {
@@ -208,6 +226,7 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
   };
 
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={isViewing ? onClose : () => {}}>
         <Transition.Child
@@ -272,6 +291,7 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            placeholder={t('techCards.modal.namePlaceholder')}
                             className="mt-1"
                             disabled={isViewing || loadingData}
                           />
@@ -288,21 +308,65 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                             value={formData.selling_price}
                             onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
                             onInput={(e) => limitDecimalInput(e, 2)}
+                            placeholder={t('techCards.modal.pricePlaceholder')}
                             className="mt-1"
                             disabled={isViewing || loadingData}
                           />
                         </div>
                       </div>
 
+                      {/* Cost and Margin - only in view mode */}
+                      {isViewing && item && (
+                        <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase">
+                              {t('techCards.fields.cost')}
+                            </label>
+                            <div className="mt-1 text-lg font-semibold text-gray-900">
+                              {item.total_ingredient_cost && item.total_ingredient_cost > 0 
+                                ? `${formatNumber(item.total_ingredient_cost)} ₽`
+                                : '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase">
+                              {t('techCards.fields.margin')}
+                            </label>
+                            <div className="mt-1 text-lg font-semibold text-gray-900">
+                              {item.profit_margin && item.profit_margin > 0
+                                ? `${formatNumber(item.profit_margin)} ₽`
+                                : '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase">
+                              {t('techCards.fields.marginPercent')}
+                            </label>
+                            <div className={`mt-1 text-lg font-semibold ${
+                              item.profit_percentage && item.profit_percentage > 30 
+                                ? 'text-green-600' 
+                                : item.profit_percentage && item.profit_percentage > 15 
+                                ? 'text-yellow-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {item.profit_percentage && item.profit_percentage > 0
+                                ? `${formatNumber(item.profit_percentage)}%`
+                                : '-'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           {t('techCards.fields.description')}
                         </label>
-                        <textarea
+                        <Textarea
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           rows={3}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                          placeholder={t('techCards.modal.descriptionPlaceholder')}
+                          className="mt-1"
                           disabled={isViewing || loadingData}
                         />
                       </div>
@@ -392,6 +456,7 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                                   onChange={(e) =>
                                     handleIngredientChange(ing.tempId, 'quantity', parseFloat(e.target.value) || 0)
                                   }
+                                  placeholder="0.00"
                                   disabled={isViewing || loadingData}
                                 />
                               </div>
@@ -472,23 +537,85 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
                   </div>
 
                   {/* Footer */}
-                  <div className="flex justify-end gap-3 border-t px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
-                    >
-                      {isViewing ? t('common.close') : t('common.cancel')}
-                    </button>
-                    {!isViewing && (
+                  <div className="flex justify-between items-center border-t px-6 py-4">
+                    <div className="flex gap-3">
+                      {isViewing && item && item.approval_status === 'draft' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!currentLocation?.id || !item) return;
+                              setConfirmModal({
+                                isOpen: true,
+                                title: t('techCards.actions.approve'),
+                                message: t('techCards.confirmApprove'),
+                                confirmText: t('techCards.actions.approve'),
+                                type: 'success',
+                                onConfirm: async () => {
+                                  try {
+                                    await techCardsApi.updateApproval(currentLocation.id, item.id, 'approved');
+                                    onSuccess();
+                                    onClose();
+                                    setConfirmModal({ ...confirmModal, isOpen: false });
+                                  } catch (err) {
+                                    console.error('Failed to approve:', err);
+                                  }
+                                },
+                              });
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md"
+                          >
+                            <CheckIcon className="h-4 w-4" />
+                            {t('techCards.actions.approve')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!currentLocation?.id || !item) return;
+                              setConfirmModal({
+                                isOpen: true,
+                                title: t('techCards.actions.reject'),
+                                message: t('techCards.confirmReject'),
+                                confirmText: t('techCards.actions.reject'),
+                                type: 'warning',
+                                onConfirm: async () => {
+                                  try {
+                                    await techCardsApi.updateApproval(currentLocation.id, item.id, 'rejected');
+                                    onSuccess();
+                                    onClose();
+                                    setConfirmModal({ ...confirmModal, isOpen: false });
+                                  } catch (err) {
+                                    console.error('Failed to reject:', err);
+                                  }
+                                },
+                              });
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
+                          >
+                            <XCircleIcon className="h-4 w-4" />
+                            {t('techCards.actions.reject')}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex gap-3">
                       <button
-                        type="submit"
-                        disabled={isSubmitting || loadingData}
-                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
                       >
-                        {isSubmitting ? t('common.saving') : isEditMode ? t('common.save') : t('common.create')}
+                        {isViewing ? t('common.close') : t('common.cancel')}
                       </button>
-                    )}
+                      {!isViewing && (
+                        <button
+                          type="submit"
+                          disabled={isSubmitting || loadingData}
+                          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSubmitting ? t('common.saving') : isEditMode ? t('common.save') : t('common.create')}
+                        </button>
+                      )}  
+                    </div>
                   </div>
                 </form>
               </Dialog.Panel>
@@ -497,5 +624,18 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
         </div>
       </Dialog>
     </Transition>
+    
+    {/* Confirm Modal */}
+    <ConfirmModal
+      isOpen={confirmModal.isOpen}
+      onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+      onConfirm={confirmModal.onConfirm}
+      title={confirmModal.title}
+      message={confirmModal.message}
+      confirmText={confirmModal.confirmText}
+      cancelText={t('common.cancel')}
+      type={confirmModal.type}
+    />
+    </>
   );
 }
