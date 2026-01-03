@@ -31,20 +31,38 @@ export default function SearchableSelect({
   className = ""
 }: SearchableSelectProps) {
   const [query, setQuery] = useState('');
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, openUpward: false });
+  const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
   const updatePosition = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownMaxHeight = 240; // max-h-60 = 15rem = 240px
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // Open upward if insufficient space below and sufficient space above
+      const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > dropdownMaxHeight;
+      
       setDropdownPosition({
-        top: rect.bottom + window.scrollY,
+        top: openUpward ? rect.top + window.scrollY : rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
-        width: rect.width
+        width: rect.width,
+        openUpward
       });
     }
   };
 
+  // Update position when dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+    }
+  }, [isOpen]);
+
+  // Listen for resize/scroll events
   useEffect(() => {
     updatePosition();
     window.addEventListener('resize', updatePosition);
@@ -71,9 +89,12 @@ export default function SearchableSelect({
     <div className={className}>
       <Combobox value={value} onChange={onChange} disabled={disabled}>
         {({ open }) => {
-          if (open) {
-            updatePosition();
+          // Track open state for useEffect (don't call setState here!)
+          if (open !== isOpen) {
+            // Use setTimeout to defer state update outside of render
+            setTimeout(() => setIsOpen(open), 0);
           }
+          
           return (
             <>
               <div ref={buttonRef} className="relative">
@@ -103,9 +124,10 @@ export default function SearchableSelect({
                 afterLeave={() => setQuery('')}
               >
                 <Combobox.Options 
-                  className="fixed z-[100] mt-1 max-h-60 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                  className="fixed z-[100] max-h-60 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
                   style={{
-                    top: `${dropdownPosition.top + 4}px`,
+                    top: dropdownPosition.openUpward ? 'auto' : `${dropdownPosition.top + 4}px`,
+                    bottom: dropdownPosition.openUpward ? `${window.innerHeight - dropdownPosition.top + 4}px` : 'auto',
                     left: `${dropdownPosition.left}px`,
                     minWidth: `${dropdownPosition.width}px`,
                     maxWidth: '400px',

@@ -13,6 +13,7 @@ from app.expenses.expense_section_router import router as sections_router
 from app.expenses.expense_category_router import router as categories_router
 from app.expenses.invoice_router import router as invoices_router
 from app.expenses.inventory_balance_router import router as inventory_balance_router
+from app.tech_cards.router import router as tech_cards_router
 from app.core.db import engine
 from app.core.config import settings
 from app.core_models import Base
@@ -90,3 +91,6 @@ app.include_router(sections_router, prefix=f"{settings.api_prefix}/expenses/sect
 app.include_router(categories_router, prefix=f"{settings.api_prefix}/expenses/categories", tags=["expenses", "categories"])
 app.include_router(invoices_router, prefix=f"{settings.api_prefix}/expenses/invoices", tags=["expenses", "invoices"])
 app.include_router(inventory_balance_router, prefix=f"{settings.api_prefix}/expenses", tags=["expenses", "inventory-balance"])
+
+# Technology cards routes
+app.include_router(tech_cards_router, prefix=f"{settings.api_prefix}/tech-cards", tags=["tech-cards"])

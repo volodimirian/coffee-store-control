@@ -70,18 +70,20 @@ async def login(
             content=create_error_response(ErrorCode.INVALID_CREDENTIALS)
         )
     
-    access_token = create_access_token(subject=user.id)
-    refresh_token = None
+    from datetime import datetime, timedelta, timezone
+    from app.core.config import settings
     
-    # If remember_me is enabled, create and store refresh token
-    if data.remember_me:
-        from datetime import datetime, timedelta, timezone
-        from app.core.config import settings
-        
-        refresh_token = create_refresh_token(subject=user.id)
-        user.refresh_token = refresh_token
-        user.refresh_token_expires = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
-        await db.commit()
+    access_token = create_access_token(subject=user.id)
+    
+    # Always create refresh token, but with different expiry based on remember_me
+    # remember_me=True: 30 days (can close browser)
+    # remember_me=False: 1 day (session-like, but allows token refresh during active use)
+    refresh_expiry_days = settings.refresh_token_expire_days if data.remember_me else 1
+    
+    refresh_token = create_refresh_token(subject=user.id)
+    user.refresh_token = refresh_token
+    user.refresh_token_expires = datetime.now(timezone.utc) + timedelta(days=refresh_expiry_days)
+    await db.commit()
     
     return TokenOut(access_token=access_token, refresh_token=refresh_token)
 
