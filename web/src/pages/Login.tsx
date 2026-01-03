@@ -38,7 +38,7 @@ export default function Login() {
       // Store clean token using helper function
       saveToken(data.access_token);
       
-      // Store refresh token if remember me is enabled
+      // Always store refresh token (backend controls expiry based on remember_me)
       if (data.refresh_token) {
         saveRefreshToken(data.refresh_token);
       }
