@@ -5,7 +5,7 @@ import { USER_ROLES } from '~/shared/api/authentication';
 import {
   // HomeIcon,
   // UserIcon,
-  // CubeIcon,
+  CubeIcon,
   // ShoppingCartIcon,
   ChartBarIcon,
   // CogIcon,
@@ -19,7 +19,6 @@ import {
   MapPinIcon,
   UsersIcon,
   ArrowLeftOnRectangleIcon,
-  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -81,12 +80,15 @@ const menuSections: MenuSection[] = [
           { resource: 'units', action: 'view' },
         ],
       },
-      // {
-      //   id: 'products',
-      //   path: '/products',
-      //   icon: CubeIcon,
-      //   labelKey: 'navigation.products',
-      // },
+      {
+        id: 'tech-cards',
+        path: '/tech-cards',
+        icon: CubeIcon,
+        labelKey: 'navigation.techCards',
+        requiredPermissions: [
+          { resource: 'tech_card_items', action: 'view' },
+        ],
+      },
       // {
       //   id: 'orders',
       //   path: '/orders',
@@ -110,15 +112,6 @@ const menuSections: MenuSection[] = [
         path: '/employees',
         icon: UsersIcon,
         labelKey: 'navigation.employees',
-      },
-      {
-        id: 'tech-cards',
-        path: '/tech-cards',
-        icon: DocumentTextIcon,
-        labelKey: 'navigation.techCards',
-        requiredPermissions: [
-          { resource: 'tech_card_items', action: 'view' },
-        ],
       },
     ],
   },
