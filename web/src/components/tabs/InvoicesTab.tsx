@@ -79,7 +79,7 @@ export default function InvoicesTab() {
     
     // Get supplier payment terms
     const supplier = suppliers.find(s => s.id === invoice.supplier_id);
-    const paymentTerms = supplier?.payment_terms_days || 14; // Default to 14 days if supplier not found
+    const paymentTerms = supplier?.payment_terms_days ?? 14; // Default to 14 days if supplier not found
     
     const invoiceDate = new Date(invoice.invoice_date);
     const paymentDueDate = new Date(invoiceDate);
@@ -166,7 +166,7 @@ export default function InvoicesTab() {
     
     // Get supplier payment terms
     const supplier = suppliers.find(s => s.id === invoice.supplier_id);
-    const paymentTerms = supplier?.payment_terms_days || 14; // Default to 14 days if supplier not found
+    const paymentTerms = supplier?.payment_terms_days ?? 14; // Default to 14 days if supplier not found
     
     // For pending/cancelled/overdue, add payment terms to invoice_date
     const invoiceDate = new Date(invoice.invoice_date);

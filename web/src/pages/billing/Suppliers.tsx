@@ -100,7 +100,8 @@ export default function Suppliers() {
 
   const handleSupplierSave = async () => {
     setIsSupplierModalOpen(false);
-    await loadSuppliers();
+    setSelectedSupplier(null); // Clear selection
+    await loadSuppliers(); // Reload suppliers to get fresh data
   };
 
   const handleDeleteClick = async (supplier: Supplier) => {
