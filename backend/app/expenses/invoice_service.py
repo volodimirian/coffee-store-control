@@ -99,6 +99,9 @@ class InvoiceService:
         if not invoice:
             return None
 
+        # Check if invoice is paid BEFORE update
+        was_paid = getattr(invoice, 'paid_status') == InvoiceStatus.PAID
+
         update_data = invoice_data.model_dump(exclude_unset=True)
         if update_data:
             for field, value in update_data.items():
@@ -106,6 +109,19 @@ class InvoiceService:
             setattr(invoice, 'updated_at', datetime.utcnow())
             await session.flush()
             await session.refresh(invoice)
+
+        # Check if invoice is paid AFTER update
+        is_paid_now = getattr(invoice, 'paid_status') == InvoiceStatus.PAID
+
+        # Resync ingredient costs if invoice is/was paid
+        # This ensures tech cards always use current invoice data for cost calculations
+        if was_paid or is_paid_now:
+            from app.tech_cards.service import IngredientCostService
+            await IngredientCostService.sync_invoice_costs(
+                session=session,
+                invoice_id=invoice_id,
+                business_id=getattr(invoice, 'business_id'),
+            )
 
         return invoice
 
@@ -345,6 +361,17 @@ class InvoiceItemService:
             session, item_data.invoice_id, item_data.category_id
         )
         
+        # Resync ingredient costs if invoice is paid
+        # This adds cost entries for newly created items
+        invoice = await InvoiceService.get_invoice_by_id(session, item_data.invoice_id)
+        if invoice and getattr(invoice, 'paid_status') == InvoiceStatus.PAID:
+            from app.tech_cards.service import IngredientCostService
+            await IngredientCostService.sync_invoice_costs(
+                session=session,
+                invoice_id=item_data.invoice_id,
+                business_id=getattr(invoice, 'business_id'),
+            )
+        
         return db_item
 
     @staticmethod
@@ -402,6 +429,10 @@ class InvoiceItemService:
             invoice_id = getattr(item, 'invoice_id')
             new_category_id = getattr(item, 'category_id')
             
+            # Check if invoice is paid
+            invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
+            is_paid = invoice and getattr(invoice, 'paid_status') == InvoiceStatus.PAID
+            
             if category_changed:
                 # Update both old and new category balances
                 await InvoiceItemService._update_inventory_balance_if_paid(
@@ -414,6 +445,16 @@ class InvoiceItemService:
                 # Update current category balance
                 await InvoiceItemService._update_inventory_balance_if_paid(
                     session, invoice_id, new_category_id
+                )
+            
+            # Resync ingredient costs if invoice is paid
+            # This ensures tech cards always reflect current invoice item data
+            if is_paid:
+                from app.tech_cards.service import IngredientCostService
+                await IngredientCostService.sync_invoice_costs(
+                    session=session,
+                    invoice_id=invoice_id,
+                    business_id=getattr(invoice, 'business_id'),
                 )
 
         return item
@@ -428,6 +469,10 @@ class InvoiceItemService:
         invoice_id = getattr(item, 'invoice_id')
         category_id = getattr(item, 'category_id')
         
+        # Check if invoice is paid before deleting
+        invoice = await InvoiceService.get_invoice_by_id(session, invoice_id)
+        is_paid = invoice and getattr(invoice, 'paid_status') == InvoiceStatus.PAID
+        
         await session.delete(item)
         await session.flush()
         
@@ -435,6 +480,16 @@ class InvoiceItemService:
         await InvoiceItemService._update_inventory_balance_if_paid(
             session, invoice_id, category_id
         )
+        
+        # Resync ingredient costs if invoice is paid
+        # This removes cost entries for deleted items
+        if is_paid:
+            from app.tech_cards.service import IngredientCostService
+            await IngredientCostService.sync_invoice_costs(
+                session=session,
+                invoice_id=invoice_id,
+                business_id=getattr(invoice, 'business_id'),
+            )
         
         return True
 

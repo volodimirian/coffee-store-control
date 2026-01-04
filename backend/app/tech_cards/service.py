@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional, cast
 
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import select, func, and_, desc, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -245,9 +245,17 @@ class IngredientCostService:
     ) -> int:
         """
         Sync ingredient costs from invoice items to cost history.
-        Called when invoice is approved.
+        Called when invoice is approved or updated.
+        Deletes old records for this invoice and creates new ones.
         Returns count of cost records created.
         """
+        # First, delete existing cost history records for this invoice
+        # This ensures we don't have duplicates when invoice is updated
+        delete_stmt = delete(IngredientCostHistory).where(
+            IngredientCostHistory.invoice_id == invoice_id
+        )
+        await session.execute(delete_stmt)
+        
         # Get invoice with items
         invoice_stmt = (
             select(Invoice)
