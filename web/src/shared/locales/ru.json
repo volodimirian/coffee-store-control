@@ -142,14 +142,14 @@
     "USER_NOT_FOUND": "Пользователь не найден",
     "RATE_LIMIT_EXCEEDED": "Слишком много запросов, попробуйте позже",
 
-    "_registration_title": "Ошибки регистрации", 
+    "_registration_title": "Ошибки регистрации",
     "EMAIL_ALREADY_EXISTS": "Email уже зарегистрирован",
     "USERNAME_ALREADY_EXISTS": "Имя пользователя уже занято",
     "INVALID_ROLE": "Указана неверная роль",
 
     "_permissions_title": "Ошибки ролей и разрешений",
     "BUYERS_NOT_ALLOWED": "Эта операция недоступна для покупателей",
-    "SUPPLIERS_ONLY": "Только поставщики могут выполнить эту операцию", 
+    "SUPPLIERS_ONLY": "Только поставщики могут выполнить эту операцию",
     "ADMIN_ONLY": "Требуются административные права",
 
     "_business_employees_title": "Ошибки управления бизнесом и сотрудниками",
@@ -836,7 +836,7 @@
       "delete": "Удалить",
       "accessLevels": {
         "readOnly": "Только чтение",
-        "edit": "Редактирование", 
+        "edit": "Редактирование",
         "fullAccess": "Полный доступ",
         "noAccess": "Нет доступа"
       },
@@ -858,7 +858,7 @@
     },
     "navigation": {
       "overview": "Обзор",
-      "inventoryTracking": "Учет расходов", 
+      "inventoryTracking": "Учет расходов",
       "categories": "Категории",
       "units": "Единицы измерения",
       "invoices": "Счета",
@@ -873,7 +873,7 @@
       "title": "Обзор расходов",
       "addExpense": "Внести расход",
       "totalExpenses": "Общие расходы",
-      "thisMonth": "Этот месяц", 
+      "thisMonth": "Этот месяц",
       "categoriesCount": "Категории",
       "daysLeft": "Дней осталось",
       "pendingInvoices": "Неоплаченные накладные",
@@ -907,7 +907,7 @@
   "billing": {
     "navigation": {
       "invoices": "Счета",
-      "suppliers": "Поставщики", 
+      "suppliers": "Поставщики",
       "categories": "Категории",
       "units": "Единицы измерения"
     },
@@ -1010,7 +1010,7 @@
       "ingredients": "Ингредиенты",
       "cost": "Себестоимость",
       "margin": "Маржа",
-      "marginPercent": "% маржи"
+      "marginPercent": "Рентабельность"
     },
     "ingredients": {
       "title": "Состав",

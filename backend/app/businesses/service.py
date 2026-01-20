@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core_models import Business, User, UserBusiness, Role, Permission, UserPermission
 from app.core.security import hash_password
 from app.core.error_codes import ErrorCode
+from app.expenses.models import MonthPeriod, MonthPeriodStatus
 from app.businesses.schemas import (
     BusinessCreate,
     BusinessUpdate,
@@ -59,6 +60,18 @@ class BusinessService:
         # Seed default measurement units for the new business
         language = getattr(business_data, 'language', 'ru')
         await UnitService.seed_default_units(session, db_business.id, language)
+        
+        # Create current month period automatically
+        now = datetime.utcnow()
+        current_period = MonthPeriod(
+            name=f"{now.strftime('%B %Y')}",
+            business_id=db_business.id,
+            year=now.year,
+            month=now.month,
+            status=MonthPeriodStatus.ACTIVE,
+            is_active=True,
+        )
+        session.add(current_period)
         
         await session.commit()
         

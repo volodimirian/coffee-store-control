@@ -46,7 +46,7 @@
     "home": "Home",
     "dashboard": "Dashboard",
     "products": "Products",
-    "orders": "Orders", 
+    "orders": "Orders",
     "analytics": "Analytics",
     "account": "Account",
     "settings": "Settings",
@@ -93,7 +93,7 @@
   },
   "roles": {
     "admin": "Administrator",
-    "businessOwner": "Business Owner", 
+    "businessOwner": "Business Owner",
     "employee": "Employee"
   },
   "validation": {
@@ -105,7 +105,7 @@
     "passwordsMismatch": "Passwords do not match",
     "usernameMinLength": "Username must be at least {{min}} characters long",
     "usernameMaxLength": "Username must be no more than {{max}} characters long",
-        "passwordMinLength": "Password must be at least {{min}} characters",
+    "passwordMinLength": "Password must be at least {{min}} characters",
     "passwordMaxLength": "Password must be no more than {{max}} characters",
     "emailMaxLength": "Email must be no more than {{max}} characters",
     "required": "{{field}} is required",
@@ -140,14 +140,14 @@
     "USER_NOT_FOUND": "User not found",
     "RATE_LIMIT_EXCEEDED": "Too many requests, please try again later",
 
-    "_registration_title": "Registration Errors", 
+    "_registration_title": "Registration Errors",
     "EMAIL_ALREADY_EXISTS": "Email already registered",
     "USERNAME_ALREADY_EXISTS": "Username already taken",
     "INVALID_ROLE": "Invalid role specified",
 
     "_permissions_title": "Role & Permission Errors",
     "BUYERS_NOT_ALLOWED": "This operation is not allowed for buyers",
-    "SUPPLIERS_ONLY": "Only suppliers can perform this operation", 
+    "SUPPLIERS_ONLY": "Only suppliers can perform this operation",
     "ADMIN_ONLY": "Administrative privileges required",
 
     "_business_employees_title": "Business & Employee Management Errors",
@@ -226,7 +226,7 @@
     "ordersMessage": "Orders will appear here once customers start purchasing."
   },
   "analytics": {
-    "title": "Analytics", 
+    "title": "Analytics",
     "description": "View insights and performance metrics",
     "totalRevenue": "Total Revenue",
     "totalOrders": "Total Orders",
@@ -241,7 +241,7 @@
     "applicationSettings": "Application Settings",
     "language": "Language",
     "languageDescription": "Choose your preferred language",
-    "english": "English", 
+    "english": "English",
     "russian": "Russian",
     "notifications": "Notifications",
     "notificationsDescription": "Configure notification preferences",
@@ -720,7 +720,7 @@
       "addExpense": "Add Expense",
       "totalExpenses": "Total Expenses",
       "thisMonth": "This Month",
-      "categoriesCount": "Categories", 
+      "categoriesCount": "Categories",
       "daysLeft": "Days Left",
       "pendingInvoices": "Pending Invoices",
       "recentInvoices": "Recent Invoices",
@@ -790,7 +790,7 @@
     "loadingError": "Failed to load locations",
     "deletedLocations": "Deleted Locations",
     "deletedLocationsDescription": "These locations have been deleted but can be restored",
-    "restoreLocation": "Restore Location", 
+    "restoreLocation": "Restore Location",
     "restore": "Restore"
   },
   "employees": {
@@ -906,7 +906,7 @@
     "navigation": {
       "invoices": "Invoices",
       "suppliers": "Suppliers",
-      "categories": "Categories", 
+      "categories": "Categories",
       "units": "Units"
     },
     "page": {
@@ -955,7 +955,7 @@
       "notesPlaceholder": "Additional information about the supplier",
       "createTitle": "Add Supplier",
       "editTitle": "Edit Supplier",
-            "deleteTitle": "Delete Supplier",
+      "deleteTitle": "Delete Supplier",
       "deleteMessage": "Are you sure you want to delete this supplier? This action can be undone.",
       "deleteHardTitle": "Permanently Delete Supplier",
       "deleteHardMessage": "This supplier has no invoices. The supplier will be permanently deleted without possibility of recovery.",
@@ -1008,7 +1008,7 @@
       "ingredients": "Ingredients",
       "cost": "Cost",
       "margin": "Margin",
-      "marginPercent": "Margin %"
+      "marginPercent": "Profitability"
     },
     "ingredients": {
       "title": "Recipe",
