@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, func
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 
-from app.expenses.models import ExpenseCategory
+from app.expenses.models import ExpenseCategory, InvoiceItem, ExpenseRecord
 from app.expenses.schemas import ExpenseCategoryCreate, ExpenseCategoryUpdate
 
 
@@ -190,15 +191,36 @@ class ExpenseCategoryService:
     async def delete_category(
         session: AsyncSession,
         category_id: int,
-    ) -> bool:
-        """Hard delete category (permanently remove from database)."""
+    ) -> tuple[bool, Optional[str]]:
+        """Hard delete category (permanently remove from database).
+        
+        Returns:
+            Tuple of (success, error_message). If success=False, error_message contains the reason.
+        """
         category = await ExpenseCategoryService.get_category_by_id(session, category_id, include_inactive=True)
         if not category:
-            return False
+            return False, "Category not found"
 
-        await session.delete(category)
-        await session.flush()
-        return True
+        # Check if category has any related invoice items
+        invoice_items_count = await session.scalar(
+            select(func.count()).select_from(InvoiceItem).where(InvoiceItem.category_id == category_id)
+        )
+        if invoice_items_count and invoice_items_count > 0:
+            return False, f"Cannot delete category: {invoice_items_count} invoice item(s) are using this category"
+
+        # Check if category has any related expense records
+        expense_records_count = await session.scalar(
+            select(func.count()).select_from(ExpenseRecord).where(ExpenseRecord.category_id == category_id)
+        )
+        if expense_records_count and expense_records_count > 0:
+            return False, f"Cannot delete category: {expense_records_count} expense record(s) are using this category"
+
+        try:
+            await session.delete(category)
+            await session.flush()
+            return True, None
+        except IntegrityError as e:
+            return False, f"Cannot delete category: database constraint violation - {str(e)}"
 
     @staticmethod
     async def deactivate_category(

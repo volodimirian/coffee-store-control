@@ -86,7 +86,7 @@ class TechCardItemOut(TechCardItemBase):
     ingredients: list[TechCardItemIngredientOut] = Field(default_factory=list)
     total_ingredient_cost: Optional[Decimal] = None  # Sum of all ingredient costs
     profit_margin: Optional[Decimal] = None  # selling_price - total_ingredient_cost
-    profit_percentage: Optional[float] = None  # (profit_margin / selling_price) * 100
+    profit_percentage: Optional[float] = None  # (selling_price / total_ingredient_cost) * 100 - рентабельность
     category_name: Optional[str] = None
     created_by_name: Optional[str] = None
     approved_by_name: Optional[str] = None

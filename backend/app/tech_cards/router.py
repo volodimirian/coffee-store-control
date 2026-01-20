@@ -66,8 +66,8 @@ async def create_tech_card_item(
     response.total_ingredient_cost = cost
     if cost is not None and response.selling_price is not None and response.selling_price > 0:
         response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+        if cost > 0:
+            response.profit_percentage = float((response.selling_price / cost) * 100)
 
     return response
 
@@ -121,8 +121,8 @@ async def list_tech_card_items(
         item_out.total_ingredient_cost = cost
         if cost is not None and item_out.selling_price is not None and item_out.selling_price > 0:
             item_out.profit_margin = item_out.selling_price - cost
-            if item_out.selling_price > 0:
-                item_out.profit_percentage = float((item_out.profit_margin / item_out.selling_price) * 100)
+            if cost > 0:
+                item_out.profit_percentage = float((item_out.selling_price / cost) * 100)
 
         items_out.append(item_out)
 
@@ -181,8 +181,8 @@ async def get_tech_card_item(
     response.total_ingredient_cost = cost
     if cost is not None and response.selling_price is not None and response.selling_price > 0:
         response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+        if cost > 0:
+            response.profit_percentage = float((response.selling_price / cost) * 100)
 
     return response
 
@@ -236,8 +236,8 @@ async def update_tech_card_item(
     response.total_ingredient_cost = cost
     if cost is not None and response.selling_price is not None and response.selling_price > 0:
         response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+        if cost > 0:
+            response.profit_percentage = float((response.selling_price / cost) * 100)
 
     return response
 
@@ -329,8 +329,8 @@ async def update_tech_card_approval(
     response.total_ingredient_cost = cost
     if cost is not None and response.selling_price is not None and response.selling_price > 0:
         response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+        if cost > 0:
+            response.profit_percentage = float((response.selling_price / cost) * 100)
 
     return response
 

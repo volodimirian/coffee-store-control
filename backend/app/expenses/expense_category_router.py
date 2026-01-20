@@ -244,11 +244,11 @@ async def delete_category(
             detail="Category not found",
         )
 
-    success = await ExpenseCategoryService.delete_category(session, category_id)
+    success, error_message = await ExpenseCategoryService.delete_category(session, category_id)
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete category",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_message or "Failed to delete category",
         )
 
     await session.commit()
