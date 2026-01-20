@@ -1,6 +1,7 @@
 """Technology Card API router."""
 
 from typing import Optional
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +22,24 @@ from app.tech_cards.schemas import (
 from app.core.error_codes import ErrorCode
 
 router = APIRouter()
+
+
+def calculate_profitability(
+    selling_price: Decimal, 
+    cost: Optional[Decimal]
+) -> tuple[Optional[Decimal], Optional[Decimal], Optional[float]]:
+    """Calculate profitability metrics for tech card item.
+    
+    Returns tuple of (total_cost, profit_margin, profit_percentage).
+    Formula: (selling_price / cost) * 100
+    """
+    if cost is None or selling_price <= 0:
+        return cost, None, None
+    
+    profit_margin = selling_price - cost
+    profit_percentage = float((selling_price / cost) * 100) if cost > 0 else None
+    
+    return cost, profit_margin, profit_percentage
 
 
 @router.post("/business/{business_id}/items", response_model=TechCardItemOut, status_code=status.HTTP_201_CREATED)
@@ -63,11 +82,9 @@ async def create_tech_card_item(
         item_id=response.id,
         business_id=business_id,
     )
-    response.total_ingredient_cost = cost
-    if cost is not None and response.selling_price is not None and response.selling_price > 0:
-        response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+    response.total_ingredient_cost, response.profit_margin, response.profit_percentage = calculate_profitability(
+        response.selling_price, cost
+    )
 
     return response
 
@@ -117,12 +134,9 @@ async def list_tech_card_items(
             item_id=item_out.id,
             business_id=business_id,
         )
-
-        item_out.total_ingredient_cost = cost
-        if cost is not None and item_out.selling_price is not None and item_out.selling_price > 0:
-            item_out.profit_margin = item_out.selling_price - cost
-            if item_out.selling_price > 0:
-                item_out.profit_percentage = float((item_out.profit_margin / item_out.selling_price) * 100)
+        item_out.total_ingredient_cost, item_out.profit_margin, item_out.profit_percentage = calculate_profitability(
+            item_out.selling_price, cost
+        )
 
         items_out.append(item_out)
 
@@ -178,11 +192,9 @@ async def get_tech_card_item(
         item_id=response.id,
         business_id=business_id,
     )
-    response.total_ingredient_cost = cost
-    if cost is not None and response.selling_price is not None and response.selling_price > 0:
-        response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+    response.total_ingredient_cost, response.profit_margin, response.profit_percentage = calculate_profitability(
+        response.selling_price, cost
+    )
 
     return response
 
@@ -233,11 +245,9 @@ async def update_tech_card_item(
         item_id=response.id,
         business_id=business_id,
     )
-    response.total_ingredient_cost = cost
-    if cost is not None and response.selling_price is not None and response.selling_price > 0:
-        response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+    response.total_ingredient_cost, response.profit_margin, response.profit_percentage = calculate_profitability(
+        response.selling_price, cost
+    )
 
     return response
 
@@ -325,12 +335,9 @@ async def update_tech_card_approval(
         item_id=response.id,
         business_id=business_id,
     )
-    
-    response.total_ingredient_cost = cost
-    if cost is not None and response.selling_price is not None and response.selling_price > 0:
-        response.profit_margin = response.selling_price - cost
-        if response.selling_price > 0:
-            response.profit_percentage = float((response.profit_margin / response.selling_price) * 100)
+    response.total_ingredient_cost, response.profit_margin, response.profit_percentage = calculate_profitability(
+        response.selling_price, cost
+    )
 
     return response
 
