@@ -1,74 +1,60 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  ChevronLeftIcon, 
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   PlusIcon,
   PencilIcon,
-} from '@heroicons/react/24/outline';
-import { 
-  format, 
-  addMonths, 
-  subMonths, 
-  startOfMonth, 
-  endOfMonth, 
+} from "@heroicons/react/24/outline";
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
   eachDayOfInterval,
   isSameDay,
-  parseISO
-} from 'date-fns';
-import { ru, enUS } from 'date-fns/locale';
-import { useTranslation } from 'react-i18next';
-import { useAppContext } from '~/shared/context/AppContext';
-import { 
-  expenseSectionsApi,
-  expenseCategoriesApi, 
-  monthPeriodsApi,
-  invoicesApi,
-  invoiceItemsApi,
-  unitsApi,
-} from '~/shared/api/expenses';
-import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
-import InvoiceModal from '~/components/modals/InvoiceModal';
-import CategoryModal from '~/components/modals/CategoryModal';
-import SectionModal from '~/components/modals/SectionModal';
-import { Protected } from '~/shared/ui';
-import { formatCurrencyCompact } from '~/shared/lib/helpers';
-import type { 
-  ExpenseSection,
-  ExpenseCategory,
-} from '~/shared/api/types';
+} from "date-fns";
+import { ru, enUS } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { useAppContext } from "~/shared/context/AppContext";
+import { monthPeriodsApi, inventoryTrackingApi } from "~/shared/api/expenses";
+import CreateExpenseModal from "~/components/modals/CreateExpenseModal";
+import InvoiceModal from "~/components/modals/InvoiceModal";
+import CategoryModal from "~/components/modals/CategoryModal";
+import SectionModal from "~/components/modals/SectionModal";
+import { Protected } from "~/shared/ui";
+import { formatCurrencyCompact } from "~/shared/lib/helpers";
+import type { ExpenseSection, ExpenseCategory } from "~/shared/api/types";
 
-// Interface for table data structure by section
+// Interface for table data structure by section (now just a wrapper for backend data)
 interface TableSection {
   section: ExpenseSection;
   categories: TableCategory[];
 }
 
-// Interface for category with daily data
+// Interface for category with daily data (now wraps backend data)
 interface TableCategory {
   category: ExpenseCategory;
-  unitSymbol: string; // Unit symbol for display
+  unitSymbol: string;
   dailyData: Map<string, DayData>; // key: YYYY-MM-DD
-}
-
-// Purchase detail for tooltip
-interface PurchaseDetail {
-  invoiceNumber: string;
-  originalQuantity: number;
-  originalUnitId?: number;
-  originalUnitSymbol?: string;
-  convertedQuantity?: number;
-  wasConverted: boolean;
 }
 
 // Data for each day
 interface DayData {
-  purchasesQty: number; // quantity from InvoiceItems (including PENDING)
-  purchasesAmount: number; // money amount from InvoiceItems
-  usageQty: number; // quantity from ExpenseRecords - TODO
-  usageAmount: number; // money amount from ExpenseRecords - TODO
-  purchaseDetails: PurchaseDetail[]; // details for tooltip
+  purchasesQty: number;
+  purchasesAmount: number;
+  usageQty: number;
+  usageAmount: number;
+  purchaseDetails: Array<{
+    invoiceNumber: string;
+    originalQuantity: number;
+    originalUnitId?: number;
+    originalUnitSymbol?: string;
+    convertedQuantity?: number;
+    wasConverted: boolean;
+  }>;
 }
 
 export default function InventoryTrackingTab() {
@@ -77,19 +63,26 @@ export default function InventoryTrackingTab() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tableSections, setTableSections] = useState<TableSection[]>([]);
   const [monthDays, setMonthDays] = useState<Date[]>([]);
-  const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<number>>(
+    new Set(),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
   const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
-  const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(null);
-  const [selectedSectionIdForCreate, setSelectedSectionIdForCreate] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<ExpenseCategory | null>(null);
+  const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(
+    null,
+  );
+  const [selectedSectionIdForCreate, setSelectedSectionIdForCreate] = useState<
+    number | null
+  >(null);
 
   // Get locale for date-fns
-  const dateLocale = i18n.language === 'ru' ? ru : enUS;
+  const dateLocale = i18n.language === "ru" ? ru : enUS;
 
   // Helper function to format quantity (remove .00 for whole numbers)
   const formatQty = (value: number): string => {
@@ -109,7 +102,7 @@ export default function InventoryTrackingTab() {
   };
 
   const toggleSectionCollapse = (sectionId: number) => {
-    setCollapsedSections(prev => {
+    setCollapsedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(sectionId)) {
         newSet.delete(sectionId);
@@ -170,147 +163,94 @@ export default function InventoryTrackingTab() {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
-      
+
       // Store monthDays for rendering
       setMonthDays(monthDays);
 
       // 1. Get or create period for current month
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
-      
+
       const periodsResponse = await monthPeriodsApi.list({
         business_id: currentLocation.id,
         limit: 1000,
       });
-      
+
       let period = periodsResponse.periods.find(
-        p => p.year === year && p.month === month
+        (p) => p.year === year && p.month === month,
       );
-      
+
       if (!period) {
         // Create new period
         period = await monthPeriodsApi.create({
           business_id: currentLocation.id,
-          name: format(currentDate, 'LLLL yyyy', { locale: dateLocale }),
+          name: format(currentDate, "LLLL yyyy", { locale: dateLocale }),
           year,
           month,
-          status: 'active',
+          status: "active",
         });
       }
       // Period created or found - we don't need to store it
 
-      // 2. Load units to get symbols
-      const unitsResponse = await unitsApi.list({
-        business_id: currentLocation.id,
-        limit: 1000,
-      });
-      const unitsMap = new Map(unitsResponse.units.map(unit => [unit.id, unit.symbol]));
+      // 2. OPTIMIZED: Get ALL data in ONE request (replaces 800+ requests)
+      const summaryData = await inventoryTrackingApi.getMonthSummary(
+        currentLocation.id,
+        year,
+        month,
+      );
 
-      // 3. Load sections with categories
-      const sectionsResponse = await expenseSectionsApi.list({
-        business_id: currentLocation.id,
-        include_categories: true,
-      });
+      // 3. Transform backend data to component format
+      const sections: TableSection[] = summaryData.sections.map(
+        (sectionData) => {
+          const tableCategories: TableCategory[] = sectionData.categories.map(
+            (categoryData) => {
+              // Convert daily data array to Map for fast lookup
+              const dailyDataMap = new Map<string, DayData>();
 
-      // 3. Load invoices for the month (including PENDING and PAID)
-      const invoicesResponse = await invoicesApi.list({
-        business_id: currentLocation.id,
-        skip: 0,
-        limit: 1000,
-      });
-
-      // Filter invoices for current month and include PENDING status
-      const monthInvoices = invoicesResponse.invoices.filter(inv => {
-        const invDate = parseISO(inv.invoice_date);
-        return invDate >= monthStart && invDate <= monthEnd && 
-               (inv.paid_status === 'pending' || inv.paid_status === 'paid');
-      });
-
-      // 4. Build table structure with daily data
-      const sections: TableSection[] = [];
-
-      for (const section of sectionsResponse.sections) {
-        const categoriesResponse = await expenseCategoriesApi.listBySection(section.id, {
-          include_relations: true,
-        });
-
-        const tableCategories: TableCategory[] = [];
-
-        for (const category of categoriesResponse.categories) {
-          const dailyData = new Map<string, DayData>();
-
-          // Initialize all days with zeros
-          monthDays.forEach(day => {
-            const dateKey = format(day, 'yyyy-MM-dd');
-            dailyData.set(dateKey, { 
-              purchasesQty: 0, 
-              purchasesAmount: 0, 
-              usageQty: 0, 
-              usageAmount: 0,
-              purchaseDetails: []
-            });
-          });
-
-          // Add purchases from invoice items
-          for (const invoice of monthInvoices) {
-            const invDate = format(parseISO(invoice.invoice_date), 'yyyy-MM-dd');
-            
-            // Get items for this invoice WITH CONVERSION to category default unit
-            const items = await invoiceItemsApi.list(invoice.id, true); // true = convert to category unit
-            
-            // Sum up quantities and amounts for this category
-            const categoryItems = items.filter(item => item.category_id === category.id);
-            categoryItems.forEach(item => {
-              const dayData = dailyData.get(invDate);
-              if (dayData) {
-                // Use converted_quantity if available, otherwise use original quantity
-                const quantity = item.converted_quantity 
-                  ? parseFloat(item.converted_quantity) 
-                  : parseFloat(item.quantity);
-                  
-                dayData.purchasesQty += quantity;
-                dayData.purchasesAmount += parseFloat(item.quantity) * parseFloat(item.unit_price);
-                
-                // Save details for tooltip
-                const wasConverted = !!item.converted_quantity && item.original_unit_id !== undefined;
-                const originalUnitSymbol = wasConverted && item.original_unit_id 
-                  ? unitsMap.get(item.original_unit_id) 
-                  : undefined;
-                
-                dayData.purchaseDetails.push({
-                  invoiceNumber: item.invoice_number || `#${invoice.id}`,
-                  originalQuantity: item.original_quantity ? parseFloat(item.original_quantity) : parseFloat(item.quantity),
-                  originalUnitId: item.original_unit_id,
-                  originalUnitSymbol,
-                  convertedQuantity: item.converted_quantity ? parseFloat(item.converted_quantity) : undefined,
-                  wasConverted,
+              categoryData.daily_data.forEach((dayData) => {
+                dailyDataMap.set(dayData.date, {
+                  purchasesQty: parseFloat(dayData.purchases_qty),
+                  purchasesAmount: parseFloat(dayData.purchases_amount),
+                  usageQty: parseFloat(dayData.usage_qty),
+                  usageAmount: parseFloat(dayData.usage_amount),
+                  purchaseDetails: dayData.purchase_details.map((detail) => ({
+                    invoiceNumber: detail.invoice_number,
+                    originalQuantity: parseFloat(detail.original_quantity),
+                    originalUnitId: detail.original_unit_id,
+                    originalUnitSymbol: detail.original_unit_symbol,
+                    convertedQuantity: detail.converted_quantity
+                      ? parseFloat(detail.converted_quantity)
+                      : undefined,
+                    wasConverted: detail.was_converted,
+                  })),
                 });
-              }
-            });
-          }
+              });
 
-          // TODO: Add usage from expense records when API is available
-          // For now, usage stays at 0
+              return {
+                category: {
+                  id: categoryData.category_id,
+                  name: categoryData.category_name,
+                } as ExpenseCategory,
+                unitSymbol: categoryData.unit_symbol,
+                dailyData: dailyDataMap,
+              };
+            },
+          );
 
-          const unitSymbol = unitsMap.get(category.default_unit_id) || '';
-          
-          tableCategories.push({
-            category,
-            unitSymbol,
-            dailyData,
-          });
-        }
-
-        sections.push({
-          section,
-          categories: tableCategories,
-        });
-      }
+          return {
+            section: {
+              id: sectionData.section_id,
+              name: sectionData.section_name,
+            } as ExpenseSection,
+            categories: tableCategories,
+          };
+        },
+      );
 
       setTableSections(sections);
     } catch (err) {
-      console.error('Failed to load inventory tracking data:', err);
-      setError(t('expenses.inventoryTracking.loadingError'));
+      console.error("Failed to load inventory tracking data:", err);
+      setError(t("expenses.inventoryTracking.loadingError"));
     } finally {
       setLoading(false);
     }
@@ -323,7 +263,9 @@ export default function InventoryTrackingTab() {
   if (!currentLocation) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">{t('expenses.inventoryTracking.selectLocation')}</p>
+        <p className="text-gray-500">
+          {t("expenses.inventoryTracking.selectLocation")}
+        </p>
       </div>
     );
   }
@@ -331,7 +273,7 @@ export default function InventoryTrackingTab() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">{t('common.loading')}</p>
+        <p className="text-gray-500">{t("common.loading")}</p>
       </div>
     );
   }
@@ -339,13 +281,13 @@ export default function InventoryTrackingTab() {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div className="text-red-800 font-medium mb-2">{t('common.error')}</div>
+        <div className="text-red-800 font-medium mb-2">{t("common.error")}</div>
         <div className="text-red-600">{error}</div>
         <button
           onClick={loadData}
           className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
         >
-          {t('common.retry')}
+          {t("common.retry")}
         </button>
       </div>
     );
@@ -361,19 +303,19 @@ export default function InventoryTrackingTab() {
             <button
               onClick={handlePrevMonth}
               className="p-2 hover:bg-gray-100 rounded-md"
-              aria-label={t('common.previous')}
+              aria-label={t("common.previous")}
             >
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
-            
+
             <div className="text-lg font-semibold min-w-[200px] text-center">
-              {format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
+              {format(currentDate, "LLLL yyyy", { locale: dateLocale })}
             </div>
-            
+
             <button
               onClick={handleNextMonth}
               className="p-2 hover:bg-gray-100 rounded-md"
-              aria-label={t('common.next')}
+              aria-label={t("common.next")}
             >
               <ChevronRightIcon className="h-5 w-5" />
             </button>
@@ -383,30 +325,32 @@ export default function InventoryTrackingTab() {
             onClick={handleToday}
             className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
           >
-            {t('common.today')}
+            {t("common.today")}
           </button>
         </div>
 
         <div className="flex items-center space-x-2">
-          <Protected permission={{ resource: 'invoices', action: 'create' }}>
+          <Protected permission={{ resource: "invoices", action: "create" }}>
             <button
               onClick={() => setIsInvoiceModalOpen(true)}
               className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <PlusIcon className="h-4 w-4 mr-1" />
-              {t('expenses.overview.addExpense')}
+              {t("expenses.overview.addExpense")}
             </button>
           </Protected>
-          <Protected anyOf={[
-            { resource: 'categories', action: 'create' },
-            { resource: 'subcategories', action: 'create' }
-          ]}>
-            <button 
+          <Protected
+            anyOf={[
+              { resource: "categories", action: "create" },
+              { resource: "subcategories", action: "create" },
+            ]}
+          >
+            <button
               onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <PlusIcon className="h-4 w-4 mr-1" />
-              {t('expenses.modals.createExpense.createButton')}
+              {t("expenses.modals.createExpense.createButton")}
             </button>
           </Protected>
         </div>
@@ -415,8 +359,12 @@ export default function InventoryTrackingTab() {
       {/* Main Table */}
       {tableSections.length === 0 ? (
         <div className="bg-white rounded-lg shadow border p-12 text-center">
-          <p className="text-gray-500 text-lg">{t('expenses.inventoryTracking.noCategories')}</p>
-          <p className="text-gray-400 text-sm mt-2">{t('expenses.inventoryTracking.noCategoriesDescription')}</p>
+          <p className="text-gray-500 text-lg">
+            {t("expenses.inventoryTracking.noCategories")}
+          </p>
+          <p className="text-gray-400 text-sm mt-2">
+            {t("expenses.inventoryTracking.noCategoriesDescription")}
+          </p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow border overflow-hidden">
@@ -424,11 +372,11 @@ export default function InventoryTrackingTab() {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th 
+                  <th
                     rowSpan={2}
                     className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r z-10 min-w-[250px]"
                   >
-                    {t('expenses.inventoryTracking.table.category')}
+                    {t("expenses.inventoryTracking.table.category")}
                   </th>
                   {monthDays.map((day) => {
                     const isToday = isSameDay(day, new Date());
@@ -437,12 +385,16 @@ export default function InventoryTrackingTab() {
                         <th
                           colSpan={2}
                           className={`px-3 py-2 text-center text-xs font-medium uppercase tracking-wider border-x ${
-                            isToday ? 'bg-blue-100 text-blue-900' : 'text-gray-500'
+                            isToday
+                              ? "bg-blue-100 text-blue-900"
+                              : "text-gray-500"
                           }`}
                         >
-                          <div className="font-semibold">{format(day, 'd')}</div>
+                          <div className="font-semibold">
+                            {format(day, "d")}
+                          </div>
                           <div className="text-[10px] opacity-75">
-                            {format(day, 'EEE', { locale: dateLocale })}
+                            {format(day, "EEE", { locale: dateLocale })}
                           </div>
                         </th>
                         {/* Spacing column */}
@@ -450,11 +402,11 @@ export default function InventoryTrackingTab() {
                       </React.Fragment>
                     );
                   })}
-                  <th 
+                  <th
                     colSpan={2}
                     className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l"
                   >
-                    {t('expenses.inventoryTracking.table.total')}
+                    {t("expenses.inventoryTracking.table.total")}
                   </th>
                 </tr>
                 <tr>
@@ -462,15 +414,23 @@ export default function InventoryTrackingTab() {
                     const isToday = isSameDay(day, new Date());
                     return (
                       <React.Fragment key={`${day.toISOString()}-sub`}>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[60px] ${
-                          isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
-                        }`}>
-                          {t('expenses.inventoryTracking.table.qty')}
+                        <th
+                          className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[60px] ${
+                            isToday
+                              ? "bg-blue-50 text-blue-800"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {t("expenses.inventoryTracking.table.qty")}
                         </th>
-                        <th className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[80px] ${
-                          isToday ? 'bg-blue-50 text-blue-800' : 'text-gray-400'
-                        }`}>
-                          {t('expenses.inventoryTracking.table.amount')}
+                        <th
+                          className={`px-2 py-1 text-center text-[10px] font-medium uppercase border-x min-w-[80px] ${
+                            isToday
+                              ? "bg-blue-50 text-blue-800"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {t("expenses.inventoryTracking.table.amount")}
                         </th>
                         {/* Spacing column */}
                         <th className="px-6 bg-gray-50"></th>
@@ -478,63 +438,84 @@ export default function InventoryTrackingTab() {
                     );
                   })}
                   <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 border-x min-w-[60px]">
-                    {t('expenses.inventoryTracking.table.qty')}
+                    {t("expenses.inventoryTracking.table.qty")}
                   </th>
                   <th className="px-2 py-1 text-center text-[10px] font-medium uppercase text-gray-400 min-w-[80px]">
-                    {t('expenses.inventoryTracking.table.amount')}
+                    {t("expenses.inventoryTracking.table.amount")}
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white">
                 {tableSections.map((tableSection, sectionIndex) => {
-                  const isCollapsed = collapsedSections.has(tableSection.section.id);
-                  
+                  const isCollapsed = collapsedSections.has(
+                    tableSection.section.id,
+                  );
+
                   // Calculate section totals
-                  const sectionDailyTotals = new Map<string, { purchasesAmount: number; usageAmount: number }>();
+                  const sectionDailyTotals = new Map<
+                    string,
+                    { purchasesAmount: number; usageAmount: number }
+                  >();
                   let sectionGrandTotal = 0;
-                  
-                  tableSection.categories.forEach(tableCategory => {
-                    monthDays.forEach(day => {
-                      const dateKey = format(day, 'yyyy-MM-dd');
+
+                  tableSection.categories.forEach((tableCategory) => {
+                    monthDays.forEach((day) => {
+                      const dateKey = format(day, "yyyy-MM-dd");
                       const dayData = tableCategory.dailyData.get(dateKey);
                       if (dayData) {
                         if (!sectionDailyTotals.has(dateKey)) {
-                          sectionDailyTotals.set(dateKey, { purchasesAmount: 0, usageAmount: 0 });
+                          sectionDailyTotals.set(dateKey, {
+                            purchasesAmount: 0,
+                            usageAmount: 0,
+                          });
                         }
                         const totals = sectionDailyTotals.get(dateKey)!;
                         totals.purchasesAmount += dayData.purchasesAmount;
                         totals.usageAmount += dayData.usageAmount;
-                        sectionGrandTotal += dayData.purchasesAmount - dayData.usageAmount;
+                        sectionGrandTotal +=
+                          dayData.purchasesAmount - dayData.usageAmount;
                       }
                     });
                   });
-                  
+
                   return (
                     <React.Fragment key={`section-${tableSection.section.id}`}>
                       {/* Spacing between sections */}
                       {sectionIndex > 0 && (
                         <tr className="bg-gray-100">
-                          <td colSpan={monthDays.length * 3 + 4} className="h-8"></td>
+                          <td
+                            colSpan={monthDays.length * 3 + 4}
+                            className="h-8"
+                          ></td>
                         </tr>
                       )}
-                      
+
                       {/* Section Header with Totals */}
                       <tr className="bg-blue-50 hover:bg-blue-100">
-                        <td 
+                        <td
                           className="sticky left-0 bg-blue-50 hover:bg-blue-100 px-4 py-3 font-medium text-blue-900 border-r z-10 cursor-pointer"
-                          onClick={() => toggleSectionCollapse(tableSection.section.id)}
+                          onClick={() =>
+                            toggleSectionCollapse(tableSection.section.id)
+                          }
                         >
                           <div className="flex items-center justify-between w-full">
-                            <span className="font-semibold">{tableSection.section.name}</span>
+                            <span className="font-semibold">
+                              {tableSection.section.name}
+                            </span>
                             <div className="flex items-center space-x-2">
-                              <Protected permission={{ resource: 'categories', action: 'edit' }}>
+                              <Protected
+                                permission={{
+                                  resource: "categories",
+                                  action: "edit",
+                                }}
+                              >
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEditSection(tableSection.section);
                                   }}
                                   className="p-1 hover:bg-blue-200 rounded transition-colors"
-                                  title={t('expenses.categories.editSection')}
+                                  title={t("expenses.categories.editSection")}
                                 >
                                   <PencilIcon className="h-4 w-4 text-blue-600" />
                                 </button>
@@ -545,7 +526,7 @@ export default function InventoryTrackingTab() {
                                   handleAddCategory(tableSection.section.id);
                                 }}
                                 className="p-1 hover:bg-blue-200 rounded transition-colors"
-                                title={t('expenses.categories.add')}
+                                title={t("expenses.categories.add")}
                               >
                                 <PlusIcon className="h-4 w-4 text-blue-600" />
                               </button>
@@ -561,34 +542,50 @@ export default function InventoryTrackingTab() {
                           </div>
                         </td>
                         {monthDays.map((day) => {
-                          const dateKey = format(day, 'yyyy-MM-dd');
+                          const dateKey = format(day, "yyyy-MM-dd");
                           const dayTotals = sectionDailyTotals.get(dateKey);
                           const isToday = isSameDay(day, new Date());
-                          
+
                           return (
-                            <React.Fragment key={`${day.toISOString()}-section`}>
+                            <React.Fragment
+                              key={`${day.toISOString()}-section`}
+                            >
                               {/* Skip Quantity Column for section header */}
-                              <td className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
-                                <div className="text-blue-600 text-[10px]">—</div>
+                              <td
+                                className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? "bg-blue-100" : "bg-blue-50 hover:bg-blue-100"}`}
+                              >
+                                <div className="text-blue-600 text-[10px]">
+                                  —
+                                </div>
                               </td>
-                              
+
                               {/* Amount Column - show section totals */}
-                              <td className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}>
-                                {dayTotals && (dayTotals.purchasesAmount !== 0 || dayTotals.usageAmount !== 0) ? (
+                              <td
+                                className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? "bg-blue-100" : "bg-blue-50 hover:bg-blue-100"}`}
+                              >
+                                {dayTotals &&
+                                (dayTotals.purchasesAmount !== 0 ||
+                                  dayTotals.usageAmount !== 0) ? (
                                   <div className="space-y-0.5">
                                     {dayTotals.purchasesAmount !== 0 && (
                                       <div className="text-green-600 font-semibold text-[10px]">
-                                        {formatCurrencyCompact(dayTotals.purchasesAmount)}
+                                        {formatCurrencyCompact(
+                                          dayTotals.purchasesAmount,
+                                        )}
                                       </div>
                                     )}
                                     {dayTotals.usageAmount !== 0 && (
                                       <div className="text-red-600 font-semibold text-[10px]">
-                                        {formatCurrencyCompact(dayTotals.usageAmount)}
+                                        {formatCurrencyCompact(
+                                          dayTotals.usageAmount,
+                                        )}
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="text-blue-600 text-[10px]">{formatCurrencyCompact(0)}</div>
+                                  <div className="text-blue-600 text-[10px]">
+                                    {formatCurrencyCompact(0)}
+                                  </div>
                                 )}
                               </td>
                               {/* Spacing column between days */}
@@ -605,127 +602,183 @@ export default function InventoryTrackingTab() {
                           </div>
                         </td>
                       </tr>
-                      
+
                       {/* Category Rows */}
-                      {!isCollapsed && tableSection.categories.map((tableCategory) => {
-                        // Calculate totals
-                        let totalPurchasesAmount = 0;
-                        let totalUsageAmount = 0;
-                        let totalPurchasesQty = 0;
-                        let totalUsageQty = 0;
-                        
-                        monthDays.forEach(day => {
-                          const dateKey = format(day, 'yyyy-MM-dd');
-                          const dayData = tableCategory.dailyData.get(dateKey);
-                          if (dayData) {
-                            totalPurchasesAmount += dayData.purchasesAmount;
-                            totalUsageAmount += dayData.usageAmount;
-                            totalPurchasesQty += dayData.purchasesQty;
-                            totalUsageQty += dayData.usageQty;
-                          }
-                        });
+                      {!isCollapsed &&
+                        tableSection.categories.map((tableCategory) => {
+                          // Calculate totals
+                          let totalPurchasesAmount = 0;
+                          let totalUsageAmount = 0;
+                          let totalPurchasesQty = 0;
+                          let totalUsageQty = 0;
 
-                        const totalAmount = totalPurchasesAmount - totalUsageAmount;
-                        const totalQty = totalPurchasesQty - totalUsageQty;
+                          monthDays.forEach((day) => {
+                            const dateKey = format(day, "yyyy-MM-dd");
+                            const dayData =
+                              tableCategory.dailyData.get(dateKey);
+                            if (dayData) {
+                              totalPurchasesAmount += dayData.purchasesAmount;
+                              totalUsageAmount += dayData.usageAmount;
+                              totalPurchasesQty += dayData.purchasesQty;
+                              totalUsageQty += dayData.usageQty;
+                            }
+                          });
 
-                        return (
-                          <tr key={`category-${tableCategory.category.id}`} className="group hover:bg-gray-50 border-b border-gray-100">
-                            <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
-                              <div className="flex items-center justify-between">
-                                <span>{tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}</span>
-                                <Protected permission={{ resource: 'subcategories', action: 'edit' }}>
-                                  <button
-                                    onClick={() => handleEditCategory(tableCategory.category)}
-                                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title={t('expenses.categories.editCategory')}
+                          const totalAmount =
+                            totalPurchasesAmount - totalUsageAmount;
+                          const totalQty = totalPurchasesQty - totalUsageQty;
+
+                          return (
+                            <tr
+                              key={`category-${tableCategory.category.id}`}
+                              className="group hover:bg-gray-50 border-b border-gray-100"
+                            >
+                              <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
+                                <div className="flex items-center justify-between">
+                                  <span>
+                                    {tableCategory.category.name}
+                                    {tableCategory.unitSymbol &&
+                                      ` (${tableCategory.unitSymbol})`}
+                                  </span>
+                                  <Protected
+                                    permission={{
+                                      resource: "subcategories",
+                                      action: "edit",
+                                    }}
                                   >
-                                    <PencilIcon className="h-4 w-4" />
-                                  </button>
-                                </Protected>
-                              </div>
-                            </td>
-                            {monthDays.map((day) => {
-                              const dateKey = format(day, 'yyyy-MM-dd');
-                              const dayData = tableCategory.dailyData.get(dateKey);
-                              const isToday = isSameDay(day, new Date());
-                              
-                              return (
-                                <React.Fragment key={`${day.toISOString()}-cat`}>
-                                  {/* Quantity Column */}
-                                  <td 
-                                    className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-50' : ''}`}
-                                    title={dayData && dayData.purchaseDetails.length > 0 ? 
-                                      dayData.purchaseDetails.map(detail => 
-                                        detail.wasConverted 
-                                          ? `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.original')}: ${formatQty(detail.originalQuantity)} ${detail.originalUnitSymbol || ''}\n${t('common.converted')}: ${formatQty(detail.convertedQuantity || 0)} ${tableCategory.unitSymbol}`
-                                          : `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.quantity')}: ${formatQty(detail.originalQuantity)} ${tableCategory.unitSymbol}`
-                                      ).join('\n---\n')
-                                      : undefined
-                                    }
+                                    <button
+                                      onClick={() =>
+                                        handleEditCategory(
+                                          tableCategory.category,
+                                        )
+                                      }
+                                      className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title={t(
+                                        "expenses.categories.editCategory",
+                                      )}
+                                    >
+                                      <PencilIcon className="h-4 w-4" />
+                                    </button>
+                                  </Protected>
+                                </div>
+                              </td>
+                              {monthDays.map((day) => {
+                                const dateKey = format(day, "yyyy-MM-dd");
+                                const dayData =
+                                  tableCategory.dailyData.get(dateKey);
+                                const isToday = isSameDay(day, new Date());
+
+                                return (
+                                  <React.Fragment
+                                    key={`${day.toISOString()}-cat`}
                                   >
-                                    {dayData ? (
-                                      <div className="space-y-0.5">
-                                        {dayData.purchasesQty !== 0 && (
-                                          <div className="text-green-600 cursor-help">
-                                            {formatQty(dayData.purchasesQty)}
-                                          </div>
-                                        )}
-                                        {dayData.usageQty !== 0 && (
-                                          <div className="text-red-600">
-                                            {formatQty(dayData.usageQty)}
-                                          </div>
-                                        )}
-                                        {dayData.purchasesQty === 0 && dayData.usageQty === 0 && (
-                                          <div className="text-gray-400">0</div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <div className="text-gray-400">0</div>
-                                    )}
-                                  </td>
-                                  
-                                  {/* Amount Column */}
-                                  <td 
-                                    className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-50' : ''}`}
-                                  >
-                                    {dayData ? (
-                                      <div className="space-y-0.5">
-                                        {dayData.purchasesAmount !== 0 && (
-                                          <div className="text-green-600 font-semibold">
-                                            {formatCurrencyCompact(dayData.purchasesAmount)}
-                                          </div>
-                                        )}
-                                        {dayData.usageAmount !== 0 && (
-                                          <div className="text-red-600 font-semibold">
-                                            {formatCurrencyCompact(dayData.usageAmount)}
-                                          </div>
-                                        )}
-                                        {dayData.purchasesAmount === 0 && dayData.usageAmount === 0 && (
-                                          <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
-                                    )}
-                                  </td>
-                                  {/* Spacing column between days */}
-                                  <td className={`px-6 bg-gray-50`}></td>
-                                </React.Fragment>
-                              );
-                            })}
-                            <td className="px-2 py-2 text-center text-xs border-x whitespace-nowrap">
-                              <div className={totalQty > 0 ? 'text-green-600' : totalQty < 0 ? 'text-red-600' : 'text-gray-900'}>
-                                {formatQty(totalQty)}
-                              </div>
-                            </td>
-                            <td className="px-2 py-2 text-center text-xs whitespace-nowrap">
-                              <div className={totalAmount > 0 ? 'text-green-600 font-bold' : totalAmount < 0 ? 'text-red-600 font-bold' : 'text-gray-900 font-bold'}>
-                                {formatCurrencyCompact(totalAmount)}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                                    {/* Quantity Column */}
+                                    <td
+                                      className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? "bg-blue-50" : ""}`}
+                                      title={
+                                        dayData &&
+                                        dayData.purchaseDetails.length > 0
+                                          ? dayData.purchaseDetails
+                                              .map((detail) =>
+                                                detail.wasConverted
+                                                  ? `${t("expenses.invoices.number")}: ${detail.invoiceNumber}\n${t("common.original")}: ${formatQty(detail.originalQuantity)} ${detail.originalUnitSymbol || ""}\n${t("common.converted")}: ${formatQty(detail.convertedQuantity || 0)} ${tableCategory.unitSymbol}`
+                                                  : `${t("expenses.invoices.number")}: ${detail.invoiceNumber}\n${t("common.quantity")}: ${formatQty(detail.originalQuantity)} ${tableCategory.unitSymbol}`,
+                                              )
+                                              .join("\n---\n")
+                                          : undefined
+                                      }
+                                    >
+                                      {dayData ? (
+                                        <div className="space-y-0.5">
+                                          {dayData.purchasesQty !== 0 && (
+                                            <div className="text-green-600 cursor-help">
+                                              {formatQty(dayData.purchasesQty)}
+                                            </div>
+                                          )}
+                                          {dayData.usageQty !== 0 && (
+                                            <div className="text-red-600">
+                                              {formatQty(dayData.usageQty)}
+                                            </div>
+                                          )}
+                                          {dayData.purchasesQty === 0 &&
+                                            dayData.usageQty === 0 && (
+                                              <div className="text-gray-400">
+                                                0
+                                              </div>
+                                            )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-gray-400">0</div>
+                                      )}
+                                    </td>
+
+                                    {/* Amount Column */}
+                                    <td
+                                      className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? "bg-blue-50" : ""}`}
+                                    >
+                                      {dayData ? (
+                                        <div className="space-y-0.5">
+                                          {dayData.purchasesAmount !== 0 && (
+                                            <div className="text-green-600 font-semibold">
+                                              {formatCurrencyCompact(
+                                                dayData.purchasesAmount,
+                                              )}
+                                            </div>
+                                          )}
+                                          {dayData.usageAmount !== 0 && (
+                                            <div className="text-red-600 font-semibold">
+                                              {formatCurrencyCompact(
+                                                dayData.usageAmount,
+                                              )}
+                                            </div>
+                                          )}
+                                          {dayData.purchasesAmount === 0 &&
+                                            dayData.usageAmount === 0 && (
+                                              <div className="text-gray-400">
+                                                {formatCurrencyCompact(0)}
+                                              </div>
+                                            )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-gray-400">
+                                          {formatCurrencyCompact(0)}
+                                        </div>
+                                      )}
+                                    </td>
+                                    {/* Spacing column between days */}
+                                    <td className={`px-6 bg-gray-50`}></td>
+                                  </React.Fragment>
+                                );
+                              })}
+                              <td className="px-2 py-2 text-center text-xs border-x whitespace-nowrap">
+                                <div
+                                  className={
+                                    totalQty > 0
+                                      ? "text-green-600"
+                                      : totalQty < 0
+                                        ? "text-red-600"
+                                        : "text-gray-900"
+                                  }
+                                >
+                                  {formatQty(totalQty)}
+                                </div>
+                              </td>
+                              <td className="px-2 py-2 text-center text-xs whitespace-nowrap">
+                                <div
+                                  className={
+                                    totalAmount > 0
+                                      ? "text-green-600 font-bold"
+                                      : totalAmount < 0
+                                        ? "text-red-600 font-bold"
+                                        : "text-gray-900 font-bold"
+                                  }
+                                >
+                                  {formatCurrencyCompact(totalAmount)}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </React.Fragment>
                   );
                 })}
@@ -740,7 +793,10 @@ export default function InventoryTrackingTab() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
-        sections={tableSections.map(ts => ({ id: ts.section.id, name: ts.section.name }))}
+        sections={tableSections.map((ts) => ({
+          id: ts.section.id,
+          name: ts.section.name,
+        }))}
       />
 
       {isInvoiceModalOpen && (
@@ -765,7 +821,9 @@ export default function InventoryTrackingTab() {
           sectionId={selectedSectionIdForCreate || undefined}
           category={selectedCategory || undefined}
           onCategoryAdded={selectedCategory ? undefined : handleCategoryUpdated}
-          onCategoryUpdated={selectedCategory ? handleCategoryUpdated : undefined}
+          onCategoryUpdated={
+            selectedCategory ? handleCategoryUpdated : undefined
+          }
         />
       )}
 

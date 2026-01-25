@@ -12,7 +12,6 @@ from app.core.resource_permissions import (
     Resource,
     Action,
     extract_business_id_from_invoice,
-    extract_business_id_from_invoice_item,
 )
 from app.expenses.schemas import (
     InvoiceCreate,
@@ -362,14 +361,15 @@ async def get_invoice_items(
     return [InvoiceItemOutWithConversion(**item.__dict__, invoice_number=getattr(invoice, 'invoice_number', None)) for item in items]
 
 
-@router.put("/items/{item_id}", response_model=InvoiceItemOut)
+@router.put("/{invoice_id}/items/{item_id}", response_model=InvoiceItemOut)
 async def update_invoice_item(
+    invoice_id: int,
     item_id: int,
     item_data: InvoiceItemUpdate,
     auth: Annotated[dict, Depends(require_resource_permission(
         Resource.INVOICES,
         Action.EDIT,
-        business_id_extractor=extract_business_id_from_invoice_item
+        business_id_extractor=extract_business_id_from_invoice
     ))],
     session: AsyncSession = Depends(get_db_dep),
 ):
@@ -395,13 +395,14 @@ async def update_invoice_item(
     return updated_item
 
 
-@router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{invoice_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_invoice_item(
+    invoice_id: int,
     item_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(
         Resource.INVOICES,
         Action.DELETE,
-        business_id_extractor=extract_business_id_from_invoice_item
+        business_id_extractor=extract_business_id_from_invoice
     ))],
     session: AsyncSession = Depends(get_db_dep),
 ):
