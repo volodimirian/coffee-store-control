@@ -348,7 +348,7 @@ export default function InvoiceModal({
         // Delete old items and create new ones (simpler than diffing)
         const existingItems = await invoiceItemsApi.list(invoice.id);
         for (const item of existingItems) {
-          await invoiceItemsApi.delete(item.id);
+          await invoiceItemsApi.delete(invoice.id, item.id);
         }
 
         for (const item of lineItems) {
