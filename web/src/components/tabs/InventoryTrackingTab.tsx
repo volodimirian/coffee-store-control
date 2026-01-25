@@ -19,7 +19,11 @@ import {
 import { ru, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import { useAppContext } from "~/shared/context/AppContext";
-import { monthPeriodsApi, inventoryTrackingApi } from "~/shared/api/expenses";
+import {
+  monthPeriodsApi,
+  inventoryTrackingApi,
+  type PurchaseDetail,
+} from "~/shared/api/expenses";
 import CreateExpenseModal from "~/components/modals/CreateExpenseModal";
 import InvoiceModal from "~/components/modals/InvoiceModal";
 import CategoryModal from "~/components/modals/CategoryModal";
@@ -28,33 +32,26 @@ import { Protected } from "~/shared/ui";
 import { formatCurrencyCompact } from "~/shared/lib/helpers";
 import type { ExpenseSection, ExpenseCategory } from "~/shared/api/types";
 
-// Interface for table data structure by section (now just a wrapper for backend data)
+// Interface for table data structure by section
 interface TableSection {
   section: ExpenseSection;
   categories: TableCategory[];
 }
 
-// Interface for category with daily data (now wraps backend data)
+// Interface for category with daily data
 interface TableCategory {
   category: ExpenseCategory;
-  unitSymbol: string;
+  unitSymbol: string; // Unit symbol for display
   dailyData: Map<string, DayData>; // key: YYYY-MM-DD
 }
 
 // Data for each day
 interface DayData {
-  purchasesQty: number;
-  purchasesAmount: number;
-  usageQty: number;
-  usageAmount: number;
-  purchaseDetails: Array<{
-    invoiceNumber: string;
-    originalQuantity: number;
-    originalUnitId?: number;
-    originalUnitSymbol?: string;
-    convertedQuantity?: number;
-    wasConverted: boolean;
-  }>;
+  purchasesQty: number; // quantity from InvoiceItems (including PENDING)
+  purchasesAmount: number; // money amount from InvoiceItems
+  usageQty: number; // quantity from ExpenseRecords - TODO
+  usageAmount: number; // money amount from ExpenseRecords - TODO
+  purchaseDetails: PurchaseDetail[]; // details for tooltip
 }
 
 export default function InventoryTrackingTab() {
@@ -214,14 +211,12 @@ export default function InventoryTrackingTab() {
                   usageQty: parseFloat(dayData.usage_qty),
                   usageAmount: parseFloat(dayData.usage_amount),
                   purchaseDetails: dayData.purchase_details.map((detail) => ({
-                    invoiceNumber: detail.invoice_number,
-                    originalQuantity: parseFloat(detail.original_quantity),
-                    originalUnitId: detail.original_unit_id,
-                    originalUnitSymbol: detail.original_unit_symbol,
-                    convertedQuantity: detail.converted_quantity
-                      ? parseFloat(detail.converted_quantity)
-                      : undefined,
-                    wasConverted: detail.was_converted,
+                    invoice_number: detail.invoice_number,
+                    original_quantity: detail.original_quantity,
+                    original_unit_id: detail.original_unit_id,
+                    original_unit_symbol: detail.original_unit_symbol,
+                    converted_quantity: detail.converted_quantity,
+                    was_converted: detail.was_converted,
                   })),
                 });
               });
@@ -680,9 +675,9 @@ export default function InventoryTrackingTab() {
                                         dayData.purchaseDetails.length > 0
                                           ? dayData.purchaseDetails
                                               .map((detail) =>
-                                                detail.wasConverted
-                                                  ? `${t("expenses.invoices.number")}: ${detail.invoiceNumber}\n${t("common.original")}: ${formatQty(detail.originalQuantity)} ${detail.originalUnitSymbol || ""}\n${t("common.converted")}: ${formatQty(detail.convertedQuantity || 0)} ${tableCategory.unitSymbol}`
-                                                  : `${t("expenses.invoices.number")}: ${detail.invoiceNumber}\n${t("common.quantity")}: ${formatQty(detail.originalQuantity)} ${tableCategory.unitSymbol}`,
+                                                detail.was_converted
+                                                  ? `${t("expenses.invoices.number")}: ${detail.invoice_number}\n${t("common.original")}: ${formatQty(parseFloat(detail.original_quantity))} ${detail.original_unit_symbol || ""}\n${t("common.converted")}: ${formatQty(detail.converted_quantity ? parseFloat(detail.converted_quantity) : 0)} ${tableCategory.unitSymbol}`
+                                                  : `${t("expenses.invoices.number")}: ${detail.invoice_number}\n${t("common.quantity")}: ${formatQty(parseFloat(detail.original_quantity))} ${tableCategory.unitSymbol}`,
                                               )
                                               .join("\n---\n")
                                           : undefined
