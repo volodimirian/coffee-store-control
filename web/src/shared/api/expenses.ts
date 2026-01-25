@@ -701,24 +701,28 @@ export const inventoryBalanceApi = {
 // ============ Inventory Tracking API ============
 
 export interface PurchaseDetail {
-  invoice_id: number;
-  invoice_date: string;
-  supplier_name: string;
-  quantity: string;
-  unit_symbol: string;
-  unit_price: string;
-  total_price: string;
+  invoice_number: string;
+  original_quantity: string;
+  original_unit_id?: number;
+  original_unit_symbol?: string;
+  converted_quantity?: string;
+  was_converted: boolean;
 }
 
 export interface DayData {
-  day: number;
-  purchases: PurchaseDetail[];
+  date: string;
+  purchases_qty: string;
+  purchases_amount: string;
+  usage_qty: string;
+  usage_amount: string;
+  purchase_details: PurchaseDetail[];
 }
 
 export interface CategoryData {
   category_id: number;
   category_name: string;
-  days: DayData[];
+  unit_symbol: string;
+  daily_data: DayData[];
 }
 
 export interface SectionData {
