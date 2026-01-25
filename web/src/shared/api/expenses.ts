@@ -599,16 +599,16 @@ export const invoiceItemsApi = {
   /**
    * Update invoice item
    */
-  update: async (itemId: number, data: InvoiceItemUpdate): Promise<InvoiceItem> => {
-    const response = await api.put<InvoiceItem>(`/expenses/invoices/items/${itemId}`, data);
+  update: async (invoiceId: number, itemId: number, data: InvoiceItemUpdate): Promise<InvoiceItem> => {
+    const response = await api.put<InvoiceItem>(`/expenses/invoices/${invoiceId}/items/${itemId}`, data);
     return response.data;
   },
 
   /**
    * Delete invoice item
    */
-  delete: async (itemId: number): Promise<void> => {
-    await api.delete(`/expenses/invoices/items/${itemId}`);
+  delete: async (invoiceId: number, itemId: number): Promise<void> => {
+    await api.delete(`/expenses/invoices/${invoiceId}/items/${itemId}`);
   },
 };
 
@@ -693,6 +693,55 @@ export const inventoryBalanceApi = {
     const response = await api.get<string>(
       `/expenses/inventory-balance/${businessId}/category/${categoryId}/average-usage`,
       { params: { months_back: monthsBack } }
+    );
+    return response.data;
+  },
+};
+
+// ============ Inventory Tracking API ============
+
+export interface PurchaseDetail {
+  invoice_id: number;
+  invoice_date: string;
+  supplier_name: string;
+  quantity: string;
+  unit_symbol: string;
+  unit_price: string;
+  total_price: string;
+}
+
+export interface DayData {
+  day: number;
+  purchases: PurchaseDetail[];
+}
+
+export interface CategoryData {
+  category_id: number;
+  category_name: string;
+  days: DayData[];
+}
+
+export interface SectionData {
+  section_id: number;
+  section_name: string;
+  categories: CategoryData[];
+}
+
+export interface InventoryTrackingSummary {
+  year: number;
+  month: number;
+  sections: SectionData[];
+}
+
+export const inventoryTrackingApi = {
+  /**
+   * Get complete inventory tracking data for a month (optimized - single request)
+   * Replaces 800+ individual API calls with one batched request
+   */
+  getMonthSummary: async (businessId: number, year: number, month: number): Promise<InventoryTrackingSummary> => {
+    const response = await api.get<InventoryTrackingSummary>(
+      `/expenses/inventory-tracking/business/${businessId}/summary`,
+      { params: { year, month } }
     );
     return response.data;
   },

@@ -14,19 +14,15 @@ import {
   startOfMonth, 
   endOfMonth, 
   eachDayOfInterval,
-  isSameDay,
-  parseISO
+  isSameDay
 } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '~/shared/context/AppContext';
 import { 
-  expenseSectionsApi,
-  expenseCategoriesApi, 
   monthPeriodsApi,
-  invoicesApi,
-  invoiceItemsApi,
-  unitsApi,
+  inventoryTrackingApi,
+  type PurchaseDetail,
 } from '~/shared/api/expenses';
 import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
 import InvoiceModal from '~/components/modals/InvoiceModal';
@@ -50,16 +46,6 @@ interface TableCategory {
   category: ExpenseCategory;
   unitSymbol: string; // Unit symbol for display
   dailyData: Map<string, DayData>; // key: YYYY-MM-DD
-}
-
-// Purchase detail for tooltip
-interface PurchaseDetail {
-  invoiceNumber: string;
-  originalQuantity: number;
-  originalUnitId?: number;
-  originalUnitSymbol?: string;
-  convertedQuantity?: number;
-  wasConverted: boolean;
 }
 
 // Data for each day
@@ -199,113 +185,47 @@ export default function InventoryTrackingTab() {
       }
       // Period created or found - we don't need to store it
 
-      // 2. Load units to get symbols
-      const unitsResponse = await unitsApi.list({
-        business_id: currentLocation.id,
-        limit: 1000,
-      });
-      const unitsMap = new Map(unitsResponse.units.map(unit => [unit.id, unit.symbol]));
+      // 2. OPTIMIZED: Get ALL data in ONE request (replaces 800+ requests)
+      const summaryData = await inventoryTrackingApi.getMonthSummary(
+        currentLocation.id,
+        year,
+        month
+      );
 
-      // 3. Load sections with categories
-      const sectionsResponse = await expenseSectionsApi.list({
-        business_id: currentLocation.id,
-        include_categories: true,
-      });
-
-      // 3. Load invoices for the month (including PENDING and PAID)
-      const invoicesResponse = await invoicesApi.list({
-        business_id: currentLocation.id,
-        skip: 0,
-        limit: 1000,
-      });
-
-      // Filter invoices for current month and include PENDING status
-      const monthInvoices = invoicesResponse.invoices.filter(inv => {
-        const invDate = parseISO(inv.invoice_date);
-        return invDate >= monthStart && invDate <= monthEnd && 
-               (inv.paid_status === 'pending' || inv.paid_status === 'paid');
-      });
-
-      // 4. Build table structure with daily data
-      const sections: TableSection[] = [];
-
-      for (const section of sectionsResponse.sections) {
-        const categoriesResponse = await expenseCategoriesApi.listBySection(section.id, {
-          include_relations: true,
-        });
-
-        const tableCategories: TableCategory[] = [];
-
-        for (const category of categoriesResponse.categories) {
-          const dailyData = new Map<string, DayData>();
-
-          // Initialize all days with zeros
-          monthDays.forEach(day => {
-            const dateKey = format(day, 'yyyy-MM-dd');
-            dailyData.set(dateKey, { 
-              purchasesQty: 0, 
-              purchasesAmount: 0, 
-              usageQty: 0, 
-              usageAmount: 0,
-              purchaseDetails: []
-            });
-          });
-
-          // Add purchases from invoice items
-          for (const invoice of monthInvoices) {
-            const invDate = format(parseISO(invoice.invoice_date), 'yyyy-MM-dd');
-            
-            // Get items for this invoice WITH CONVERSION to category default unit
-            const items = await invoiceItemsApi.list(invoice.id, true); // true = convert to category unit
-            
-            // Sum up quantities and amounts for this category
-            const categoryItems = items.filter(item => item.category_id === category.id);
-            categoryItems.forEach(item => {
-              const dayData = dailyData.get(invDate);
-              if (dayData) {
-                // Use converted_quantity if available, otherwise use original quantity
-                const quantity = item.converted_quantity 
-                  ? parseFloat(item.converted_quantity) 
-                  : parseFloat(item.quantity);
-                  
-                dayData.purchasesQty += quantity;
-                dayData.purchasesAmount += parseFloat(item.quantity) * parseFloat(item.unit_price);
-                
-                // Save details for tooltip
-                const wasConverted = !!item.converted_quantity && item.original_unit_id !== undefined;
-                const originalUnitSymbol = wasConverted && item.original_unit_id 
-                  ? unitsMap.get(item.original_unit_id) 
-                  : undefined;
-                
-                dayData.purchaseDetails.push({
-                  invoiceNumber: item.invoice_number || `#${invoice.id}`,
-                  originalQuantity: item.original_quantity ? parseFloat(item.original_quantity) : parseFloat(item.quantity),
-                  originalUnitId: item.original_unit_id,
-                  originalUnitSymbol,
-                  convertedQuantity: item.converted_quantity ? parseFloat(item.converted_quantity) : undefined,
-                  wasConverted,
-                });
-              }
-            });
-          }
-
-          // TODO: Add usage from expense records when API is available
-          // For now, usage stays at 0
-
-          const unitSymbol = unitsMap.get(category.default_unit_id) || '';
+      // 3. Transform backend data to component format
+      const sections: TableSection[] = summaryData.sections.map((sectionData) => {
+        const tableCategories: TableCategory[] = sectionData.categories.map((categoryData) => {
+          // Convert daily data array to Map for fast lookup
+          const dailyDataMap = new Map<string, DayData>();
           
-          tableCategories.push({
-            category,
-            unitSymbol,
-            dailyData,
+          categoryData.daily_data.forEach((dayData) => {
+            dailyDataMap.set(dayData.date, {
+              purchasesQty: parseFloat(dayData.purchases_qty),
+              purchasesAmount: parseFloat(dayData.purchases_amount),
+              usageQty: parseFloat(dayData.usage_qty),
+              usageAmount: parseFloat(dayData.usage_amount),
+              purchaseDetails: dayData.purchase_details,
+            });
           });
-        }
 
-        sections.push({
-          section,
-          categories: tableCategories,
+          return {
+            category: {
+              id: categoryData.category_id,
+              name: categoryData.category_name,
+            } as ExpenseCategory,
+            unitSymbol: categoryData.unit_symbol,
+            dailyData: dailyDataMap,
+          };
         });
-      }
+
+        return {
+          section: {
+            id: sectionData.section_id,
+            name: sectionData.section_name,
+          } as ExpenseSection,
+          categories: tableCategories,
+        };
+      });
 
       setTableSections(sections);
     } catch (err) {
@@ -656,9 +576,9 @@ export default function InventoryTrackingTab() {
                                     className={`px-1 py-2 text-center text-xs border-x whitespace-nowrap ${isToday ? 'bg-blue-50' : ''}`}
                                     title={dayData && dayData.purchaseDetails.length > 0 ? 
                                       dayData.purchaseDetails.map(detail => 
-                                        detail.wasConverted 
-                                          ? `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.original')}: ${formatQty(detail.originalQuantity)} ${detail.originalUnitSymbol || ''}\n${t('common.converted')}: ${formatQty(detail.convertedQuantity || 0)} ${tableCategory.unitSymbol}`
-                                          : `${t('expenses.invoices.number')}: ${detail.invoiceNumber}\n${t('common.quantity')}: ${formatQty(detail.originalQuantity)} ${tableCategory.unitSymbol}`
+                                        detail.was_converted 
+                                          ? `${t('expenses.invoices.number')}: ${detail.invoice_number}\n${t('common.original')}: ${formatQty(parseFloat(detail.original_quantity))} ${detail.original_unit_symbol || ''}\n${t('common.converted')}: ${formatQty(detail.converted_quantity ? parseFloat(detail.converted_quantity) : 0)} ${tableCategory.unitSymbol}`
+                                          : `${t('expenses.invoices.number')}: ${detail.invoice_number}\n${t('common.quantity')}: ${formatQty(parseFloat(detail.original_quantity))} ${tableCategory.unitSymbol}`
                                       ).join('\n---\n')
                                       : undefined
                                     }
