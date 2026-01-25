@@ -2,7 +2,7 @@
  * Expenses API - Category, Section, Unit, and Supplier management
  */
 
-import { api } from "./client";
+import { api } from './client';
 import type {
   Unit,
   UnitCreate,
@@ -36,7 +36,7 @@ import type {
   InventoryBalance,
   LowStockCategory,
   BalanceRecalculationResponse,
-} from "./types";
+} from './types';
 
 // ============ Units API ============
 
@@ -56,15 +56,15 @@ export const unitsApi = {
    */
   list: async (params: UnitListParams = {}): Promise<UnitListResponse> => {
     const queryParams = new URLSearchParams();
-
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
+      if (value !== undefined && value !== null && value !== '') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<UnitListResponse>(
-      `/expenses/units/business/${params.business_id}?${queryParams.toString()}`,
+      `/expenses/units/business/${params.business_id}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -74,7 +74,7 @@ export const unitsApi = {
    */
   get: async (unitId: number, includeConversions = false): Promise<Unit> => {
     const response = await api.get<Unit>(
-      `/expenses/units/${unitId}?include_conversions=${includeConversions}`,
+      `/expenses/units/${unitId}?include_conversions=${includeConversions}`
     );
     return response.data;
   },
@@ -83,7 +83,7 @@ export const unitsApi = {
    * Create new unit
    */
   create: async (data: UnitCreate): Promise<Unit> => {
-    const response = await api.post<Unit>("/expenses/units/", data);
+    const response = await api.post<Unit>('/expenses/units/', data);
     return response.data;
   },
 
@@ -132,24 +132,17 @@ export const monthPeriodsApi = {
   /**
    * Get all periods for a business
    */
-  list: async (
-    params: MonthPeriodListParams,
-  ): Promise<MonthPeriodListResponse> => {
+  list: async (params: MonthPeriodListParams): Promise<MonthPeriodListResponse> => {
     const queryParams = new URLSearchParams();
-
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== "" &&
-        key !== "business_id"
-      ) {
+      if (value !== undefined && value !== null && value !== '' && key !== 'business_id') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<MonthPeriodListResponse>(
-      `/expenses/periods/business/${params.business_id}?${queryParams.toString()}`,
+      `/expenses/periods/business/${params.business_id}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -158,9 +151,7 @@ export const monthPeriodsApi = {
    * Get period by ID
    */
   get: async (periodId: number): Promise<MonthPeriod> => {
-    const response = await api.get<MonthPeriod>(
-      `/expenses/periods/${periodId}`,
-    );
+    const response = await api.get<MonthPeriod>(`/expenses/periods/${periodId}`);
     return response.data;
   },
 
@@ -168,21 +159,15 @@ export const monthPeriodsApi = {
    * Create new period
    */
   create: async (data: MonthPeriodCreate): Promise<MonthPeriod> => {
-    const response = await api.post<MonthPeriod>("/expenses/periods/", data);
+    const response = await api.post<MonthPeriod>('/expenses/periods/', data);
     return response.data;
   },
 
   /**
    * Update period
    */
-  update: async (
-    periodId: number,
-    data: MonthPeriodUpdate,
-  ): Promise<MonthPeriod> => {
-    const response = await api.put<MonthPeriod>(
-      `/expenses/periods/${periodId}`,
-      data,
-    );
+  update: async (periodId: number, data: MonthPeriodUpdate): Promise<MonthPeriod> => {
+    const response = await api.put<MonthPeriod>(`/expenses/periods/${periodId}`, data);
     return response.data;
   },
 
@@ -209,24 +194,18 @@ export const expenseSectionsApi = {
   /**
    * Get all sections for a business
    */
-  list: async (
-    params: ExpenseSectionListParams,
-  ): Promise<ExpenseSectionListResponse> => {
+  list: async (params: ExpenseSectionListParams): Promise<ExpenseSectionListResponse> => {
     const queryParams = new URLSearchParams();
-
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== "" &&
-        key !== "business_id"
-      ) {
+      if (value !== undefined && value !== null && value !== '' && 
+          key !== 'business_id') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<ExpenseSectionListResponse>(
-      `/expenses/sections/business/${params.business_id}?${queryParams.toString()}`,
+      `/expenses/sections/business/${params.business_id}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -234,12 +213,9 @@ export const expenseSectionsApi = {
   /**
    * Get section by ID
    */
-  get: async (
-    sectionId: number,
-    includeCategories = false,
-  ): Promise<ExpenseSection> => {
+  get: async (sectionId: number, includeCategories = false): Promise<ExpenseSection> => {
     const response = await api.get<ExpenseSection>(
-      `/expenses/sections/${sectionId}?include_categories=${includeCategories}`,
+      `/expenses/sections/${sectionId}?include_categories=${includeCategories}`
     );
     return response.data;
   },
@@ -248,24 +224,15 @@ export const expenseSectionsApi = {
    * Create new section
    */
   create: async (data: ExpenseSectionCreate): Promise<ExpenseSection> => {
-    const response = await api.post<ExpenseSection>(
-      "/expenses/sections/",
-      data,
-    );
+    const response = await api.post<ExpenseSection>('/expenses/sections/', data);
     return response.data;
   },
 
   /**
    * Update section
    */
-  update: async (
-    sectionId: number,
-    data: ExpenseSectionUpdate,
-  ): Promise<ExpenseSection> => {
-    const response = await api.put<ExpenseSection>(
-      `/expenses/sections/${sectionId}`,
-      data,
-    );
+  update: async (sectionId: number, data: ExpenseSectionUpdate): Promise<ExpenseSection> => {
+    const response = await api.put<ExpenseSection>(`/expenses/sections/${sectionId}`, data);
     return response.data;
   },
 
@@ -287,9 +254,7 @@ export const expenseSectionsApi = {
    * Restore deleted section
    */
   restore: async (sectionId: number): Promise<ExpenseSection> => {
-    const response = await api.post<ExpenseSection>(
-      `/expenses/sections/${sectionId}/restore`,
-    );
+    const response = await api.post<ExpenseSection>(`/expenses/sections/${sectionId}/restore`);
     return response.data;
   },
 
@@ -325,19 +290,19 @@ export const expenseCategoriesApi = {
    * Get categories by section
    */
   listBySection: async (
-    sectionId: number,
-    params: Omit<ExpenseCategoryListParams, "section_id"> = {},
+    sectionId: number, 
+    params: Omit<ExpenseCategoryListParams, 'section_id'> = {}
   ): Promise<ExpenseCategoryListResponse> => {
     const queryParams = new URLSearchParams();
-
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
+      if (value !== undefined && value !== null && value !== '') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<ExpenseCategoryListResponse>(
-      `/expenses/categories/section/${sectionId}?${queryParams.toString()}`,
+      `/expenses/categories/section/${sectionId}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -347,18 +312,18 @@ export const expenseCategoriesApi = {
    */
   listByBusiness: async (
     businessId: number,
-    params: Omit<ExpenseCategoryListParams, "business_id"> = {},
+    params: Omit<ExpenseCategoryListParams, 'business_id'> = {}
   ): Promise<ExpenseCategoryListResponse> => {
     const queryParams = new URLSearchParams();
-
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
+      if (value !== undefined && value !== null && value !== '') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<ExpenseCategoryListResponse>(
-      `/expenses/categories/business/${businessId}?${queryParams.toString()}`,
+      `/expenses/categories/business/${businessId}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -366,12 +331,9 @@ export const expenseCategoriesApi = {
   /**
    * Get category by ID
    */
-  get: async (
-    categoryId: number,
-    includeRelations = false,
-  ): Promise<ExpenseCategory> => {
+  get: async (categoryId: number, includeRelations = false): Promise<ExpenseCategory> => {
     const response = await api.get<ExpenseCategory>(
-      `/expenses/categories/${categoryId}?include_relations=${includeRelations}`,
+      `/expenses/categories/${categoryId}?include_relations=${includeRelations}`
     );
     return response.data;
   },
@@ -380,24 +342,15 @@ export const expenseCategoriesApi = {
    * Create new category
    */
   create: async (data: ExpenseCategoryCreate): Promise<ExpenseCategory> => {
-    const response = await api.post<ExpenseCategory>(
-      "/expenses/categories/",
-      data,
-    );
+    const response = await api.post<ExpenseCategory>('/expenses/categories/', data);
     return response.data;
   },
 
   /**
    * Update category
    */
-  update: async (
-    categoryId: number,
-    data: ExpenseCategoryUpdate,
-  ): Promise<ExpenseCategory> => {
-    const response = await api.put<ExpenseCategory>(
-      `/expenses/categories/${categoryId}`,
-      data,
-    );
+  update: async (categoryId: number, data: ExpenseCategoryUpdate): Promise<ExpenseCategory> => {
+    const response = await api.put<ExpenseCategory>(`/expenses/categories/${categoryId}`, data);
     return response.data;
   },
 
@@ -426,18 +379,14 @@ export const expenseCategoriesApi = {
    * Activate all categories in a section
    */
   activateAllInSection: async (sectionId: number): Promise<void> => {
-    await api.patch(
-      `/expenses/categories/section/${sectionId}/activate-all-categories`,
-    );
+    await api.patch(`/expenses/categories/section/${sectionId}/activate-all-categories`);
   },
 
   /**
    * Deactivate all categories in a section
    */
   deactivateAllInSection: async (sectionId: number): Promise<void> => {
-    await api.patch(
-      `/expenses/categories/section/${sectionId}/deactivate-all-categories`,
-    );
+    await api.patch(`/expenses/categories/section/${sectionId}/deactivate-all-categories`);
   },
 };
 
@@ -457,20 +406,15 @@ export const suppliersApi = {
    */
   list: async (params: SupplierListParams): Promise<SupplierListResponse> => {
     const queryParams = new URLSearchParams();
-
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== "" &&
-        key !== "business_id"
-      ) {
+      if (value !== undefined && value !== null && value !== '' && key !== 'business_id') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<SupplierListResponse>(
-      `/expenses/suppliers/business/${params.business_id}?${queryParams.toString()}`,
+      `/expenses/suppliers/business/${params.business_id}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -479,9 +423,7 @@ export const suppliersApi = {
    * Get supplier by ID
    */
   get: async (supplierId: number): Promise<Supplier> => {
-    const response = await api.get<Supplier>(
-      `/expenses/suppliers/${supplierId}`,
-    );
+    const response = await api.get<Supplier>(`/expenses/suppliers/${supplierId}`);
     return response.data;
   },
 
@@ -489,32 +431,23 @@ export const suppliersApi = {
    * Create new supplier
    */
   create: async (data: SupplierCreate): Promise<Supplier> => {
-    const response = await api.post<Supplier>("/expenses/suppliers/", data);
+    const response = await api.post<Supplier>('/expenses/suppliers/', data);
     return response.data;
   },
 
   /**
    * Update supplier
    */
-  update: async (
-    supplierId: number,
-    data: SupplierUpdate,
-  ): Promise<Supplier> => {
-    const response = await api.put<Supplier>(
-      `/expenses/suppliers/${supplierId}`,
-      data,
-    );
+  update: async (supplierId: number, data: SupplierUpdate): Promise<Supplier> => {
+    const response = await api.put<Supplier>(`/expenses/suppliers/${supplierId}`, data);
     return response.data;
   },
 
   /**
    * Delete supplier (soft delete by default, hard delete if permanent=true)
    */
-  delete: async (
-    supplierId: number,
-    permanent: boolean = false,
-  ): Promise<void> => {
-    const queryParams = permanent ? "?permanent=true" : "";
+  delete: async (supplierId: number, permanent: boolean = false): Promise<void> => {
+    const queryParams = permanent ? '?permanent=true' : '';
     await api.delete(`/expenses/suppliers/${supplierId}${queryParams}`);
   },
 
@@ -522,22 +455,15 @@ export const suppliersApi = {
    * Restore deleted supplier
    */
   restore: async (supplierId: number): Promise<Supplier> => {
-    const response = await api.post<Supplier>(
-      `/expenses/suppliers/${supplierId}/restore`,
-    );
+    const response = await api.post<Supplier>(`/expenses/suppliers/${supplierId}/restore`);
     return response.data;
   },
 
   /**
    * Check if supplier has invoices
    */
-  hasInvoices: async (
-    supplierId: number,
-  ): Promise<{ has_invoices: boolean; invoice_count: number }> => {
-    const response = await api.get<{
-      has_invoices: boolean;
-      invoice_count: number;
-    }>(`/expenses/suppliers/${supplierId}/has-invoices`);
+  hasInvoices: async (supplierId: number): Promise<{ has_invoices: boolean; invoice_count: number }> => {
+    const response = await api.get<{ has_invoices: boolean; invoice_count: number }>(`/expenses/suppliers/${supplierId}/has-invoices`);
     return response.data;
   },
 };
@@ -560,20 +486,15 @@ export const invoicesApi = {
    */
   list: async (params: InvoiceListParams): Promise<InvoiceListResponse> => {
     const queryParams = new URLSearchParams();
-
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== "" &&
-        key !== "business_id"
-      ) {
+      if (value !== undefined && value !== null && value !== '' && key !== 'business_id') {
         queryParams.append(key, String(value));
       }
     });
 
     const response = await api.get<InvoiceListResponse>(
-      `/expenses/invoices/business/${params.business_id}?${queryParams.toString()}`,
+      `/expenses/invoices/business/${params.business_id}?${queryParams.toString()}`
     );
     return response.data;
   },
@@ -582,10 +503,8 @@ export const invoicesApi = {
    * Get invoice by ID
    */
   get: async (invoiceId: number, loadItems = false): Promise<Invoice> => {
-    const queryParams = loadItems ? "?load_items=true" : "";
-    const response = await api.get<Invoice>(
-      `/expenses/invoices/${invoiceId}${queryParams}`,
-    );
+    const queryParams = loadItems ? '?load_items=true' : '';
+    const response = await api.get<Invoice>(`/expenses/invoices/${invoiceId}${queryParams}`);
     return response.data;
   },
 
@@ -593,7 +512,7 @@ export const invoicesApi = {
    * Create new invoice
    */
   create: async (data: InvoiceCreate): Promise<Invoice> => {
-    const response = await api.post<Invoice>("/expenses/invoices/", data);
+    const response = await api.post<Invoice>('/expenses/invoices/', data);
     return response.data;
   },
 
@@ -601,10 +520,7 @@ export const invoicesApi = {
    * Update invoice
    */
   update: async (invoiceId: number, data: InvoiceUpdate): Promise<Invoice> => {
-    const response = await api.put<Invoice>(
-      `/expenses/invoices/${invoiceId}`,
-      data,
-    );
+    const response = await api.put<Invoice>(`/expenses/invoices/${invoiceId}`, data);
     return response.data;
   },
 
@@ -618,16 +534,10 @@ export const invoicesApi = {
   /**
    * Mark invoice as paid
    */
-  markAsPaid: async (
-    invoiceId: number,
-    paidDate?: string,
-  ): Promise<Invoice> => {
-    const response = await api.post<Invoice>(
-      `/expenses/invoices/${invoiceId}/mark-paid`,
-      {
-        paid_date: paidDate,
-      },
-    );
+  markAsPaid: async (invoiceId: number, paidDate?: string): Promise<Invoice> => {
+    const response = await api.post<Invoice>(`/expenses/invoices/${invoiceId}/mark-paid`, {
+      paid_date: paidDate,
+    });
     return response.data;
   },
 
@@ -635,23 +545,16 @@ export const invoicesApi = {
    * Mark invoice as cancelled
    */
   markAsCancelled: async (invoiceId: number): Promise<Invoice> => {
-    const response = await api.post<Invoice>(
-      `/expenses/invoices/${invoiceId}/mark-cancelled`,
-    );
+    const response = await api.post<Invoice>(`/expenses/invoices/${invoiceId}/mark-cancelled`);
     return response.data;
   },
 
   /**
    * Search invoices
    */
-  search: async (
-    businessId: number,
-    query: string,
-    skip = 0,
-    limit = 50,
-  ): Promise<InvoiceListResponse> => {
+  search: async (businessId: number, query: string, skip = 0, limit = 50): Promise<InvoiceListResponse> => {
     const response = await api.get<InvoiceListResponse>(
-      `/expenses/invoices/business/${businessId}/search?q=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`,
+      `/expenses/invoices/business/${businessId}/search?q=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`
     );
     return response.data;
   },
@@ -659,14 +562,12 @@ export const invoicesApi = {
   /**
    * Update overdue statuses for pending invoices
    */
-  updateOverdueStatuses: async (
-    businessId?: number,
-  ): Promise<{ message: string; updated_count: number }> => {
+  updateOverdueStatuses: async (businessId?: number): Promise<{ message: string; updated_count: number }> => {
     const params = businessId ? { business_id: businessId } : {};
     const response = await api.post<{ message: string; updated_count: number }>(
-      "/expenses/invoices/update-overdue-statuses",
+      '/expenses/invoices/update-overdue-statuses',
       {},
-      { params },
+      { params }
     );
     return response.data;
   },
@@ -678,16 +579,11 @@ export const invoiceItemsApi = {
   /**
    * Get all items for an invoice
    */
-  list: async (
-    invoiceId: number,
-    convertToCategoryUnit: boolean = false,
-  ): Promise<InvoiceItemWithConversion[]> => {
-    const params = convertToCategoryUnit
-      ? { convert_to_category_unit: true }
-      : {};
+  list: async (invoiceId: number, convertToCategoryUnit: boolean = false): Promise<InvoiceItemWithConversion[]> => {
+    const params = convertToCategoryUnit ? { convert_to_category_unit: true } : {};
     const response = await api.get<InvoiceItemWithConversion[]>(
       `/expenses/invoices/${invoiceId}/items`,
-      { params },
+      { params }
     );
     return response.data;
   },
@@ -696,25 +592,15 @@ export const invoiceItemsApi = {
    * Create new invoice item
    */
   create: async (data: InvoiceItemCreate): Promise<InvoiceItem> => {
-    const response = await api.post<InvoiceItem>(
-      `/expenses/invoices/${data.invoice_id}/items`,
-      data,
-    );
+    const response = await api.post<InvoiceItem>(`/expenses/invoices/${data.invoice_id}/items`, data);
     return response.data;
   },
 
   /**
    * Update invoice item
    */
-  update: async (
-    invoiceId: number,
-    itemId: number,
-    data: InvoiceItemUpdate,
-  ): Promise<InvoiceItem> => {
-    const response = await api.put<InvoiceItem>(
-      `/expenses/invoices/${invoiceId}/items/${itemId}`,
-      data,
-    );
+  update: async (invoiceId: number, itemId: number, data: InvoiceItemUpdate): Promise<InvoiceItem> => {
+    const response = await api.put<InvoiceItem>(`/expenses/invoices/${invoiceId}/items/${itemId}`, data);
     return response.data;
   },
 
@@ -732,13 +618,9 @@ export const inventoryBalanceApi = {
   /**
    * Get inventory balance for category and period
    */
-  getBalance: async (
-    businessId: number,
-    categoryId: number,
-    monthPeriodId: number,
-  ): Promise<InventoryBalance | null> => {
+  getBalance: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<InventoryBalance | null> => {
     const response = await api.get<InventoryBalance | null>(
-      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}`,
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}`
     );
     return response.data;
   },
@@ -746,13 +628,9 @@ export const inventoryBalanceApi = {
   /**
    * Get purchases total for category in period
    */
-  getPurchases: async (
-    businessId: number,
-    categoryId: number,
-    monthPeriodId: number,
-  ): Promise<string> => {
+  getPurchases: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<string> => {
     const response = await api.get<string>(
-      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/purchases`,
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/purchases`
     );
     return response.data;
   },
@@ -760,13 +638,9 @@ export const inventoryBalanceApi = {
   /**
    * Get usage total for category in period
    */
-  getUsage: async (
-    businessId: number,
-    categoryId: number,
-    monthPeriodId: number,
-  ): Promise<string> => {
+  getUsage: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<string> => {
     const response = await api.get<string>(
-      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/usage`,
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/usage`
     );
     return response.data;
   },
@@ -774,13 +648,9 @@ export const inventoryBalanceApi = {
   /**
    * Get opening balance for category
    */
-  getOpeningBalance: async (
-    businessId: number,
-    categoryId: number,
-    monthPeriodId: number,
-  ): Promise<string> => {
+  getOpeningBalance: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<string> => {
     const response = await api.get<string>(
-      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/opening-balance`,
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/opening-balance`
     );
     return response.data;
   },
@@ -788,13 +658,9 @@ export const inventoryBalanceApi = {
   /**
    * Recalculate balance for category and period
    */
-  recalculateBalance: async (
-    businessId: number,
-    categoryId: number,
-    monthPeriodId: number,
-  ): Promise<BalanceRecalculationResponse> => {
+  recalculateBalance: async (businessId: number, categoryId: number, monthPeriodId: number): Promise<BalanceRecalculationResponse> => {
     const response = await api.post<BalanceRecalculationResponse>(
-      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/recalculate`,
+      `/expenses/inventory-balance/${businessId}/category/${categoryId}/period/${monthPeriodId}/recalculate`
     );
     return response.data;
   },
@@ -802,14 +668,10 @@ export const inventoryBalanceApi = {
   /**
    * Get low stock categories
    */
-  getLowStock: async (
-    businessId: number,
-    monthPeriodId: number,
-    threshold?: string,
-  ): Promise<LowStockCategory[]> => {
+  getLowStock: async (businessId: number, monthPeriodId: number, threshold?: string): Promise<LowStockCategory[]> => {
     const response = await api.get<LowStockCategory[]>(
       `/expenses/inventory-balance/${businessId}/period/${monthPeriodId}/low-stock`,
-      { params: { threshold } },
+      { params: { threshold } }
     );
     return response.data;
   },
@@ -817,21 +679,9 @@ export const inventoryBalanceApi = {
   /**
    * Transfer closing balances to next month
    */
-  transferBalances: async (
-    businessId: number,
-    currentPeriodId: number,
-    nextPeriodId: number,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    transferred_count: number;
-  }> => {
-    const response = await api.post<{
-      success: boolean;
-      message: string;
-      transferred_count: number;
-    }>(
-      `/expenses/inventory-balance/${businessId}/period/${currentPeriodId}/transfer-balances/${nextPeriodId}`,
+  transferBalances: async (businessId: number, currentPeriodId: number, nextPeriodId: number): Promise<{ success: boolean; message: string; transferred_count: number }> => {
+    const response = await api.post<{ success: boolean; message: string; transferred_count: number }>(
+      `/expenses/inventory-balance/${businessId}/period/${currentPeriodId}/transfer-balances/${nextPeriodId}`
     );
     return response.data;
   },
@@ -839,44 +689,36 @@ export const inventoryBalanceApi = {
   /**
    * Get average monthly usage for category
    */
-  getAverageUsage: async (
-    businessId: number,
-    categoryId: number,
-    monthsBack: number = 6,
-  ): Promise<string> => {
+  getAverageUsage: async (businessId: number, categoryId: number, monthsBack: number = 6): Promise<string> => {
     const response = await api.get<string>(
       `/expenses/inventory-balance/${businessId}/category/${categoryId}/average-usage`,
-      { params: { months_back: monthsBack } },
+      { params: { months_back: monthsBack } }
     );
     return response.data;
   },
 };
 
-// ============ Inventory Tracking API (Optimized) ============
+// ============ Inventory Tracking API ============
 
 export interface PurchaseDetail {
-  invoice_number: string;
-  original_quantity: string;
-  original_unit_id?: number;
-  original_unit_symbol?: string;
-  converted_quantity?: string;
-  was_converted: boolean;
+  invoice_id: number;
+  invoice_date: string;
+  supplier_name: string;
+  quantity: string;
+  unit_symbol: string;
+  unit_price: string;
+  total_price: string;
 }
 
 export interface DayData {
-  date: string; // YYYY-MM-DD
-  purchases_qty: string;
-  purchases_amount: string;
-  usage_qty: string;
-  usage_amount: string;
-  purchase_details: PurchaseDetail[];
+  day: number;
+  purchases: PurchaseDetail[];
 }
 
 export interface CategoryData {
   category_id: number;
   category_name: string;
-  unit_symbol: string;
-  daily_data: DayData[];
+  days: DayData[];
 }
 
 export interface SectionData {
@@ -896,14 +738,10 @@ export const inventoryTrackingApi = {
    * Get complete inventory tracking data for a month (optimized - single request)
    * Replaces 800+ individual API calls with one batched request
    */
-  getMonthSummary: async (
-    businessId: number,
-    year: number,
-    month: number,
-  ): Promise<InventoryTrackingSummary> => {
+  getMonthSummary: async (businessId: number, year: number, month: number): Promise<InventoryTrackingSummary> => {
     const response = await api.get<InventoryTrackingSummary>(
       `/expenses/inventory-tracking/business/${businessId}/summary`,
-      { params: { year, month } },
+      { params: { year, month } }
     );
     return response.data;
   },
