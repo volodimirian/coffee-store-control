@@ -123,17 +123,20 @@ export default function OFDIntegration() {
       const result = await ofdAPI.testConnection(connectionId);
       if (result.success) {
         success(t('ofd.testSuccess'));
-        await loadConnections(); // Reload to get updated sync status
       } else {
         showError(
           t('ofd.testFailed'),
           result.error || t('ofd.unknownError')
         );
       }
+      // Reload connections regardless of test result to show updated sync status
+      await loadConnections();
     } catch (err) {
       console.error('Failed to test connection:', err);
       const errorMessage = err instanceof Error ? err.message : t('ofd.unknownError');
       showError(t('ofd.testFailed'), errorMessage);
+      // Reload connections even on error to show updated status
+      await loadConnections();
     } finally {
       setTestingConnectionId(null);
     }

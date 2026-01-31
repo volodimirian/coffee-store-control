@@ -228,6 +228,11 @@ class OFDConnectionService:
                 
                 return {"success": True}
             else:
+                # Update error status for invalid credentials
+                connection.last_sync_status = "error"
+                connection.last_sync_error = "Invalid credentials"
+                await session.flush()
+                
                 return {
                     "success": False,
                     "error": "Invalid credentials"
