@@ -39,7 +39,9 @@ class OFDConnectionResponse(BaseModel):
     id: int
     business_id: int
     provider_id: int
-    provider_name: str = Field(..., description="Provider name from relationship")
+    provider_name: str | None = Field(None, description="Provider name from relationship")
+    provider_base_url: str | None = Field(None, description="Provider default base URL")
+    custom_base_url: str | None
     is_active: bool
     last_sync_at: datetime | None
     last_sync_status: str | None

@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 class OFDProvider(Base):
-    """Справочник ОФД провайдеров."""
+    """OFD providers directory."""
 
     __tablename__ = "ofd_providers"
 
@@ -49,7 +49,7 @@ class OFDProvider(Base):
 
 
 class OFDConnection(Base):
-    """Подключения бизнеса к ОФД провайдерам."""
+    """Business connections to OFD providers."""
 
     __tablename__ = "ofd_connections"
 
@@ -85,13 +85,23 @@ class OFDConnection(Base):
     )
     sales: Mapped[list["Sale"]] = relationship("Sale", back_populates="connection")
 
+    @property
+    def provider_name(self) -> str | None:
+        """Get provider name from relationship."""
+        return self.provider.name if self.provider else None
+
+    @property
+    def provider_base_url(self) -> str | None:
+        """Get provider base URL from relationship."""
+        return self.provider.base_url if self.provider else None
+
     __table_args__ = (
         UniqueConstraint("business_id", "provider_id", name="uq_business_provider"),
     )
 
 
 class ProductMapping(Base):
-    """Маппинг ОФД товаров на tech_card_items."""
+    """Mapping of OFD products to tech_card_items."""
 
     __tablename__ = "product_mappings"
 
@@ -131,7 +141,7 @@ class ProductMapping(Base):
 
 
 class Sale(Base):
-    """Чеки/Продажи из ОФД."""
+    """Receipts/Sales from OFD."""
 
     __tablename__ = "sales"
 
@@ -175,7 +185,7 @@ class Sale(Base):
 
 
 class SaleItem(Base):
-    """Позиции в чеке."""
+    """Receipt line items."""
 
     __tablename__ = "sale_items"
 
@@ -213,7 +223,7 @@ class SaleItem(Base):
 
 
 class SaleIngredientExpense(Base):
-    """Списание ингредиентов от продаж."""
+    """Ingredient expenses from sales."""
 
     __tablename__ = "sale_ingredient_expenses"
 
