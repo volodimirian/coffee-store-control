@@ -16,6 +16,7 @@ from sqlalchemy import (
     Index,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.types import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -144,7 +145,7 @@ class Sale(Base):
         String(200), nullable=True
     )
     fiscal_sign: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    raw_data: Mapped[dict] = mapped_column(JSONB)
+    raw_data: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"))
     processing_status: Mapped[str] = mapped_column(
         String(20), default="pending"
     )  # pending, processed, error

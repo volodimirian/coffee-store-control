@@ -53,6 +53,11 @@ class OFDConnectionResponse(BaseModel):
         from_attributes = True
 
 
+class OFDConnectionTestResponse(BaseModel):
+    success: bool
+    error: str | None = None
+
+
 # ========== Product Mapping Schemas ==========
 class ProductMappingCreate(BaseModel):
     ofd_product_id: str | None = None
