@@ -51,6 +51,47 @@ export interface OFDConnectionTestResponse {
   error: string | null;
 }
 
+export interface OFDProduct {
+  product_id: string | null;
+  product_name: string;
+  category: string | null;
+}
+
+export interface ProductMapping {
+  id: number;
+  connection_id: number;
+  ofd_product_id: string | null;
+  ofd_product_name: string;
+  tech_card_item_id: number;
+  tech_card_item_name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductMappingCreate {
+  ofd_product_id: string | null;
+  ofd_product_name: string;
+  tech_card_item_id: number;
+}
+
+export interface ProductMappingBulkCreate {
+  mappings: ProductMappingCreate[];
+}
+
+export interface ProductMappingUpdate {
+  tech_card_item_id?: number | null;
+  is_active?: boolean | null;
+}
+
+export interface ProductMappingBulkResponse {
+  success: ProductMapping[];
+  errors: Array<{ ofd_product_name: string; error: string }>;
+  total: number;
+  created: number;
+  failed: number;
+}
+
 // ============ Providers API ============
 
 export const ofdAPI = {
@@ -115,5 +156,52 @@ export const ofdAPI = {
       `/ofd/connections/${connectionId}/test`
     );
     return response.data;
+  },
+
+  // ============ Product Mappings API ============
+
+  // Get products from OFD provider
+  getOFDProducts: async (connectionId: number): Promise<OFDProduct[]> => {
+    const response = await api.get<OFDProduct[]>(
+      `/ofd/connections/${connectionId}/products`
+    );
+    return response.data;
+  },
+
+  // Get all product mappings for a connection
+  getProductMappings: async (connectionId: number): Promise<ProductMapping[]> => {
+    const response = await api.get<ProductMapping[]>(
+      `/ofd/connections/${connectionId}/mappings`
+    );
+    return response.data;
+  },
+
+  // Create one or multiple product mappings
+  createProductMappings: async (
+    connectionId: number,
+    data: ProductMappingBulkCreate
+  ): Promise<ProductMappingBulkResponse> => {
+    const response = await api.post<ProductMappingBulkResponse>(
+      `/ofd/connections/${connectionId}/mappings`,
+      data
+    );
+    return response.data;
+  },
+
+  // Update product mapping
+  updateProductMapping: async (
+    mappingId: number,
+    data: ProductMappingUpdate
+  ): Promise<ProductMapping> => {
+    const response = await api.put<ProductMapping>(
+      `/ofd/mappings/${mappingId}`,
+      data
+    );
+    return response.data;
+  },
+
+  // Delete product mapping
+  deleteProductMapping: async (mappingId: number): Promise<void> => {
+    await api.delete(`/ofd/mappings/${mappingId}`);
   },
 };

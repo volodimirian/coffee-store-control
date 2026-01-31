@@ -1072,6 +1072,13 @@
     "createSuccess": "Connection created successfully",
     "updateSuccess": "Connection updated successfully",
     "deleteSuccess": "Connection deleted successfully",
+    "tabs": {
+      "connections": "Connections",
+      "productMappings": "Product Mappings"
+    },
+    "mappings": {
+      "comingSoon": "Product mappings — coming soon"
+    },
     "table": {
       "provider": "Provider",
       "status": "Status",

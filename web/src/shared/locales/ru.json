@@ -1074,6 +1074,13 @@
     "createSuccess": "Подключение успешно создано",
     "updateSuccess": "Подключение успешно обновлено",
     "deleteSuccess": "Подключение успешно удалено",
+    "tabs": {
+      "connections": "Подключения",
+      "productMappings": "Связи товаров"
+    },
+    "mappings": {
+      "comingSoon": "Связывание товаров — скоро"
+    },
     "table": {
       "provider": "Провайдер",
       "status": "Статус",

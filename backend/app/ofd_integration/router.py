@@ -16,8 +16,13 @@ from app.ofd_integration.schemas import (
     OFDConnectionUpdate,
     OFDConnectionResponse,
     OFDConnectionTestResponse,
+    ProductMappingBulkCreate,
+    ProductMappingUpdate,
+    ProductMappingResponse,
+    OFDProductResponse,
 )
 from app.ofd_integration.service import OFDConnectionService
+from app.ofd_integration.product_mapping_service import ProductMappingService
 from app.core.error_codes import ErrorCode, create_error_response
 
 router = APIRouter()
@@ -206,3 +211,169 @@ async def test_connection(
     await session.commit()  # Save sync status updates
     
     return OFDConnectionTestResponse(**result)
+
+
+# ==================== Product Mappings Endpoints ====================
+
+@router.get("/connections/{connection_id}/products", response_model=List[OFDProductResponse])
+async def get_ofd_products(
+    connection_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.PRODUCT_MAPPINGS, Action.VIEW))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Get product nomenclature from OFD provider."""
+    connection = await OFDConnectionService.get_connection_by_id(
+        session=session,
+        connection_id=connection_id
+    )
+    
+    if not connection:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                error_code=ErrorCode.NOT_FOUND,
+                detail="OFD connection not found"
+            )
+        )
+    
+    products = await ProductMappingService.get_products_from_ofd(
+        session=session,
+        connection=connection
+    )
+    
+    return [OFDProductResponse.model_validate(p) for p in products]
+
+
+@router.get("/connections/{connection_id}/mappings", response_model=List[ProductMappingResponse])
+async def get_product_mappings(
+    connection_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.PRODUCT_MAPPINGS, Action.VIEW))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Get all product mappings for a connection."""
+    mappings = await ProductMappingService.get_mappings_by_connection(
+        session=session,
+        connection_id=connection_id
+    )
+    
+    # Enrich with tech_card_item name
+    result = []
+    for mapping in mappings:
+        mapping_dict = ProductMappingResponse.model_validate(mapping).model_dump()
+        mapping_dict["tech_card_item_name"] = mapping.tech_card_item.name if mapping.tech_card_item else None
+        result.append(ProductMappingResponse(**mapping_dict))
+    
+    return result
+
+
+@router.post("/connections/{connection_id}/mappings", status_code=status.HTTP_201_CREATED)
+async def create_product_mappings(
+    connection_id: int,
+    bulk_data: ProductMappingBulkCreate,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.PRODUCT_MAPPINGS, Action.CREATE))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Create one or multiple product mappings."""
+    # Verify connection exists
+    connection = await OFDConnectionService.get_connection_by_id(
+        session=session,
+        connection_id=connection_id
+    )
+    
+    if not connection:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                error_code=ErrorCode.NOT_FOUND,
+                detail="OFD connection not found"
+            )
+        )
+    
+    result = await ProductMappingService.create_mappings_bulk(
+        session=session,
+        connection_id=connection_id,
+        mappings_data=bulk_data.mappings,
+        created_by_user_id=auth["user_id"]
+    )
+    
+    await session.commit()
+    
+    # Format response
+    success_response = []
+    for mapping in result["success"]:
+        mapping_dict = ProductMappingResponse.model_validate(mapping).model_dump()
+        mapping_dict["tech_card_item_name"] = mapping.tech_card_item.name
+        success_response.append(mapping_dict)
+    
+    return {
+        "success": success_response,
+        "errors": result["errors"],
+        "total": len(bulk_data.mappings),
+        "created": len(result["success"]),
+        "failed": len(result["errors"])
+    }
+
+
+@router.put("/mappings/{mapping_id}", response_model=ProductMappingResponse)
+async def update_product_mapping(
+    mapping_id: int,
+    update_data: ProductMappingUpdate,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.PRODUCT_MAPPINGS, Action.EDIT))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Update product mapping."""
+    mapping = await ProductMappingService.get_mapping_by_id(
+        session=session,
+        mapping_id=mapping_id
+    )
+    
+    if not mapping:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                error_code=ErrorCode.NOT_FOUND,
+                detail="Product mapping not found"
+            )
+        )
+    
+    updated_mapping = await ProductMappingService.update_mapping(
+        session=session,
+        mapping=mapping,
+        tech_card_item_id=update_data.tech_card_item_id,
+        is_active=update_data.is_active
+    )
+    
+    await session.commit()
+    
+    mapping_dict = ProductMappingResponse.model_validate(updated_mapping).model_dump()
+    mapping_dict["tech_card_item_name"] = updated_mapping.tech_card_item.name
+    
+    return ProductMappingResponse(**mapping_dict)
+
+
+@router.delete("/mappings/{mapping_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product_mapping(
+    mapping_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.PRODUCT_MAPPINGS, Action.DELETE))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Delete product mapping."""
+    mapping = await ProductMappingService.get_mapping_by_id(
+        session=session,
+        mapping_id=mapping_id
+    )
+    
+    if not mapping:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                error_code=ErrorCode.NOT_FOUND,
+                detail="Product mapping not found"
+            )
+        )
+    
+    await ProductMappingService.delete_mapping(
+        session=session,
+        mapping=mapping
+    )
+    await session.commit()

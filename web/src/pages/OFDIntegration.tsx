@@ -25,6 +25,9 @@ export default function OFDIntegration() {
   const { permissions, isLoading: isLoadingPermissions } = usePermissions();
   const { toast, success, error: showError, hideToast } = useToast();
 
+  // Active tab
+  const [activeTab, setActiveTab] = useState<'connections' | 'mappings'>('connections');
+
   const [connections, setConnections] = useState<OFDConnection[]>([]);
   const [providers, setProviders] = useState<OFDProvider[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -200,25 +203,62 @@ export default function OFDIntegration() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {t('ofd.title')}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {t('ofd.subtitle')}
-          </p>
-        </div>
-        <Protected permission={{ resource: 'ofd_connections', action: 'create' }}>
-          <button
-            onClick={handleCreateConnection}
-            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-          >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            {t('ofd.addConnection')}
-          </button>
-        </Protected>
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {t('ofd.title')}
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">
+          {t('ofd.subtitle')}
+        </p>
       </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('connections')}
+            className={`
+              py-2 px-1 border-b-2 font-medium text-sm
+              ${
+                activeTab === 'connections'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            {t('ofd.tabs.connections')}
+          </button>
+          <button
+            onClick={() => setActiveTab('mappings')}
+            className={`
+              py-2 px-1 border-b-2 font-medium text-sm
+              ${
+                activeTab === 'mappings'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            {t('ofd.tabs.productMappings')}
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'connections' && (
+        <div className="space-y-4">
+          {/* Action button */}
+          <div className="flex justify-end">
+            <Protected permission={{ resource: 'ofd_connections', action: 'create' }}>
+              <button
+                onClick={handleCreateConnection}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              >
+                <PlusIcon className="w-5 h-5 mr-2" />
+                {t('ofd.addConnection')}
+              </button>
+            </Protected>
+          </div>
 
       {/* Error message */}
       {error && (
@@ -321,6 +361,18 @@ export default function OFDIntegration() {
           </table>
         </div>
       </div>
+        </div>
+      )}
+
+      {activeTab === 'mappings' && (
+        <div className="space-y-4">
+          <div className="bg-white shadow rounded-lg p-6">
+            <p className="text-gray-500 text-center">
+              {t('ofd.mappings.comingSoon')}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {isConnectionModalOpen && (
