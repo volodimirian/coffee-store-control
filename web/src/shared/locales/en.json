@@ -1106,6 +1106,7 @@
       "deleteError": "Failed to delete connection",
       "selectProvider": "Select an OFD provider",
       "apiKeyRequired": "API key is required to create connection",
+      "invalidApiKey": "Invalid API key. Please enter the full key without masking.",
       "noLocationSelected": "No location selected",
       "DUPLICATE_CONNECTION": "You already have a connection to this provider. Each business can connect to each provider only once."
     }

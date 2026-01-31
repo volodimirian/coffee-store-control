@@ -135,7 +135,7 @@ def upgrade() -> None:
         INSERT INTO ofd_providers (code, name, base_url, is_active, description, created_at)
         VALUES 
             ('mock', 'Mock Provider', 'http://localhost:8000/mock', true, 'Для разработки и тестирования', NOW()),
-            ('aqsi', 'AQSI', 'https://api.aqsi.ru', true, 'Реальный ОФД провайдер', NOW())
+            ('aqsi', 'AQSI', 'https://api.aqsi.ru/pub', true, 'Реальный ОФД провайдер', NOW())
         ON CONFLICT (code) DO NOTHING;
     """)
     

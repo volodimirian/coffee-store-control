@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { ofdAPI, type OFDConnection, type OFDProvider } from '~/shared/api/ofd';
 import { useAppContext } from '~/shared/context/AppContext';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
@@ -32,6 +32,7 @@ export default function OFDConnectionModal({
   const [providerId, setProviderId] = useState<number | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [apiKeyChanged, setApiKeyChanged] = useState(false); // Track if API key was modified
+  const [isEditingApiKey, setIsEditingApiKey] = useState(false); // Track if user is editing API key
   const [customBaseUrl, setCustomBaseUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
 
@@ -42,9 +43,10 @@ export default function OFDConnectionModal({
   useEffect(() => {
     if (connection && mode === 'edit') {
       setProviderId(connection.provider_id);
-      // Show masked API key if exists
-      setApiKey(connection.api_key_preview || '');
+      // In edit mode, leave API key empty (user will enter new key only if wants to change)
+      setApiKey('');
       setApiKeyChanged(false);
+      setIsEditingApiKey(false);
       setCustomBaseUrl(connection.custom_base_url || '');
       setIsActive(connection.is_active);
     } else {
@@ -52,6 +54,7 @@ export default function OFDConnectionModal({
       setProviderId(null);
       setApiKey('');
       setApiKeyChanged(false);
+      setIsEditingApiKey(false);
       setCustomBaseUrl('');
       setIsActive(true);
     }
@@ -212,22 +215,64 @@ export default function OFDConnectionModal({
                       {t('ofd.modal.apiKey')}
                       {mode === 'create' && <span className="text-red-500">*</span>}
                     </label>
-                    <Input
-                      type="text"
-                      value={apiKey}
-                      onChange={(e) => {
-                        setApiKey(e.target.value);
-                        if (mode === 'edit') {
-                          setApiKeyChanged(true);
-                        }
-                      }}
-                      placeholder={
-                        mode === 'edit'
-                          ? t('ofd.modal.apiKeyPlaceholderEdit')
-                          : t('ofd.modal.apiKeyPlaceholder')
-                      }
-                      required={mode === 'create'}
-                    />
+                    
+                    {mode === 'edit' && !isEditingApiKey ? (
+                      // Show current masked key with edit icon
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                          <span className="text-xs text-gray-500">Текущий ключ: </span>
+                          <span className="text-sm font-mono text-gray-700">
+                            {connection?.api_key_preview || '***'}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingApiKey(true)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Изменить API ключ"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    ) : mode === 'edit' && isEditingApiKey ? (
+                      // Show input field with cancel icon
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <Input
+                            type="text"
+                            value={apiKey}
+                            onChange={(e) => {
+                              setApiKey(e.target.value);
+                              setApiKeyChanged(true);
+                            }}
+                            placeholder={t('ofd.modal.apiKeyPlaceholderEdit')}
+                            autoFocus
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingApiKey(false);
+                            setApiKey('');
+                            setApiKeyChanged(false);
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                          title="Отменить изменение"
+                        >
+                          <XMarkIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    ) : (
+                      // Create mode - regular input
+                      <Input
+                        type="text"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder={t('ofd.modal.apiKeyPlaceholder')}
+                        required
+                      />
+                    )}
+                    
                     {mode === 'edit' && (
                       <p className="mt-1 text-xs text-gray-500">
                         {t('ofd.modal.apiKeyHint')}

@@ -1,5 +1,4 @@
 """AQSI OFD provider implementation."""
-import asyncio
 from datetime import date, datetime, timedelta
 from typing import List
 import httpx
@@ -31,7 +30,7 @@ class AqsiOFDProvider(OFDProviderBase):
     def _get_headers(self) -> dict:
         """Get HTTP headers with authentication."""
         return {
-            "x-client-key": self.api_key,
+            "x-client-key": f"Application {self.api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
@@ -46,22 +45,19 @@ class AqsiOFDProvider(OFDProviderBase):
             async with httpx.AsyncClient(timeout=self.TIMEOUT_SECONDS) as client:
                 # Try to fetch first page of goods to validate credentials
                 # Using v2/Goods list endpoint as it's simple and doesn't require parameters
-                response = await client.get(
-                    f"{self.base_url}/v2/Goods",
-                    headers=self._get_headers(),
-                    params={"pageSize": 1, "page": 1}
-                )
+                url = f"{self.base_url}/v2/Goods/list"
+                headers = self._get_headers()
+                params = {"pageSize": 1, "page": 1} 
+                response = await client.get(url, headers=headers, params=params)
                 
-                # 200 = valid credentials, 401/403 = invalid
+                # 200 = valid credentials, any other status = invalid
                 if response.status_code == 200:
+                    print("[AQSI] Credentials valid!")
                     return True
-                elif response.status_code in [401, 403]:
-                    return False
                 else:
-                    # For other errors, assume credentials might be valid but other issue
-                    # Log for debugging but don't fail validation
-                    print(f"AQSI credentials validation returned status {response.status_code}")
-                    return True
+                    # Log error status for debugging
+                    print(f"[AQSI] Credentials validation failed with status {response.status_code}")
+                    return False
                     
         except httpx.HTTPError as e:
             print(f"AQSI credentials validation failed with HTTP error: {e}")
