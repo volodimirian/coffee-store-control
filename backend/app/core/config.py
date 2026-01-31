@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     redoc_url: str = Field("/redoc", alias="REDOC_URL") 
     openapi_url: str = Field("/openapi.json", alias="OPENAPI_URL")
     api_prefix: str = Field("/api", alias="API_PREFIX")
+    
+    # Encryption for OFD API keys
+    encryption_key: str = Field(..., alias="ENCRYPTION_KEY")
 
     @field_validator('cors_origins', mode='before')
     @classmethod

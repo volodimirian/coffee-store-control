@@ -1,9 +1,10 @@
-"""Security utils (JWT, password hashing)."""
+"""Security utils (JWT, password hashing, API key encryption)."""
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from jose import jwt, JWTError
 from passlib.context import CryptContext  # type: ignore
+from cryptography.fernet import Fernet
 
 from app.core.config import settings
 
@@ -48,4 +49,16 @@ def decode_token(token: str) -> dict[str, Any]:
     try:
         return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
     except JWTError as e:
-        raise ValueError("Invalid token") from e
+        raise ValueError(f"Invalid token: {e}")
+
+
+def encrypt_api_key(api_key: str) -> str:
+    """Encrypt API key for database storage (Fernet: AES-128-CBC + HMAC)."""
+    f = Fernet(settings.encryption_key.encode())
+    return f.encrypt(api_key.encode()).decode()
+
+
+def decrypt_api_key(encrypted: str) -> str:
+    """Decrypt API key from database."""
+    f = Fernet(settings.encryption_key.encode())
+    return f.decrypt(encrypted.encode()).decode()

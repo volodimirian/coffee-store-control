@@ -181,3 +181,9 @@ dev-test:
 	@echo "Backend tests: make test-watch-backend"
 	@echo "Frontend tests: make test-watch-frontend"
 	@echo "Test UI: make test-ui"
+
+# OFD Integration
+generate-encryption-key:
+	@echo "🔐 Generating encryption key for OFD API keys..."
+	cd backend && uv run python scripts/generate_encryption_key.py
+
