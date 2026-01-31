@@ -31,6 +31,7 @@ export default function OFDConnectionModal({
   // Form state
   const [providerId, setProviderId] = useState<number | null>(null);
   const [apiKey, setApiKey] = useState('');
+  const [apiKeyChanged, setApiKeyChanged] = useState(false); // Track if API key was modified
   const [customBaseUrl, setCustomBaseUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
 
@@ -41,13 +42,16 @@ export default function OFDConnectionModal({
   useEffect(() => {
     if (connection && mode === 'edit') {
       setProviderId(connection.provider_id);
-      setApiKey(''); // Don't show existing API key for security
+      // Show masked API key if exists
+      setApiKey(connection.api_key_preview || '');
+      setApiKeyChanged(false);
       setCustomBaseUrl(connection.custom_base_url || '');
       setIsActive(connection.is_active);
     } else {
       // Reset for create mode
       setProviderId(null);
       setApiKey('');
+      setApiKeyChanged(false);
       setCustomBaseUrl('');
       setIsActive(true);
     }
@@ -84,7 +88,7 @@ export default function OFDConnectionModal({
         });
       } else if (connection) {
         await ofdAPI.updateConnection(connection.id, {
-          api_key: apiKey || null, // Only update if provided
+          api_key: apiKeyChanged ? apiKey : null, // Only update if changed
           custom_base_url: customBaseUrl || null,
           is_active: isActive,
         });
@@ -209,9 +213,14 @@ export default function OFDConnectionModal({
                       {mode === 'create' && <span className="text-red-500">*</span>}
                     </label>
                     <Input
-                      type="password"
+                      type="text"
                       value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
+                      onChange={(e) => {
+                        setApiKey(e.target.value);
+                        if (mode === 'edit') {
+                          setApiKeyChanged(true);
+                        }
+                      }}
                       placeholder={
                         mode === 'edit'
                           ? t('ofd.modal.apiKeyPlaceholderEdit')

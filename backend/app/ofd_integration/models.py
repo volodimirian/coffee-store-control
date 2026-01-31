@@ -95,6 +95,19 @@ class OFDConnection(Base):
         """Get provider base URL from relationship."""
         return self.provider.base_url if self.provider else None
 
+    @property
+    def api_key_preview(self) -> str | None:
+        """Get masked API key preview (first 5 + last 3 chars)."""
+        from app.core.security import decrypt_api_key
+        
+        try:
+            decrypted = decrypt_api_key(self.api_key_encrypted)
+            if not decrypted or len(decrypted) <= 8:
+                return decrypted
+            return f"{decrypted[:5]}{'*' * min(len(decrypted) - 8, 20)}{decrypted[-3:]}"
+        except Exception:
+            return None
+
     __table_args__ = (
         UniqueConstraint("business_id", "provider_id", name="uq_business_provider"),
     )

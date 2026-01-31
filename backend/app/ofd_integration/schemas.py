@@ -41,6 +41,7 @@ class OFDConnectionResponse(BaseModel):
     provider_id: int
     provider_name: str | None = Field(None, description="Provider name from relationship")
     provider_base_url: str | None = Field(None, description="Provider default base URL")
+    api_key_preview: str | None = Field(None, description="Masked API key preview (first 5 + last 3 chars)")
     custom_base_url: str | None
     is_active: bool
     last_sync_at: datetime | None

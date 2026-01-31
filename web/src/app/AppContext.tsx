@@ -7,10 +7,13 @@ import { invoicesApi } from "~/shared/api/expenses";
 import type { Location, LocationCreate, LocationUpdate, LocationMember } from "~/shared/types/locations";
 import { hasToken, logout as helperLogout } from "~/shared/lib/helpers/storageHelpers";
 import { setLogoutHandler } from "~/shared/api/client";
+import { useToast } from "~/shared/lib/useToast";
+import Toast from "~/shared/ui/Toast";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { toast, error: showError, hideToast } = useToast();
   const [user, setUser] = useState<AppContextType["user"]>(null);
   
   // Location state
@@ -183,8 +186,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Set up automatic logout handler for API client
   useEffect(() => {
-    setLogoutHandler(logout, t);
-  }, [logout, t]);
+    setLogoutHandler(logout, t, showError);
+  }, [logout, t, showError]);
 
   const contextValue: AppContextType = {
     user,
@@ -206,6 +209,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={contextValue}>
       {children}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={hideToast}
+      />
     </AppContext.Provider>
   );
 }
