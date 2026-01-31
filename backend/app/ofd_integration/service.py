@@ -14,6 +14,7 @@ from app.ofd_integration.schemas import (
 )
 from app.ofd_integration.providers.base import OFDProviderBase
 from app.ofd_integration.providers.mock import MockOFDProvider
+from app.ofd_integration.providers.aqsi import AqsiOFDProvider
 from app.core.security import encrypt_api_key, decrypt_api_key
 
 
@@ -41,9 +42,8 @@ class OFDConnectionService:
         """
         if provider_code == "mock":
             return MockOFDProvider(api_key=api_key, base_url=base_url)
-        # TODO: Add AQSI provider in Stage 10
-        # elif provider_code == "aqsi":
-        #     return AQSIOFDProvider(api_key=api_key, base_url=base_url)
+        elif provider_code == "aqsi":
+            return AqsiOFDProvider(api_key=api_key, base_url=base_url)
         else:
             raise ValueError(f"Unknown OFD provider: {provider_code}")
 
