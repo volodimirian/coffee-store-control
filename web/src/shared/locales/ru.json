@@ -64,7 +64,8 @@
     "billing": "Оплата",
     "locations": "Локации",
     "employees": "Сотрудники",
-    "techCards": "Товары"
+    "techCards": "Товары",
+    "ofdIntegration": "Интеграция с ОФД"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
@@ -1056,6 +1057,59 @@
         "ingredientUnitRequired": "Выберите единицу измерения для всех ингредиентов",
         "saveFailed": "Ошибка сохранения товара"
       }
+    }
+  },
+  "ofd": {
+    "title": "Интеграция с ОФД",
+    "subtitle": "Подключите операторов фискальных данных для автоматической синхронизации продаж",
+    "addConnection": "Добавить подключение",
+    "noConnections": "Нет подключений к ОФД",
+    "neverSynced": "Никогда не синхронизировано",
+    "testConnection": "Тестировать подключение",
+    "testSuccess": "Подключение успешно! Учетные данные действительны.",
+    "testFailed": "Тест подключения не пройден",
+    "unknownError": "Неизвестная ошибка",
+    "deleteConnectionTitle": "Удалить подключение ОФД",
+    "deleteConnectionMessage": "Вы уверены, что хотите удалить подключение к {{provider}}?",
+    "createSuccess": "Подключение успешно создано",
+    "updateSuccess": "Подключение успешно обновлено",
+    "deleteSuccess": "Подключение успешно удалено",
+    "table": {
+      "provider": "Провайдер",
+      "status": "Статус",
+      "lastSync": "Последняя синхронизация",
+      "syncStatus": "Статус синхронизации"
+    },
+    "status": {
+      "notSynced": "Не синхронизировано",
+      "success": "Успешно",
+      "failed": "Ошибка"
+    },
+    "modal": {
+      "titleCreate": "Добавить подключение ОФД",
+      "titleEdit": "Редактировать подключение ОФД",
+      "provider": "Провайдер ОФД",
+      "selectProvider": "Выберите провайдера",
+      "searchProvider": "Поиск провайдера...",
+      "noProvidersFound": "Провайдеры не найдены",
+      "apiKey": "API ключ",
+      "apiKeyPlaceholder": "Введите API ключ",
+      "apiKeyPlaceholderEdit": "Введите новый API ключ (оставьте пустым, чтобы не менять)",
+      "apiKeyHint": "Оставьте пустым, если не хотите менять текущий ключ",
+      "customUrl": "Пользовательский URL",
+      "customUrlPlaceholder": "https://api.example.com",
+      "customUrlHint": "Оставьте пустым для использования стандартного URL провайдера",
+      "customUrlHintWithDefault": "По умолчанию: {{url}}. Оставьте пустым для использования этого URL",
+      "isActive": "Подключение активно"
+    },
+    "errors": {
+      "loadingError": "Ошибка загрузки подключений",
+      "saveError": "Не удалось сохранить подключение",
+      "deleteError": "Ошибка удаления подключения",
+      "selectProvider": "Выберите провайдера ОФД",
+      "apiKeyRequired": "API ключ обязателен для создания подключения",
+      "noLocationSelected": "Не выбрана локация",
+      "DUPLICATE_CONNECTION": "У вас уже есть подключение к этому провайдеру. Один бизнес может подключить каждого провайдера только один раз."
     }
   }
 }

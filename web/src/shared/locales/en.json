@@ -62,7 +62,8 @@
     "billing": "Billing",
     "locations": "Locations",
     "employees": "Employees",
-    "techCards": "Products"
+    "techCards": "Products",
+    "ofdIntegration": "OFD Integration"
   },
   "auth": {
     "createAccount": "Create Account",
@@ -1054,6 +1055,59 @@
         "ingredientUnitRequired": "Select unit for all ingredients",
         "saveFailed": "Failed to save product"
       }
+    }
+  },
+  "ofd": {
+    "title": "OFD Integration",
+    "subtitle": "Connect fiscal data operators to automatically sync sales",
+    "addConnection": "Add Connection",
+    "noConnections": "No OFD connections",
+    "neverSynced": "Never synced",
+    "testConnection": "Test Connection",
+    "testSuccess": "Connection successful! Credentials are valid.",
+    "testFailed": "Connection test failed",
+    "unknownError": "Unknown error",
+    "deleteConnectionTitle": "Delete OFD Connection",
+    "deleteConnectionMessage": "Are you sure you want to delete the connection to {{provider}}?",
+    "createSuccess": "Connection created successfully",
+    "updateSuccess": "Connection updated successfully",
+    "deleteSuccess": "Connection deleted successfully",
+    "table": {
+      "provider": "Provider",
+      "status": "Status",
+      "lastSync": "Last Sync",
+      "syncStatus": "Sync Status"
+    },
+    "status": {
+      "notSynced": "Not Synced",
+      "success": "Success",
+      "failed": "Failed"
+    },
+    "modal": {
+      "titleCreate": "Add OFD Connection",
+      "titleEdit": "Edit OFD Connection",
+      "provider": "OFD Provider",
+      "selectProvider": "Select provider",
+      "searchProvider": "Search provider...",
+      "noProvidersFound": "No providers found",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter API key",
+      "apiKeyPlaceholderEdit": "Enter new API key (leave blank to keep current)",
+      "apiKeyHint": "Leave blank if you don't want to change the current key",
+      "customUrl": "Custom URL",
+      "customUrlPlaceholder": "https://api.example.com",
+      "customUrlHint": "Leave blank to use provider's default URL",
+      "customUrlHintWithDefault": "Default: {{url}}. Leave blank to use this URL",
+      "isActive": "Connection is active"
+    },
+    "errors": {
+      "loadingError": "Failed to load connections",
+      "saveError": "Could not save connection",
+      "deleteError": "Failed to delete connection",
+      "selectProvider": "Select an OFD provider",
+      "apiKeyRequired": "API key is required to create connection",
+      "noLocationSelected": "No location selected",
+      "DUPLICATE_CONNECTION": "You already have a connection to this provider. Each business can connect to each provider only once."
     }
   }
 }

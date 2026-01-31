@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 
 from app.ofd_integration.models import OFDProvider, OFDConnection
 from app.ofd_integration.schemas import (
@@ -117,6 +118,21 @@ class OFDConnectionService:
         created_by_user_id: int
     ) -> OFDConnection:
         """Create new OFD connection."""
+        # Check if connection already exists
+        existing = await session.execute(
+            select(OFDConnection).where(
+                OFDConnection.business_id == business_id,
+                OFDConnection.provider_id == connection_data.provider_id
+            )
+        )
+        if existing.scalar_one_or_none():
+            from app.core.error_codes import ErrorCode
+            from fastapi import HTTPException, status
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": ErrorCode.DUPLICATE_CONNECTION, "message": "Connection to this provider already exists for this business"}
+            )
+        
         # Encrypt API key before storing
         encrypted_key = encrypt_api_key(connection_data.api_key)
         
@@ -132,8 +148,16 @@ class OFDConnectionService:
         )
         
         session.add(connection)
-        await session.flush()
-        await session.refresh(connection, ["provider", "business"])
+        try:
+            await session.flush()
+            await session.refresh(connection, ["provider", "business"])
+        except IntegrityError:
+            from app.core.error_codes import ErrorCode
+            from fastapi import HTTPException, status
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": ErrorCode.DUPLICATE_CONNECTION, "message": "Connection to this provider already exists for this business"}
+            )
         return connection
 
     @staticmethod

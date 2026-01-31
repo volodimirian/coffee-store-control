@@ -3,6 +3,8 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { Protected } from '~/shared/ui';
+import { useToast } from '~/shared/lib/useToast';
+import Toast from '~/shared/ui/Toast';
 import AddSectionModal from './AddSectionModal';
 import CategoryModal from './CategoryModal';
 
@@ -22,6 +24,7 @@ export default function CreateExpenseModal({
   sections = [],
 }: CreateExpenseModalProps) {
   const { t } = useTranslation();
+  const { toast, warning, hideToast } = useToast();
   const [createType, setCreateType] = useState<CreateType>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
 
@@ -49,7 +52,7 @@ export default function CreateExpenseModal({
   const handleCreateCategory = (sectionId?: number) => {
     if (sections.length === 0) {
       // Show message or create section first
-      alert(t('expenses.modals.createExpense.noSectionsWarning'));
+      warning(t('expenses.modals.createExpense.noSectionsWarning'));
       return;
     }
     
@@ -95,6 +98,7 @@ export default function CreateExpenseModal({
 
   // Main selection modal
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={handleClose}>
         <Transition.Child
@@ -235,5 +239,14 @@ export default function CreateExpenseModal({
         </div>
       </Dialog>
     </Transition>
+
+    <Toast
+      show={toast.show}
+      type={toast.type}
+      title={toast.title}
+      message={toast.message}
+      onClose={hideToast}
+    />
+    </>
   );
 }
