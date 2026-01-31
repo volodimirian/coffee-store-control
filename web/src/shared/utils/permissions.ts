@@ -9,7 +9,10 @@ export type Resource =
   | 'units'
   | 'suppliers'
   | 'invoices'
-  | 'tech_card_items';
+  | 'tech_card_items'
+  | 'ofd_connections'
+  | 'product_mappings'
+  | 'sales';
 
 export type Action =
   | 'view'
@@ -20,7 +23,9 @@ export type Action =
   | 'approve'
   | 'reject'
   | 'manage_members'
-  | 'grant_permissions';
+  | 'grant_permissions'
+  | 'sync'
+  | 'reprocess';
 
 export interface Permission {
   permission_name: string;
