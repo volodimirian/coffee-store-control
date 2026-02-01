@@ -220,18 +220,11 @@ class OFDConnectionService:
             is_valid = await provider.validate_credentials()
             
             if is_valid:
-                # Update last sync status
-                connection.last_sync_at = datetime.utcnow()
-                connection.last_sync_status = "success"
-                connection.last_sync_error = None
-                await session.flush()
-                
+                # DO NOT update last_sync_at here - only sync_sales should update it
+                # Test connection should not affect sync date tracking
                 return {"success": True}
             else:
-                # Update error status for invalid credentials
-                connection.last_sync_status = "error"
-                connection.last_sync_error = "Invalid credentials"
-                await session.flush()
+                return {"success": False, "error": "Invalid credentials"}
                 
                 return {
                     "success": False,

@@ -1,12 +1,12 @@
 """Service for managing OFD sales synchronization."""
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from decimal import Decimal
 from typing import List, Dict, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import func, desc
+from sqlalchemy import desc
 
 from app.ofd_integration.models import (
     Sale,
@@ -84,12 +84,6 @@ class SalesService:
                 business_created = business_result.scalar_one()
                 actual_start_date = business_created.date()
         
-        # Apply provider limitations (e.g., AQSI max 90 days)
-        max_start_date = actual_end_date - timedelta(days=SalesService.AQSI_MAX_DAYS - 1)
-        if actual_start_date < max_start_date:
-            # Date range too large, limit it
-            actual_start_date = max_start_date
-        
         # Ensure start_date <= end_date
         if actual_start_date > actual_end_date:
             actual_start_date = actual_end_date
@@ -105,6 +99,8 @@ class SalesService:
         user_id: int,
     ) -> Dict[str, Any]:
         """Sync sales from OFD provider for date range.
+        
+        Provider handles pagination/chunking based on its own limitations.
         
         Args:
             session: Database session
@@ -144,7 +140,7 @@ class SalesService:
             base_url=base_url
         )
         
-        # Fetch receipts from OFD
+        # Fetch receipts from OFD (provider handles pagination/chunking)
         receipts = await provider.get_receipts(
             from_date=actual_start_date,
             to_date=actual_end_date,

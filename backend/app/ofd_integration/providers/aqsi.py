@@ -11,11 +11,16 @@ class AqsiOFDProvider(OFDProviderBase):
     API Documentation: https://api.aqsi.ru/
     Base URL: https://api.aqsi.ru/
     Authentication: x-client-key header
+    
+    AQSI Limitations:
+    - Maximum date range per request: 90 days
+    - Provider automatically splits larger ranges into chunks
     """
     
     DEFAULT_PAGE_SIZE = 25
     MAX_PAGE_SIZE = 100
     TIMEOUT_SECONDS = 30
+    MAX_DATE_RANGE_DAYS = 90  # AQSI limitation
     
     def __init__(self, api_key: str, base_url: str):
         """Initialize AQSI provider.
@@ -137,15 +142,61 @@ class AqsiOFDProvider(OFDProviderBase):
     ) -> List[OFDReceipt]:
         """Fetch receipts from AQSI API for specified date range.
         
-        Uses /v4/Receipts endpoint with date filtering.
+        Automatically handles AQSI 90-day limitation by splitting large date ranges
+        into multiple API requests.
         
         Args:
             from_date: Start date (inclusive)
-            to_date: End date (inclusive, will add 1 day for API)
+            to_date: End date (inclusive)
             limit: Maximum number of receipts to return (None = no limit)
             
         Returns:
             List of OFDReceipt objects
+        """
+        # Calculate total days
+        total_days = (to_date - from_date).days + 1
+        
+        # If range <= 90 days, fetch in one go
+        if total_days <= self.MAX_DATE_RANGE_DAYS:
+            return await self._fetch_receipts_chunk(from_date, to_date, limit)
+        
+        # Split into 90-day chunks
+        all_receipts: List[OFDReceipt] = []
+        current_start = from_date
+        
+        while current_start <= to_date:
+            # Calculate chunk end date (max 90 days)
+            chunk_end = min(
+                current_start + timedelta(days=self.MAX_DATE_RANGE_DAYS - 1),
+                to_date
+            )
+            
+            # Fetch chunk
+            chunk_receipts = await self._fetch_receipts_chunk(
+                current_start,
+                chunk_end,
+                limit - len(all_receipts) if limit else None
+            )
+            all_receipts.extend(chunk_receipts)
+            
+            # Check if we hit the limit
+            if limit and len(all_receipts) >= limit:
+                return all_receipts[:limit]
+            
+            # Move to next chunk
+            current_start = chunk_end + timedelta(days=1)
+        
+        return all_receipts
+    
+    async def _fetch_receipts_chunk(
+        self,
+        from_date: date,
+        to_date: date,
+        limit: int | None = None
+    ) -> List[OFDReceipt]:
+        """Fetch receipts for a single chunk (max 90 days).
+        
+        Internal method - use get_receipts() for public API.
         """
         receipts = []
         page = 1
