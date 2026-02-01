@@ -17,6 +17,7 @@ import { useToast } from '~/shared/lib/useToast';
 import Toast from '~/shared/ui/Toast';
 import OFDConnectionModal from '~/components/modals/OFDConnectionModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
+import ProductMappings from '~/components/ProductMappings';
 import { format } from 'date-fns';
 
 export default function OFDIntegration() {
@@ -365,13 +366,7 @@ export default function OFDIntegration() {
       )}
 
       {activeTab === 'mappings' && (
-        <div className="space-y-4">
-          <div className="bg-white shadow rounded-lg p-6">
-            <p className="text-gray-500 text-center">
-              {t('ofd.mappings.comingSoon')}
-            </p>
-          </div>
-        </div>
+        <ProductMappings businessId={currentLocation!.id} connections={connections} />
       )}
 
       {/* Modals */}

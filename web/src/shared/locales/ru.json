@@ -1079,7 +1079,30 @@
       "productMappings": "Связи товаров"
     },
     "mappings": {
-      "comingSoon": "Связывание товаров — скоро"
+      "comingSoon": "Связывание товаров — скоро",
+      "noConnections": "Нет подключений к ОФД",
+      "createConnectionFirst": "Сначала создайте подключение на вкладке «Подключения»",
+      "selectConnection": "Выберите подключение",
+      "selectConnectionPlaceholder": "Выберите подключение для работы с товарами",
+      "loadFromOFD": "Загрузить из ОФД",
+      "errorLoadingProducts": "Ошибка загрузки товаров",
+      "errorSaving": "Ошибка сохранения связей",
+      "saveSuccess": "Связи успешно сохранены",
+      "saveSuccessDescription": "Создано: {{created}}, Ошибок: {{failed}}",
+      "noChanges": "Нет изменений",
+      "noChangesDescription": "Выберите товары для связывания",
+      "ofdProduct": "Товар из ОФД",
+      "techCardItem": "Позиция техкарты",
+      "status": "Статус",
+      "selectTechCardItem": "Выберите позицию",
+      "searchTechCardItem": "Поиск позиции...",
+      "noTechCardItems": "Позиции не найдены",
+      "mapped": "Связан",
+      "unmapped": "Не связан",
+      "pending": "Ожидает сохранения",
+      "searchProducts": "Поиск товаров...",
+      "noProducts": "Нет товаров",
+      "summary": "Всего: {{total}} | Связано: {{mapped}} | Не связано: {{unmapped}}"
     },
     "table": {
       "provider": "Провайдер",

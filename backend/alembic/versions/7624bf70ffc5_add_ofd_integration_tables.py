@@ -139,25 +139,63 @@ def upgrade() -> None:
         ON CONFLICT (code) DO NOTHING;
     """)
     
-    op.drop_index(op.f('ix_businesses_id'), table_name='businesses')
-    op.drop_index(op.f('ix_businesses_name'), table_name='businesses')
-    op.drop_column('businesses', 'tech_card_requires_approval')
+    # Drop indexes if they exist
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    
+    if 'ix_businesses_id' in [idx['name'] for idx in inspector.get_indexes('businesses')]:
+        op.drop_index(op.f('ix_businesses_id'), table_name='businesses')
+    if 'ix_businesses_name' in [idx['name'] for idx in inspector.get_indexes('businesses')]:
+        op.drop_index(op.f('ix_businesses_name'), table_name='businesses')
+    
+    # Drop column if exists
+    if 'tech_card_requires_approval' in [col['name'] for col in inspector.get_columns('businesses')]:
+        op.drop_column('businesses', 'tech_card_requires_approval')
+    
+    # Handle expense_records
     op.alter_column('expense_records', 'created_by',
                existing_type=sa.INTEGER(),
                nullable=False)
-    op.drop_constraint('expense_records_created_by_fkey', 'expense_records', type_='foreignkey')
+    
+    expense_records_fks = [fk['name'] for fk in inspector.get_foreign_keys('expense_records')]
+    if 'expense_records_created_by_fkey' in expense_records_fks:
+        op.drop_constraint('expense_records_created_by_fkey', 'expense_records', type_='foreignkey')
     op.create_foreign_key('expense_records_created_by_fkey', 'expense_records', 'users', ['created_by'], ['id'])
-    op.drop_index(op.f('ix_ingredient_cost_category_date'), table_name='ingredient_cost_history')
-    op.create_index(op.f('ix_ingredient_cost_history_id'), 'ingredient_cost_history', ['id'], unique=False)
+    
+    # Handle ingredient_cost_history indexes
+    ingredient_indexes = [idx['name'] for idx in inspector.get_indexes('ingredient_cost_history')]
+    if 'ix_ingredient_cost_category_date' in ingredient_indexes:
+        op.drop_index(op.f('ix_ingredient_cost_category_date'), table_name='ingredient_cost_history')
+    if 'ix_ingredient_cost_history_id' not in ingredient_indexes:
+        op.create_index(op.f('ix_ingredient_cost_history_id'), 'ingredient_cost_history', ['id'], unique=False)
+    
+    # Handle invoices
     op.alter_column('invoices', 'created_by',
                existing_type=sa.INTEGER(),
                nullable=False)
-    op.drop_constraint('invoices_created_by_fkey', 'invoices', type_='foreignkey')
+    
+    invoices_fks = [fk['name'] for fk in inspector.get_foreign_keys('invoices')]
+    if 'invoices_created_by_fkey' in invoices_fks:
+        op.drop_constraint('invoices_created_by_fkey', 'invoices', type_='foreignkey')
     op.create_foreign_key('invoices_created_by_fkey', 'invoices', 'users', ['created_by'], ['id'])
-    op.drop_constraint(op.f('uq_starting_inventory_business_category_date'), 'starting_inventory', type_='unique')
-    op.create_index(op.f('ix_starting_inventory_id'), 'starting_inventory', ['id'], unique=False)
-    op.create_index(op.f('ix_tech_card_item_ingredients_id'), 'tech_card_item_ingredients', ['id'], unique=False)
-    op.create_index(op.f('ix_tech_card_items_id'), 'tech_card_items', ['id'], unique=False)
+    
+    # Handle starting_inventory
+    starting_inventory_constraints = [c['name'] for c in inspector.get_unique_constraints('starting_inventory')]
+    if 'uq_starting_inventory_business_category_date' in starting_inventory_constraints:
+        op.drop_constraint(op.f('uq_starting_inventory_business_category_date'), 'starting_inventory', type_='unique')
+    
+    starting_inventory_indexes = [idx['name'] for idx in inspector.get_indexes('starting_inventory')]
+    if 'ix_starting_inventory_id' not in starting_inventory_indexes:
+        op.create_index(op.f('ix_starting_inventory_id'), 'starting_inventory', ['id'], unique=False)
+    
+    # Handle tech_card tables
+    tech_card_ing_indexes = [idx['name'] for idx in inspector.get_indexes('tech_card_item_ingredients')]
+    if 'ix_tech_card_item_ingredients_id' not in tech_card_ing_indexes:
+        op.create_index(op.f('ix_tech_card_item_ingredients_id'), 'tech_card_item_ingredients', ['id'], unique=False)
+    
+    tech_card_items_indexes = [idx['name'] for idx in inspector.get_indexes('tech_card_items')]
+    if 'ix_tech_card_items_id' not in tech_card_items_indexes:
+        op.create_index(op.f('ix_tech_card_items_id'), 'tech_card_items', ['id'], unique=False)
     op.alter_column('user_businesses', 'role_in_business',
                existing_type=sa.VARCHAR(length=100),
                type_=sa.String(length=50),

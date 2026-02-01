@@ -1077,7 +1077,30 @@
       "productMappings": "Product Mappings"
     },
     "mappings": {
-      "comingSoon": "Product mappings — coming soon"
+      "comingSoon": "Product mappings — coming soon",
+      "noConnections": "No OFD connections",
+      "createConnectionFirst": "Create a connection on the Connections tab first",
+      "selectConnection": "Select connection",
+      "selectConnectionPlaceholder": "Select a connection to work with products",
+      "loadFromOFD": "Load from OFD",
+      "errorLoadingProducts": "Error loading products",
+      "errorSaving": "Error saving mappings",
+      "saveSuccess": "Mappings saved successfully",
+      "saveSuccessDescription": "Created: {{created}}, Failed: {{failed}}",
+      "noChanges": "No changes",
+      "noChangesDescription": "Select products to map",
+      "ofdProduct": "OFD Product",
+      "techCardItem": "Tech Card Item",
+      "status": "Status",
+      "selectTechCardItem": "Select item",
+      "searchTechCardItem": "Search item...",
+      "noTechCardItems": "No items found",
+      "mapped": "Mapped",
+      "unmapped": "Unmapped",
+      "pending": "Pending save",
+      "searchProducts": "Search products...",
+      "noProducts": "No products",
+      "summary": "Total: {{total}} | Mapped: {{mapped}} | Unmapped: {{unmapped}}"
     },
     "table": {
       "provider": "Provider",

@@ -52,9 +52,18 @@ export interface OFDConnectionTestResponse {
 }
 
 export interface OFDProduct {
-  product_id: string | null;
-  product_name: string;
+  id: string | null;  // Changed from product_id for consistency
+  name: string;       // Changed from product_name for consistency
   category: string | null;
+}
+
+export interface TechCardItem {
+  id: number;
+  name: string;
+  description: string | null;
+  selling_price: string;
+  is_active: boolean;
+  approval_status: string;
 }
 
 export interface ProductMapping {

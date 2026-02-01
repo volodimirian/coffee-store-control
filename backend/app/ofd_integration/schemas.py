@@ -168,6 +168,10 @@ class SaleIngredientExpenseResponse(BaseModel):
 class OFDProductResponse(BaseModel):
     """Product from OFD provider's nomenclature."""
 
-    product_id: str | None
-    product_name: str
+    id: str | None = Field(None, alias="product_id", description="Product ID from OFD")
+    name: str = Field(..., alias="product_name", description="Product name from OFD")
     category: str | None = None
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
