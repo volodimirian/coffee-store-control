@@ -168,8 +168,8 @@ class SaleIngredientExpenseResponse(BaseModel):
 class OFDProductResponse(BaseModel):
     """Product from OFD provider's nomenclature."""
 
-    id: str | None = Field(None, alias="product_id", description="Product ID from OFD")
-    name: str = Field(..., alias="product_name", description="Product name from OFD")
+    product_id: str | None = Field(None, serialization_alias="id", description="Product ID from OFD")
+    product_name: str = Field(..., serialization_alias="name", description="Product name from OFD")
     category: str | None = None
 
     class Config:
