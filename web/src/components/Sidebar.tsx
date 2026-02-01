@@ -20,6 +20,7 @@ import {
   UsersIcon,
   ArrowLeftOnRectangleIcon,
   CloudIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { LocationSelector } from '~/components/LocationSelector';
 import { useAppContext } from '~/shared/context/AppContext';
@@ -95,6 +96,15 @@ const menuSections: MenuSection[] = [
         path: '/ofd-integration',
         icon: CloudIcon,
         labelKey: 'navigation.ofdIntegration',
+        requiredPermissions: [
+          { resource: 'ofd_connections', action: 'view' },
+        ],
+      },
+      {
+        id: 'sales-sync',
+        path: '/sales-sync',
+        icon: ArrowPathIcon,
+        labelKey: 'navigation.salesSync',
         requiredPermissions: [
           { resource: 'ofd_connections', action: 'view' },
         ],

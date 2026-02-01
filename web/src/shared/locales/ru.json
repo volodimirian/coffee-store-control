@@ -66,7 +66,8 @@
     "locations": "Локации",
     "employees": "Сотрудники",
     "techCards": "Товары",
-    "ofdIntegration": "Интеграция с ОФД"
+    "ofdIntegration": "Интеграция с ОФД",
+    "salesSync": "Продажи"
   },
   "auth": {
     "createAccount": "Создать аккаунт",
@@ -1143,5 +1144,24 @@
       "noLocationSelected": "Не выбрана локация",
       "DUPLICATE_CONNECTION": "У вас уже есть подключение к этому провайдеру. Один бизнес может подключить каждого провайдера только один раз."
     }
+  },
+  "sales": {
+    "title": "Продажи",
+    "syncTitle": "Синхронизация продаж",
+    "startDate": "Начальная дата",
+    "endDate": "Конечная дата",
+    "syncButton": "Синхронизировать",
+    "syncing": "Синхронизация...",
+    "selectDates": "Выберите даты для синхронизации",
+    "syncError": "Ошибка синхронизации",
+    "totalReceipts": "Всего чеков",
+    "newReceipts": "Новые чеки",
+    "duplicates": "Дубликаты",
+    "mappedItems": "Связано",
+    "unmappedItems": "Не связано",
+    "errors": "Ошибки",
+    "moreErrors": "Еще {{count}} ошибок...",
+    "salesList": "Список продаж",
+    "comingSoon": "Скоро будет добавлено..."
   }
 }

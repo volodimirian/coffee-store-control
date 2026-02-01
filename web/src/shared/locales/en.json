@@ -64,7 +64,8 @@
     "locations": "Locations",
     "employees": "Employees",
     "techCards": "Products",
-    "ofdIntegration": "OFD Integration"
+    "ofdIntegration": "OFD Integration",
+    "salesSync": "Sales"
   },
   "auth": {
     "createAccount": "Create Account",
@@ -1141,5 +1142,24 @@
       "noLocationSelected": "No location selected",
       "DUPLICATE_CONNECTION": "You already have a connection to this provider. Each business can connect to each provider only once."
     }
+  },
+  "sales": {
+    "title": "Sales",
+    "syncTitle": "Sales Synchronization",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "syncButton": "Synchronize",
+    "syncing": "Synchronizing...",
+    "selectDates": "Select dates for synchronization",
+    "syncError": "Synchronization error",
+    "totalReceipts": "Total Receipts",
+    "newReceipts": "New Receipts",
+    "duplicates": "Duplicates",
+    "mappedItems": "Mapped",
+    "unmappedItems": "Unmapped",
+    "errors": "Errors",
+    "moreErrors": "{{count}} more errors...",
+    "salesList": "Sales List",
+    "comingSoon": "Coming soon..."
   }
 }

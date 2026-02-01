@@ -109,6 +109,20 @@ export interface ProductMappingBulkResponse {
   failed: number;
 }
 
+export interface SyncSalesRequest {
+  start_date: string;
+  end_date: string;
+}
+
+export interface SyncSalesResponse {
+  total_receipts: number;
+  new_receipts: number;
+  duplicate_receipts: number;
+  mapped_items: number;
+  unmapped_items: number;
+  errors: string[];
+}
+
 // ============ Providers API ============
 
 export const ofdAPI = {
@@ -229,5 +243,19 @@ export const ofdAPI = {
   // Delete product mapping
   deleteProductMapping: async (mappingId: number): Promise<void> => {
     await api.delete(`/ofd/mappings/${mappingId}`);
+  },
+
+  // ============ Sales Sync API ============
+
+  // Synchronize sales from OFD provider
+  syncSales: async (
+    connectionId: number,
+    data: SyncSalesRequest
+  ): Promise<SyncSalesResponse> => {
+    const response = await api.post<SyncSalesResponse>(
+      `/ofd/connections/${connectionId}/sync-sales`,
+      data
+    );
+    return response.data;
   },
 };

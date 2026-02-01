@@ -11,6 +11,7 @@ export type * from './types';
 export * from './authentication';
 export * from './health';
 export * from './expenses';
+export { ofdAPI } from './ofd';
 
 // Error Handling
 export { useApiError, useErrorHandler } from '../lib/useApiError';
