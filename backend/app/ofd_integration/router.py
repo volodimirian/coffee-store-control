@@ -1,7 +1,8 @@
 """API router for OFD integration endpoints."""
+from datetime import date
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db_dep
@@ -20,9 +21,14 @@ from app.ofd_integration.schemas import (
     ProductMappingUpdate,
     ProductMappingResponse,
     OFDProductResponse,
+    SaleSyncRequest,
+    SaleSyncResponse,
+    SaleResponse,
+    SaleDetailResponse,
 )
 from app.ofd_integration.service import OFDConnectionService
 from app.ofd_integration.product_mapping_service import ProductMappingService
+from app.ofd_integration.sales_service import SalesService
 from app.core.error_codes import ErrorCode, create_error_response
 
 router = APIRouter()
@@ -432,3 +438,112 @@ async def delete_product_mapping(
         mapping=mapping
     )
     await session.commit()
+
+
+# ==================== Sales Sync Endpoints ====================
+
+@router.post("/connections/{connection_id}/sync-sales", response_model=SaleSyncResponse)
+async def sync_sales(
+    connection_id: int,
+    sync_request: SaleSyncRequest,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.OFD_CONNECTIONS, Action.EDIT))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Sync sales from OFD provider for specified date range."""
+    connection = await OFDConnectionService.get_connection_by_id(
+        session=session,
+        connection_id=connection_id
+    )
+    
+    if not connection:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                error_code=ErrorCode.NOT_FOUND,
+                detail="OFD connection not found"
+            )
+        )
+    
+    # Perform sync
+    stats = await SalesService.sync_sales(
+        session=session,
+        connection=connection,
+        start_date=sync_request.start_date,
+        end_date=sync_request.end_date,
+        user_id=auth["user_id"],
+    )
+    
+    await session.commit()
+    
+    return SaleSyncResponse(**stats)
+
+
+@router.get("/business/{business_id}/sales")
+async def get_business_sales(
+    business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.OFD_CONNECTIONS, Action.VIEW))],
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Get sales for a business with optional date filtering."""
+    sales, total = await SalesService.get_sales_by_business(
+        session=session,
+        business_id=business_id,
+        start_date=start_date,
+        end_date=end_date,
+        page=page,
+        page_size=page_size,
+    )
+    
+    return {
+        "items": [SaleResponse.model_validate(sale) for sale in sales],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": (total + page_size - 1) // page_size,
+    }
+
+
+@router.get("/sales/{sale_id}", response_model=SaleDetailResponse)
+async def get_sale_detail(
+    sale_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.OFD_CONNECTIONS, Action.VIEW))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Get detailed sale information with items."""
+    sale = await SalesService.get_sale_by_id(
+        session=session,
+        sale_id=sale_id
+    )
+    
+    if not sale:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=create_error_response(
+                error_code=ErrorCode.NOT_FOUND,
+                detail="Sale not found"
+            )
+        )
+    
+    return SaleDetailResponse.model_validate(sale)
+
+
+@router.get("/business/{business_id}/unmapped-items")
+async def get_unmapped_sale_items(
+    business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.OFD_CONNECTIONS, Action.VIEW))],
+    limit: int = Query(100, ge=1, le=1000),
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Get unmapped sale items that need product mapping."""
+    items = await SalesService.get_unmapped_items(
+        session=session,
+        business_id=business_id,
+        limit=limit,
+    )
+    
+    from app.ofd_integration.schemas import SaleItemResponse
+    return [SaleItemResponse.model_validate(item) for item in items]

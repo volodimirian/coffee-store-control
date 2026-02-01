@@ -122,7 +122,6 @@ class SaleResponse(BaseModel):
     processing_error: str | None
     processed_at: datetime | None
     imported_at: datetime
-    items_count: int = Field(..., description="Count of sale items")
 
     class Config:
         from_attributes = True
@@ -134,16 +133,17 @@ class SaleDetailResponse(SaleResponse):
 
 
 class SaleSyncRequest(BaseModel):
-    from_date: date | None = None
-    to_date: date | None = None
+    start_date: date = Field(..., description="Start date for sync")
+    end_date: date = Field(..., description="End date for sync")
 
 
 class SaleSyncResponse(BaseModel):
-    imported: int
-    updated: int
-    skipped: int
-    period_from: date
-    period_to: date
+    total_receipts: int = Field(..., description="Total receipts fetched from OFD")
+    new_receipts: int = Field(..., description="New receipts imported")
+    duplicate_receipts: int = Field(..., description="Duplicate receipts skipped")
+    mapped_items: int = Field(..., description="Items with product mapping")
+    unmapped_items: int = Field(..., description="Items without product mapping")
+    errors: list[str] = Field(default_factory=list, description="Import errors")
 
 
 # ========== Ingredient Expense Schemas ==========
