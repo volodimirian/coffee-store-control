@@ -133,17 +133,20 @@ class SaleDetailResponse(SaleResponse):
 
 
 class SaleSyncRequest(BaseModel):
-    start_date: date = Field(..., description="Start date for sync")
-    end_date: date = Field(..., description="End date for sync")
+    start_date: date | None = Field(None, description="Start date for sync (optional, auto-determined if not provided)")
+    end_date: date | None = Field(None, description="End date for sync (optional, defaults to today)")
 
 
 class SaleSyncResponse(BaseModel):
     total_receipts: int = Field(..., description="Total receipts fetched from OFD")
     new_receipts: int = Field(..., description="New receipts imported")
     duplicate_receipts: int = Field(..., description="Duplicate receipts skipped")
+    updated_receipts: int = Field(default=0, description="Existing receipts updated")
     mapped_items: int = Field(..., description="Items with product mapping")
     unmapped_items: int = Field(..., description="Items without product mapping")
     errors: list[str] = Field(default_factory=list, description="Import errors")
+    actual_start_date: date = Field(..., description="Actual start date used for sync")
+    actual_end_date: date = Field(..., description="Actual end date used for sync")
 
 
 # ========== Ingredient Expense Schemas ==========

@@ -1,11 +1,12 @@
 """Service for managing OFD sales synchronization."""
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 from typing import List, Dict, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func, desc
 
 from app.ofd_integration.models import (
     Sale,
@@ -15,17 +16,92 @@ from app.ofd_integration.models import (
 )
 from app.ofd_integration.service import OFDConnectionService
 from app.core.security import decrypt_api_key
+from app.core_models import Business
+from app.expenses.models import Invoice
 
 
 class SalesService:
     """Service for managing OFD sales synchronization."""
 
+    # Provider limitations
+    AQSI_MAX_DAYS = 90  # AQSI allows max 3 months
+
+    @staticmethod
+    async def _determine_sync_dates(
+        session: AsyncSession,
+        connection: OFDConnection,
+        start_date: date | None,
+        end_date: date | None,
+    ) -> tuple[date, date]:
+        """Determine actual sync dates based on various factors.
+        
+        Logic:
+        1. If start_date provided → use it
+        2. Else if last_sync_at exists → use it as start
+        3. Else check for last invoice date in business
+        4. Else use business creation date
+        5. Always limit to provider max range (e.g., 90 days for AQSI)
+        
+        Args:
+            session: Database session
+            connection: OFD connection
+            start_date: User-provided start date (optional)
+            end_date: User-provided end date (optional)
+            
+        Returns:
+            Tuple of (actual_start_date, actual_end_date)
+        """
+        # Determine end date (default to today)
+        actual_end_date = end_date or date.today()
+        
+        # Determine start date
+        if start_date:
+            # User explicitly provided start date
+            actual_start_date = start_date
+        elif connection.last_sync_at:
+            # Use last sync date as starting point
+            actual_start_date = connection.last_sync_at.date()
+        else:
+            # First time sync - need to determine starting point
+            # Priority 1: Last invoice date
+            last_invoice_result = await session.execute(
+                select(Invoice.invoice_date)
+                .where(Invoice.business_id == connection.business_id)
+                .order_by(desc(Invoice.invoice_date))
+                .limit(1)
+            )
+            last_invoice = last_invoice_result.scalar_one_or_none()
+            
+            if last_invoice:
+                # Start from last invoice date
+                actual_start_date = last_invoice.date() if isinstance(last_invoice, datetime) else last_invoice
+            else:
+                # Priority 2: Business creation date
+                business_result = await session.execute(
+                    select(Business.created_at)
+                    .where(Business.id == connection.business_id)
+                )
+                business_created = business_result.scalar_one()
+                actual_start_date = business_created.date()
+        
+        # Apply provider limitations (e.g., AQSI max 90 days)
+        max_start_date = actual_end_date - timedelta(days=SalesService.AQSI_MAX_DAYS - 1)
+        if actual_start_date < max_start_date:
+            # Date range too large, limit it
+            actual_start_date = max_start_date
+        
+        # Ensure start_date <= end_date
+        if actual_start_date > actual_end_date:
+            actual_start_date = actual_end_date
+        
+        return actual_start_date, actual_end_date
+
     @staticmethod
     async def sync_sales(
         session: AsyncSession,
         connection: OFDConnection,
-        start_date: date,
-        end_date: date,
+        start_date: date | None,
+        end_date: date | None,
         user_id: int,
     ) -> Dict[str, Any]:
         """Sync sales from OFD provider for date range.
@@ -33,8 +109,8 @@ class SalesService:
         Args:
             session: Database session
             connection: OFD connection to sync from
-            start_date: Start date for sync
-            end_date: End date for sync
+            start_date: Start date for sync (optional, auto-determined)
+            end_date: End date for sync (optional, defaults to today)
             user_id: ID of user initiating sync
             
         Returns:
@@ -42,11 +118,22 @@ class SalesService:
                 "total_receipts": int,
                 "new_receipts": int,
                 "duplicate_receipts": int,
+                "updated_receipts": int,
                 "mapped_items": int,
                 "unmapped_items": int,
-                "errors": List[str]
+                "errors": List[str],
+                "actual_start_date": date,
+                "actual_end_date": date
             }
         """
+        # Determine actual sync dates
+        actual_start_date, actual_end_date = await SalesService._determine_sync_dates(
+            session=session,
+            connection=connection,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
         # Decrypt API key and get provider instance
         api_key = decrypt_api_key(connection.api_key_encrypted)
         base_url = connection.custom_base_url or connection.provider.base_url
@@ -59,8 +146,8 @@ class SalesService:
         
         # Fetch receipts from OFD
         receipts = await provider.get_receipts(
-            from_date=start_date,
-            to_date=end_date,
+            from_date=actual_start_date,
+            to_date=actual_end_date,
             limit=None  # Get all receipts
         )
         
@@ -86,43 +173,65 @@ class SalesService:
             "total_receipts": len(receipts),
             "new_receipts": 0,
             "duplicate_receipts": 0,
+            "updated_receipts": 0,
             "mapped_items": 0,
             "unmapped_items": 0,
-            "errors": []
+            "errors": [],
+            "actual_start_date": actual_start_date,
+            "actual_end_date": actual_end_date
         }
         
         # Process each receipt
         for receipt_data in receipts:
             try:
                 # Check if receipt already exists
-                existing = await session.execute(
-                    select(Sale).where(
+                existing_result = await session.execute(
+                    select(Sale)
+                    .where(
                         Sale.connection_id == connection.id,
                         Sale.ofd_receipt_id == receipt_data.receipt_id
                     )
+                    .options(selectinload(Sale.items))
                 )
-                if existing.scalar_one_or_none():
-                    stats["duplicate_receipts"] = stats["duplicate_receipts"] + 1
-                    continue
+                existing_sale = existing_result.scalar_one_or_none()
                 
-                # Create Sale record
-                sale = Sale(
-                    business_id=connection.business_id,
-                    connection_id=connection.id,
-                    ofd_receipt_id=receipt_data.receipt_id,
-                    receipt_datetime=datetime.fromisoformat(
+                if existing_sale:
+                    # Update existing receipt (updated_at will be set automatically by SQLAlchemy onupdate)
+                    existing_sale.receipt_datetime = datetime.fromisoformat(
                         receipt_data.receipt_datetime.replace("Z", "+00:00")
-                    ),
-                    total_amount=Decimal(receipt_data.total_amount),
-                    fiscal_document_number=receipt_data.fiscal_document_number,
-                    fiscal_sign=receipt_data.fiscal_sign,
-                    raw_data=receipt_data.raw_data,
-                    processing_status="pending",
-                    imported_at=datetime.utcnow(),
-                    imported_by=user_id,
-                )
-                session.add(sale)
-                await session.flush()  # Get sale.id
+                    )
+                    existing_sale.total_amount = Decimal(receipt_data.total_amount)
+                    existing_sale.fiscal_document_number = receipt_data.fiscal_document_number
+                    existing_sale.fiscal_sign = receipt_data.fiscal_sign
+                    existing_sale.raw_data = receipt_data.raw_data
+                    
+                    # Delete old items and recreate
+                    for old_item in existing_sale.items:
+                        await session.delete(old_item)
+                    await session.flush()
+                    
+                    sale = existing_sale
+                    stats["updated_receipts"] = stats["updated_receipts"] + 1
+                else:
+                    # Create new Sale record
+                    sale = Sale(
+                        business_id=connection.business_id,
+                        connection_id=connection.id,
+                        ofd_receipt_id=receipt_data.receipt_id,
+                        receipt_datetime=datetime.fromisoformat(
+                            receipt_data.receipt_datetime.replace("Z", "+00:00")
+                        ),
+                        total_amount=Decimal(receipt_data.total_amount),
+                        fiscal_document_number=receipt_data.fiscal_document_number,
+                        fiscal_sign=receipt_data.fiscal_sign,
+                        raw_data=receipt_data.raw_data,
+                        processing_status="pending",
+                        imported_at=datetime.utcnow(),
+                        imported_by=user_id,
+                    )
+                    session.add(sale)
+                    await session.flush()  # Get sale.id
+                    stats["new_receipts"] = stats["new_receipts"] + 1
                 
                 # Process receipt items
                 items_data = receipt_data.items

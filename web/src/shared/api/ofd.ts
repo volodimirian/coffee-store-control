@@ -110,17 +110,20 @@ export interface ProductMappingBulkResponse {
 }
 
 export interface SyncSalesRequest {
-  start_date: string;
-  end_date: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface SyncSalesResponse {
   total_receipts: number;
   new_receipts: number;
   duplicate_receipts: number;
+  updated_receipts: number;
   mapped_items: number;
   unmapped_items: number;
   errors: string[];
+  actual_start_date: string;
+  actual_end_date: string;
 }
 
 // ============ Providers API ============

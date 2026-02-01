@@ -180,6 +180,9 @@ class Sale(Base):
         DateTime(timezone=True), default=datetime.utcnow
     )
     imported_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, onupdate=datetime.utcnow
+    )
 
     # Relationships
     business: Mapped["Business"] = relationship("Business")

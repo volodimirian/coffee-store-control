@@ -14,11 +14,6 @@ export default function SalesSync() {
   const [error, setError] = useState('');
 
   const handleSync = async () => {
-    if (!startDate || !endDate) {
-      setError(t('sales.selectDates'));
-      return;
-    }
-
     setIsLoading(true);
     setError('');
     setSyncStats(null);
@@ -27,10 +22,12 @@ export default function SalesSync() {
       // TODO: Get connection_id from selected connection
       const connectionId = 1; // Placeholder
       
-      const data = await ofdAPI.syncSales(connectionId, {
-        start_date: startDate,
-        end_date: endDate,
-      });
+      // Build request with optional dates
+      const requestData: { start_date?: string; end_date?: string } = {};
+      if (startDate) requestData.start_date = startDate;
+      if (endDate) requestData.end_date = endDate;
+      
+      const data = await ofdAPI.syncSales(connectionId, requestData);
       
       setSyncStats(data);
     } catch (err) {
@@ -120,38 +117,54 @@ export default function SalesSync() {
 
         {/* Success Stats */}
         {syncStats && (
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">{t('sales.totalReceipts')}</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">
-                {syncStats.total_receipts}
+          <>
+            {/* Actual Date Range Info */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                {t('sales.actualDateRange')}:{' '}
+                <span className="font-medium">
+                  {syncStats.actual_start_date}
+                </span>
+                {' '}—{' '}
+                <span className="font-medium">
+                  {syncStats.actual_end_date}
+                </span>
               </p>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-sm text-green-700">{t('sales.newReceipts')}</p>
-              <p className="mt-1 text-2xl font-semibold text-green-900">
-                {syncStats.new_receipts}
-              </p>
+
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-5">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500">{t('sales.totalReceipts')}</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                  {syncStats.total_receipts}
+                </p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="text-sm text-green-700">{t('sales.newReceipts')}</p>
+                <p className="mt-1 text-2xl font-semibold text-green-900">
+                  {syncStats.new_receipts}
+                </p>
+              </div>
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <p className="text-sm text-yellow-700">{t('sales.updatedReceipts')}</p>
+                <p className="mt-1 text-2xl font-semibold text-yellow-900">
+                  {syncStats.updated_receipts}
+                </p>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm text-blue-700">{t('sales.mappedItems')}</p>
+                <p className="mt-1 text-2xl font-semibold text-blue-900">
+                  {syncStats.mapped_items}
+                </p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-4">
+                <p className="text-sm text-red-700">{t('sales.unmappedItems')}</p>
+                <p className="mt-1 text-2xl font-semibold text-red-900">
+                  {syncStats.unmapped_items}
+                </p>
+              </div>
             </div>
-            <div className="bg-yellow-50 rounded-lg p-4">
-              <p className="text-sm text-yellow-700">{t('sales.duplicates')}</p>
-              <p className="mt-1 text-2xl font-semibold text-yellow-900">
-                {syncStats.duplicate_receipts}
-              </p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-sm text-blue-700">{t('sales.mappedItems')}</p>
-              <p className="mt-1 text-2xl font-semibold text-blue-900">
-                {syncStats.mapped_items}
-              </p>
-            </div>
-            <div className="bg-red-50 rounded-lg p-4">
-              <p className="text-sm text-red-700">{t('sales.unmappedItems')}</p>
-              <p className="mt-1 text-2xl font-semibold text-red-900">
-                {syncStats.unmapped_items}
-              </p>
-            </div>
-          </div>
+          </>
         )}
 
         {/* Errors List */}

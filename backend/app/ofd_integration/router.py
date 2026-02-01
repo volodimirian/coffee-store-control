@@ -1,5 +1,5 @@
 """API router for OFD integration endpoints."""
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -449,7 +449,15 @@ async def sync_sales(
     auth: Annotated[dict, Depends(require_resource_permission(Resource.OFD_CONNECTIONS, Action.EDIT))],
     session: AsyncSession = Depends(get_db_dep),
 ):
-    """Sync sales from OFD provider for specified date range."""
+    """Sync sales from OFD provider for specified date range.
+    
+    Dates are optional:
+    - If not provided, automatically determined based on:
+      1. Last sync date (if exists)
+      2. Last invoice date (priority)
+      3. Business creation date (fallback)
+    - Provider limitations applied (e.g., max 90 days for AQSI)
+    """
     connection = await OFDConnectionService.get_connection_by_id(
         session=session,
         connection_id=connection_id
@@ -464,7 +472,7 @@ async def sync_sales(
             )
         )
     
-    # Perform sync
+    # Perform sync (dates will be auto-determined if not provided)
     stats = await SalesService.sync_sales(
         session=session,
         connection=connection,
@@ -472,6 +480,10 @@ async def sync_sales(
         end_date=sync_request.end_date,
         user_id=auth["user_id"],
     )
+    
+    # Update last_sync_at on connection
+    connection.last_sync_at = datetime.utcnow()
+    connection.last_sync_status = "success"
     
     await session.commit()
     
