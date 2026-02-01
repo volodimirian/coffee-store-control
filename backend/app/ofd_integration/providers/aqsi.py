@@ -81,8 +81,9 @@ class AqsiOFDProvider(OFDProviderBase):
         try:
             async with httpx.AsyncClient(timeout=self.TIMEOUT_SECONDS) as client:
                 while has_more:
+                    # AQSI API v2 uses GET for Goods list endpoint
                     response = await client.get(
-                        f"{self.base_url}/v2/Goods",
+                        f"{self.base_url}/v2/Goods/list",
                         headers=self._get_headers(),
                         params={
                             "pageSize": self.MAX_PAGE_SIZE,

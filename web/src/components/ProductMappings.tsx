@@ -34,8 +34,25 @@ export default function ProductMappings({ businessId, connections }: ProductMapp
   useEffect(() => {
     const loadTechCards = async () => {
       try {
-        const response = await techCardsApi.listItems(businessId, { is_active: true, page_size: 1000 });
-        setTechCardItems(response.items);
+        // Load all pages of tech card items (max 100 per page)
+        let allItems: TechCardItem[] = [];
+        let page = 1;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const response = await techCardsApi.listItems(businessId, { 
+            is_active: true, 
+            page_size: 100,
+            page 
+          });
+          allItems = [...allItems, ...response.items];
+          
+          // Check if there are more pages
+          hasMore = response.items.length === 100;
+          page++;
+        }
+        
+        setTechCardItems(allItems);
       } catch (err) {
         console.error('Failed to load tech card items:', err);
       }
@@ -52,6 +69,10 @@ export default function ProductMappings({ businessId, connections }: ProductMapp
         ofdAPI.getOFDProducts(selectedConnectionId),
         ofdAPI.getProductMappings(selectedConnectionId),
       ]);
+
+      console.log('Loaded OFD products:', products);
+      console.log('Loaded tech card items:', techCardItems);
+      console.log('Loaded mappings:', mappings);
 
       setOfdProducts(products);
       setExistingMappings(mappings);
