@@ -83,7 +83,7 @@ class ProductMappingResponse(BaseModel):
     ofd_product_id: str | None
     ofd_product_name: str
     tech_card_item_id: int
-    tech_card_item_name: str = Field(..., description="From relationship")
+    tech_card_item_name: str | None = Field(None, description="From relationship")
     is_active: bool
     created_at: datetime
     updated_at: datetime

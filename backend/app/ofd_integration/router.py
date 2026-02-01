@@ -279,9 +279,21 @@ async def get_product_mappings(
     # Enrich with tech_card_item name
     result = []
     for mapping in mappings:
-        mapping_dict = ProductMappingResponse.model_validate(mapping).model_dump()
-        mapping_dict["tech_card_item_name"] = mapping.tech_card_item.name if mapping.tech_card_item else None
-        result.append(ProductMappingResponse(**mapping_dict))
+        # Get tech_card_item name before validation (while session is active)
+        tech_card_item_name = mapping.tech_card_item.name if mapping.tech_card_item else None
+        
+        # Build dict manually to include computed field
+        result.append(ProductMappingResponse(
+            id=mapping.id,
+            connection_id=mapping.connection_id,
+            ofd_product_id=mapping.ofd_product_id,
+            ofd_product_name=mapping.ofd_product_name,
+            tech_card_item_id=mapping.tech_card_item_id,
+            tech_card_item_name=tech_card_item_name,
+            is_active=mapping.is_active,
+            created_at=mapping.created_at,
+            updated_at=mapping.updated_at
+        ))
     
     return result
 
@@ -321,9 +333,21 @@ async def create_product_mappings(
     # Format response
     success_response = []
     for mapping in result["success"]:
-        mapping_dict = ProductMappingResponse.model_validate(mapping).model_dump()
-        mapping_dict["tech_card_item_name"] = mapping.tech_card_item.name
-        success_response.append(mapping_dict)
+        # Get tech_card_item name before validation (while session is active)
+        tech_card_item_name = mapping.tech_card_item.name if mapping.tech_card_item else None
+        
+        # Build dict manually to include computed field
+        success_response.append({
+            "id": mapping.id,
+            "connection_id": mapping.connection_id,
+            "ofd_product_id": mapping.ofd_product_id,
+            "ofd_product_name": mapping.ofd_product_name,
+            "tech_card_item_id": mapping.tech_card_item_id,
+            "tech_card_item_name": tech_card_item_name,
+            "is_active": mapping.is_active,
+            "created_at": mapping.created_at.isoformat(),
+            "updated_at": mapping.updated_at.isoformat()
+        })
     
     return {
         "success": success_response,
@@ -365,10 +389,21 @@ async def update_product_mapping(
     
     await session.commit()
     
-    mapping_dict = ProductMappingResponse.model_validate(updated_mapping).model_dump()
-    mapping_dict["tech_card_item_name"] = updated_mapping.tech_card_item.name
+    # Get tech_card_item name before validation (while session is active)
+    tech_card_item_name = updated_mapping.tech_card_item.name if updated_mapping.tech_card_item else None
     
-    return ProductMappingResponse(**mapping_dict)
+    # Build response directly to include computed field
+    return ProductMappingResponse(
+        id=updated_mapping.id,
+        connection_id=updated_mapping.connection_id,
+        ofd_product_id=updated_mapping.ofd_product_id,
+        ofd_product_name=updated_mapping.ofd_product_name,
+        tech_card_item_id=updated_mapping.tech_card_item_id,
+        tech_card_item_name=tech_card_item_name,
+        is_active=updated_mapping.is_active,
+        created_at=updated_mapping.created_at,
+        updated_at=updated_mapping.updated_at
+    )
 
 
 @router.delete("/mappings/{mapping_id}", status_code=status.HTTP_204_NO_CONTENT)
