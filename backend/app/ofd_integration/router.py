@@ -215,13 +215,17 @@ async def test_connection(
 
 # ==================== Product Mappings Endpoints ====================
 
-@router.get("/connections/{connection_id}/products", response_model=List[OFDProductResponse])
+@router.get("/connections/{connection_id}/products")
 async def get_ofd_products(
     connection_id: int,
     auth: Annotated[dict, Depends(require_resource_permission(Resource.PRODUCT_MAPPINGS, Action.VIEW))],
+    page: int = 1,
+    page_size: int = 25,
+    filter: str = "all",  # "all", "mapped", "unmapped"
+    search: str | None = None,
     session: AsyncSession = Depends(get_db_dep),
 ):
-    """Get product nomenclature from OFD provider."""
+    """Get product nomenclature from OFD provider with pagination and filtering."""
     connection = await OFDConnectionService.get_connection_by_id(
         session=session,
         connection_id=connection_id
@@ -236,12 +240,28 @@ async def get_ofd_products(
             )
         )
     
-    products = await ProductMappingService.get_products_from_ofd(
+    # Validate page_size
+    if page_size > 100:
+        page_size = 100
+    if page_size < 1:
+        page_size = 25
+    
+    products, total = await ProductMappingService.get_products_from_ofd(
         session=session,
-        connection=connection
+        connection=connection,
+        page=page,
+        page_size=page_size,
+        filter_type=filter,
+        search=search
     )
     
-    return [OFDProductResponse.model_validate(p) for p in products]
+    return {
+        "items": [OFDProductResponse.model_validate(p) for p in products],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": (total + page_size - 1) // page_size  # Ceiling division
+    }
 
 
 @router.get("/connections/{connection_id}/mappings", response_model=List[ProductMappingResponse])

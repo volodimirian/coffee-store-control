@@ -57,6 +57,14 @@ export interface OFDProduct {
   category: string | null;
 }
 
+export interface OFDProductsResponse {
+  items: OFDProduct[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
 export interface TechCardItem {
   id: number;
   name: string;
@@ -169,10 +177,19 @@ export const ofdAPI = {
 
   // ============ Product Mappings API ============
 
-  // Get products from OFD provider
-  getOFDProducts: async (connectionId: number): Promise<OFDProduct[]> => {
-    const response = await api.get<OFDProduct[]>(
-      `/ofd/connections/${connectionId}/products`
+  // Get products from OFD provider with pagination and filtering
+  getOFDProducts: async (
+    connectionId: number,
+    params?: {
+      page?: number;
+      page_size?: number;
+      filter?: 'all' | 'mapped' | 'unmapped';
+      search?: string;
+    }
+  ): Promise<OFDProductsResponse> => {
+    const response = await api.get<OFDProductsResponse>(
+      `/ofd/connections/${connectionId}/products`,
+      { params }
     );
     return response.data;
   },

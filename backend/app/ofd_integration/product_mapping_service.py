@@ -154,11 +154,20 @@ class ProductMappingService:
     @staticmethod
     async def get_products_from_ofd(
         session: AsyncSession,
-        connection: OFDConnection
-    ) -> list:
-        """Fetch products from OFD provider."""
+        connection: OFDConnection,
+        page: int = 1,
+        page_size: int = 25,
+        filter_type: str = "all",  # "all", "mapped", "unmapped"
+        search: str | None = None
+    ) -> tuple[list, int]:
+        """Fetch products from OFD provider with filtering and pagination.
+        
+        Returns:
+            Tuple of (products_list, total_count)
+        """
         from app.ofd_integration.service import OFDConnectionService
         from app.core.security import decrypt_api_key
+        from sqlalchemy import select
 
         # Decrypt API key
         api_key = decrypt_api_key(connection.api_key_encrypted)
@@ -173,7 +182,45 @@ class ProductMappingService:
             base_url=base_url
         )
         
-        # Fetch products
-        products = await provider.get_products()
+        # Fetch ALL products from OFD (cache this in production!)
+        all_products = await provider.get_products()
         
-        return products
+        # Get existing mappings for filtering
+        stmt = select(ProductMapping).where(
+            ProductMapping.connection_id == connection.id,
+            ProductMapping.is_active
+        )
+        result = await session.execute(stmt)
+        existing_mappings = result.scalars().all()
+        
+        # Create set of mapped product keys for quick lookup
+        mapped_keys = {
+            f"{m.ofd_product_id}_{m.ofd_product_name}" 
+            for m in existing_mappings
+        }
+        
+        # Filter products
+        filtered = []
+        for product in all_products:
+            product_key = f"{product.product_id}_{product.product_name}"
+            is_mapped = product_key in mapped_keys
+            
+            # Apply mapping filter
+            if filter_type == "mapped" and not is_mapped:
+                continue
+            if filter_type == "unmapped" and is_mapped:
+                continue
+            
+            # Apply search filter
+            if search and search.lower() not in product.product_name.lower():
+                continue
+            
+            filtered.append(product)
+        
+        # Calculate pagination
+        total = len(filtered)
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated = filtered[start:end]
+        
+        return paginated, total
