@@ -107,6 +107,26 @@ class SaleItemResponse(BaseModel):
 
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        """Override model_validate to populate tech_card_item_name from relationship."""
+        if hasattr(obj, 'tech_card_item') and obj.tech_card_item:
+            # Create dict from object
+            data = {
+                'id': obj.id,
+                'ofd_product_id': obj.ofd_product_id,
+                'ofd_product_name': obj.ofd_product_name,
+                'quantity': obj.quantity,
+                'price': obj.price,
+                'total': obj.total,
+                'is_mapped': obj.is_mapped,
+                'processed': obj.processed,
+                'tech_card_item_id': obj.tech_card_item_id,
+                'tech_card_item_name': obj.tech_card_item.name if obj.tech_card_item else None,
+            }
+            return super().model_validate(data, **kwargs)
+        return super().model_validate(obj, **kwargs)
 
 
 class SaleResponse(BaseModel):
@@ -122,6 +142,8 @@ class SaleResponse(BaseModel):
     processing_error: str | None
     processed_at: datetime | None
     imported_at: datetime
+    items_count: int
+    unmapped_items_count: int
 
     class Config:
         from_attributes = True
@@ -129,7 +151,7 @@ class SaleResponse(BaseModel):
 
 class SaleDetailResponse(SaleResponse):
     items: list[SaleItemResponse]
-    raw_data: dict
+    # raw_data removed - should not expose OFD provider's internal data structure
 
 
 class SaleSyncRequest(BaseModel):

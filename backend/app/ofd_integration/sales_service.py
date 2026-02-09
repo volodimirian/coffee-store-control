@@ -38,9 +38,8 @@ class SalesService:
         Logic:
         1. If start_date provided → use it
         2. Else if last_sync_at exists → use it as start
-        3. Else check for last invoice date in business
+        3. Else check for FIRST (oldest) invoice date in business
         4. Else use business creation date
-        5. Always limit to provider max range (e.g., 90 days for AQSI)
         
         Args:
             session: Database session
@@ -63,18 +62,18 @@ class SalesService:
             actual_start_date = connection.last_sync_at.date()
         else:
             # First time sync - need to determine starting point
-            # Priority 1: Last invoice date
-            last_invoice_result = await session.execute(
+            # Priority 1: First (oldest) invoice date
+            first_invoice_result = await session.execute(
                 select(Invoice.invoice_date)
                 .where(Invoice.business_id == connection.business_id)
-                .order_by(desc(Invoice.invoice_date))
+                .order_by(Invoice.invoice_date.asc())  # ASC = oldest first
                 .limit(1)
             )
-            last_invoice = last_invoice_result.scalar_one_or_none()
+            first_invoice = first_invoice_result.scalar_one_or_none()
             
-            if last_invoice:
-                # Start from last invoice date
-                actual_start_date = last_invoice.date() if isinstance(last_invoice, datetime) else last_invoice
+            if first_invoice:
+                # Start from first invoice date
+                actual_start_date = first_invoice.date()
             else:
                 # Priority 2: Business creation date
                 business_result = await session.execute(
@@ -146,6 +145,8 @@ class SalesService:
             to_date=actual_end_date,
             limit=None  # Get all receipts
         )
+        
+        print(f"[SalesService] Fetched {len(receipts)} receipts from OFD provider")
         
         # Get all active mappings for this connection
         mappings_result = await session.execute(
@@ -224,16 +225,26 @@ class SalesService:
                         processing_status="pending",
                         imported_at=datetime.utcnow(),
                         imported_by=user_id,
+                        items_count=0,
+                        unmapped_items_count=0,
                     )
                     session.add(sale)
                     await session.flush()  # Get sale.id
                     stats["new_receipts"] = stats["new_receipts"] + 1
                 
                 # Process receipt items
+                items_count = 0
+                unmapped_count = 0
                 items_data = receipt_data.items
                 for item_data in items_data:
                     ofd_product_id = item_data.product_id
                     ofd_product_name = item_data.product_name
+                    
+                    # Debug: log if product name is empty
+                    if not ofd_product_name or ofd_product_name.strip() == "":
+                        print(f"[SalesService] Warning: Empty product name for item in receipt {receipt_data.receipt_id}")
+                        print(f"  product_id: {ofd_product_id}")
+                        print(f"  raw item_data: {item_data}")
                     
                     # Try to find mapping
                     mapping_key = f"{ofd_product_id}_{ofd_product_name}"
@@ -247,6 +258,9 @@ class SalesService:
                         stats["mapped_items"] = stats["mapped_items"] + 1
                     else:
                         stats["unmapped_items"] = stats["unmapped_items"] + 1
+                        unmapped_count += 1
+                    
+                    items_count += 1
                     
                     # Create SaleItem
                     sale_item = SaleItem(
@@ -263,13 +277,23 @@ class SalesService:
                     )
                     session.add(sale_item)
                 
-                stats["new_receipts"] = stats["new_receipts"] + 1
+                # Update sale counters
+                sale.items_count = items_count
+                sale.unmapped_items_count = unmapped_count
                 
             except Exception as e:
                 stats["errors"].append(
                     f"Receipt {receipt_data.receipt_id}: {str(e)}"
                 )
+                print(f"[SalesService] Error processing receipt {receipt_data.receipt_id}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
+        
+        # Commit changes to database
+        print(f"[SalesService] Committing {stats['new_receipts']} new and {stats['updated_receipts']} updated receipts to database")
+        await session.commit()
+        print(f"[SalesService] Successfully committed all changes")
         
         return stats
 

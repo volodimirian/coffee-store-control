@@ -481,11 +481,11 @@ async def sync_sales(
         user_id=auth["user_id"],
     )
     
-    # Update last_sync_at on connection
+    # Update last_sync_at on connection (sync_sales already committed)
     connection.last_sync_at = datetime.utcnow()
     connection.last_sync_status = "success"
     
-    await session.commit()
+    await session.commit()  # Commit connection update
     
     return SaleSyncResponse(**stats)
 

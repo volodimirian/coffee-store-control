@@ -183,6 +183,8 @@ class Sale(Base):
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, onupdate=datetime.utcnow
     )
+    items_count: Mapped[int] = mapped_column(default=0)
+    unmapped_items_count: Mapped[int] = mapped_column(default=0)
 
     # Relationships
     business: Mapped["Business"] = relationship("Business")

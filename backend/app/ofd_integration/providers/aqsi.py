@@ -80,7 +80,7 @@ class AqsiOFDProvider(OFDProviderBase):
             List of OFDProduct objects
         """
         products = []
-        page = 1
+        page = 0
         has_more = True
         
         try:
@@ -92,7 +92,7 @@ class AqsiOFDProvider(OFDProviderBase):
                         headers=self._get_headers(),
                         params={
                             "pageSize": self.MAX_PAGE_SIZE,
-                            "page": page
+                            "pageNumber": page
                         }
                     )
                     response.raise_for_status()
@@ -107,13 +107,15 @@ class AqsiOFDProvider(OFDProviderBase):
                     
                     # Process each good
                     for good in goods_list:
-                        # Skip deleted goods
-                        if good.get("deletedAt"):
-                            continue
+                        product_id = good.get("id", "")
+                        product_name = good.get("name", "")
+                        
+                        # Debug: log all products including deleted ones
+                        print(f"[AQSI] Product: ID={product_id}, Name={product_name}")
                             
                         product = OFDProduct(
-                            product_id=good.get("id", ""),
-                            product_name=good.get("name", ""),
+                            product_id=product_id,
+                            product_name=product_name,
                             category=good.get("group_id", "")  # Using group_id as category
                         )
                         products.append(product)
@@ -132,6 +134,7 @@ class AqsiOFDProvider(OFDProviderBase):
             print(f"Error fetching products from AQSI: {e}")
             raise Exception(f"Failed to process products from AQSI: {str(e)}")
         
+        print(f"[AQSI] Total products loaded: {len(products)}")
         return products
     
     async def get_receipts(
@@ -302,12 +305,32 @@ class AqsiOFDProvider(OFDProviderBase):
             # Parse items
             items = []
             for pos in positions:
+                # AQSI position structure (all data is in 'info' object):
+                # - info.name: product name
+                # - info.quantity: already in units (1 = 1 unit), NOT milliunits
+                # - info.finalPrice: price in kopecks (25000 = 250.00 rubles)
+                # - info.totalAmount: often 0, calculate instead
+                # - externalId: at position level (not in info)
+                
+                pos_info = pos.get("info", {})
+                product_name = pos_info.get("name", "")
+                
+                # Get quantity (already in correct units, not milliunits!)
+                quantity = pos_info.get("quantity", 0)
+                
+                # Get price in kopecks and convert to rubles
+                final_price_kopecks = pos_info.get("finalPrice", 0)
+                price_rubles = final_price_kopecks / 100
+                
+                # Calculate total (quantity * price)
+                total_rubles = quantity * price_rubles
+
                 item = OFDReceiptItem(
-                    product_id=pos.get("externalId", ""),  # External ID if available
-                    product_name=pos.get("name", ""),
-                    quantity=str(pos.get("quantity", 0) / 1000),  # AQSI uses milliunits
-                    price=str(pos.get("price", 0) / 100),  # Kopecks to rubles
-                    total=str(pos.get("sum", 0) / 100)  # Kopecks to rubles
+                    product_id=pos.get("externalId", ""),  # External ID at position level
+                    product_name=product_name,
+                    quantity=str(quantity),
+                    price=str(price_rubles),
+                    total=str(total_rubles)
                 )
                 items.append(item)
             
