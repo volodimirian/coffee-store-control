@@ -126,6 +126,48 @@ export interface SyncSalesResponse {
   actual_end_date: string;
 }
 
+export interface SaleItem {
+  id: number;
+  sale_id: number;
+  product_mapping_id: number | null;
+  tech_card_item_id: number | null;
+  tech_card_item_name: string | null;
+  ofd_product_id: string | null;
+  ofd_product_name: string;
+  quantity: string;
+  price: string;
+  total: string;
+  is_mapped: boolean;
+  processed: boolean;
+}
+
+export interface Sale {
+  id: number;
+  business_id: number;
+  connection_id: number;
+  ofd_receipt_id: string;
+  receipt_datetime: string;
+  total_amount: string;
+  fiscal_document_number: string | null;
+  fiscal_sign: string | null;
+  processing_status: string;
+  processing_error: string | null;
+  processed_at: string | null;
+  imported_at: string;
+  updated_at: string | null;
+  items_count: number;
+  unmapped_items_count: number;
+  items?: SaleItem[]; // Optional: only present in detail view
+}
+
+export interface SalesListResponse {
+  items: Sale[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
 // ============ Providers API ============
 
 export const ofdAPI = {
@@ -259,6 +301,32 @@ export const ofdAPI = {
       `/ofd/connections/${connectionId}/sync-sales`,
       data
     );
+    return response.data;
+  },
+
+  // ============ Sales API ============
+
+  // Get sales list for a business with pagination and filtering
+  getSales: async (
+    businessId: number,
+    params?: {
+      page?: number;
+      page_size?: number;
+      status?: string;
+      from_date?: string;
+      to_date?: string;
+    }
+  ): Promise<SalesListResponse> => {
+    const response = await api.get<SalesListResponse>(
+      `/ofd/business/${businessId}/sales`,
+      { params }
+    );
+    return response.data;
+  },
+
+  // Get single sale details with items
+  getSale: async (saleId: number): Promise<Sale> => {
+    const response = await api.get<Sale>(`/ofd/sales/${saleId}`);
     return response.data;
   },
 };
