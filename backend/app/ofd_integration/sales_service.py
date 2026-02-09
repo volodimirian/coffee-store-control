@@ -6,7 +6,6 @@ from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import desc
 
 from app.ofd_integration.models import (
     Sale,
@@ -293,7 +292,7 @@ class SalesService:
         # Commit changes to database
         print(f"[SalesService] Committing {stats['new_receipts']} new and {stats['updated_receipts']} updated receipts to database")
         await session.commit()
-        print(f"[SalesService] Successfully committed all changes")
+        print("[SalesService] Successfully committed all changes")
         
         return stats
 
