@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExclamationTriangleIcon, XMarkIcon, CheckCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
 import type { Sale, SaleItem } from '~/shared/api/ofd';
 import { ofdAPI } from '~/shared/api';
 import { techCardsApi, type TechCardItem } from '~/shared/api/techCardsApi';
@@ -99,9 +99,6 @@ export default function SaleDetailModal({
 
   if (!isOpen || !sale) return null;
 
-  const hasUnmappedItems = sale.items?.some((item) => !item.is_mapped) ?? false;
-  const unmappedCount = sale.items?.filter((item) => !item.is_mapped).length ?? 0;
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -172,31 +169,6 @@ export default function SaleDetailModal({
                     </div>
                   )}
                 </div>
-
-                {/* Unmapped Warning */}
-                {hasUnmappedItems && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mt-0.5" />
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-red-800">
-                          {t('sales.unmappedItemsInReceipt', { count: unmappedCount })}
-                        </h3>
-                        <p className="mt-1 text-sm text-red-700">
-                          {t('sales.pleaseMapProducts')}
-                        </p>
-                        <div className="mt-3">
-                          <a
-                            href="/tech-cards"
-                            className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-red-800 bg-red-100 hover:bg-red-200"
-                          >
-                            {t('sales.goToMapping')}
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Items Table */}
                 <div>
