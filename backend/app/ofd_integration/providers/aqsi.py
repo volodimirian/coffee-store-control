@@ -108,7 +108,7 @@ class AqsiOFDProvider(OFDProviderBase):
                     # Process each good
                     for good in goods_list:
                         product_id = good.get("id", "")
-                        product_name = good.get("name", "")
+                        product_name = (good.get("name", "") or "").strip()
                         
                         # Debug: log all products including deleted ones
                         print(f"[AQSI] Product: ID={product_id}, Name={product_name}")
@@ -313,7 +313,7 @@ class AqsiOFDProvider(OFDProviderBase):
                 # - externalId: at position level (not in info)
                 
                 pos_info = pos.get("info", {})
-                product_name = pos_info.get("name", "")
+                product_name = (pos_info.get("name", "") or "").strip()
                 
                 # Get quantity (already in correct units, not milliunits!)
                 quantity = pos_info.get("quantity", 0)

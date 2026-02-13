@@ -158,11 +158,15 @@ class SalesService:
         )
         mappings = list(mappings_result.scalars().all())
         
-        # Create mapping lookup dict
+        # Create mapping lookup dicts (prefer OFD product ID)
         mapping_dict: Dict[str, ProductMapping] = {}
+        mapping_name_dict: Dict[str, ProductMapping] = {}
         for mapping in mappings:
-            key = f"{mapping.ofd_product_id}_{mapping.ofd_product_name}"
-            mapping_dict[key] = mapping
+            normalized_name = (mapping.ofd_product_name or "").strip()
+            if mapping.ofd_product_id:
+                mapping_dict[mapping.ofd_product_id] = mapping
+            if normalized_name:
+                mapping_name_dict[normalized_name] = mapping
         
         # Statistics
         stats: Dict[str, Any] = {
@@ -237,7 +241,7 @@ class SalesService:
                 items_data = receipt_data.items
                 for item_data in items_data:
                     ofd_product_id = item_data.product_id
-                    ofd_product_name = item_data.product_name
+                    ofd_product_name = (item_data.product_name or "").strip()
                     
                     # Debug: log if product name is empty
                     if not ofd_product_name or ofd_product_name.strip() == "":
@@ -246,8 +250,11 @@ class SalesService:
                         print(f"  raw item_data: {item_data}")
                     
                     # Try to find mapping
-                    mapping_key = f"{ofd_product_id}_{ofd_product_name}"
-                    product_mapping: ProductMapping | None = mapping_dict.get(mapping_key)
+                    product_mapping: ProductMapping | None = None
+                    if ofd_product_id:
+                        product_mapping = mapping_dict.get(ofd_product_id)
+                    if not product_mapping and ofd_product_name:
+                        product_mapping = mapping_name_dict.get(ofd_product_name)
                     
                     is_mapped = product_mapping is not None
                     product_mapping_id = product_mapping.id if product_mapping else None

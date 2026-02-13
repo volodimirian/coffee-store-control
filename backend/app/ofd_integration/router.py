@@ -4,6 +4,8 @@ from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.deps import get_db_dep
 from app.core.resource_permissions import (
@@ -27,6 +29,7 @@ from app.ofd_integration.schemas import (
     SaleDetailResponse,
 )
 from app.ofd_integration.service import OFDConnectionService
+from app.ofd_integration.models import ProductMapping
 from app.ofd_integration.product_mapping_service import ProductMappingService
 from app.ofd_integration.sales_service import SalesService
 from app.core.error_codes import ErrorCode, create_error_response
@@ -334,26 +337,36 @@ async def create_product_mappings(
         created_by_user_id=auth["user_id"]
     )
     
+    success_ids = [mapping.id for mapping in result["success"]]
+
     await session.commit()
     
     # Format response
     success_response = []
-    for mapping in result["success"]:
-        # Get tech_card_item name before validation (while session is active)
-        tech_card_item_name = mapping.tech_card_item.name if mapping.tech_card_item else None
-        
-        # Build dict manually to include computed field
-        success_response.append({
-            "id": mapping.id,
-            "connection_id": mapping.connection_id,
-            "ofd_product_id": mapping.ofd_product_id,
-            "ofd_product_name": mapping.ofd_product_name,
-            "tech_card_item_id": mapping.tech_card_item_id,
-            "tech_card_item_name": tech_card_item_name,
-            "is_active": mapping.is_active,
-            "created_at": mapping.created_at.isoformat(),
-            "updated_at": mapping.updated_at.isoformat()
-        })
+    if success_ids:
+        mappings_result = await session.execute(
+            select(ProductMapping)
+            .where(ProductMapping.id.in_(success_ids))
+            .options(selectinload(ProductMapping.tech_card_item))
+        )
+        mappings_by_id = {m.id: m for m in mappings_result.scalars().all()}
+
+        for mapping_id in success_ids:
+            mapping = mappings_by_id.get(mapping_id)
+            if not mapping:
+                continue
+            tech_card_item_name = mapping.tech_card_item.name if mapping.tech_card_item else None
+            success_response.append({
+                "id": mapping.id,
+                "connection_id": mapping.connection_id,
+                "ofd_product_id": mapping.ofd_product_id,
+                "ofd_product_name": mapping.ofd_product_name,
+                "tech_card_item_id": mapping.tech_card_item_id,
+                "tech_card_item_name": tech_card_item_name,
+                "is_active": mapping.is_active,
+                "created_at": mapping.created_at.isoformat(),
+                "updated_at": mapping.updated_at.isoformat()
+            })
     
     return {
         "success": success_response,

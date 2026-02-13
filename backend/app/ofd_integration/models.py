@@ -146,7 +146,6 @@ class ProductMapping(Base):
         UniqueConstraint(
             "connection_id",
             "ofd_product_id",
-            "ofd_product_name",
             name="uq_connection_product",
         ),
         Index("ix_product_mappings_tech_card_item_id", "tech_card_item_id"),

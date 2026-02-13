@@ -5,8 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, case
 
-from app.ofd_integration.models import ProductMapping, OFDConnection
+from app.ofd_integration.models import ProductMapping, OFDConnection, Sale, SaleItem
 from app.ofd_integration.schemas import ProductMappingCreate
 from app.tech_cards.models import TechCardItem
 
@@ -59,20 +60,90 @@ class ProductMappingService:
 
         for mapping_data in mappings_data:
             try:
-                # Check if mapping already exists
-                existing = await session.execute(
-                    select(ProductMapping).where(
-                        ProductMapping.connection_id == connection_id,
-                        ProductMapping.ofd_product_id == mapping_data.ofd_product_id,
-                        ProductMapping.ofd_product_name == mapping_data.ofd_product_name
+                normalized_name = (mapping_data.ofd_product_name or "").strip()
+
+                # Check if mapping already exists (prefer OFD product ID)
+                if mapping_data.ofd_product_id:
+                    existing = await session.execute(
+                        select(ProductMapping).where(
+                            ProductMapping.connection_id == connection_id,
+                            ProductMapping.ofd_product_id == mapping_data.ofd_product_id
+                        )
                     )
-                )
+                else:
+                    existing = await session.execute(
+                        select(ProductMapping).where(
+                            ProductMapping.connection_id == connection_id,
+                            ProductMapping.ofd_product_name == normalized_name
+                        )
+                    )
                 
-                if existing.scalar_one_or_none():
-                    errors.append({
-                        "ofd_product_name": mapping_data.ofd_product_name,
-                        "error": "Mapping already exists"
-                    })
+                existing_mapping = existing.scalars().first()
+                if existing_mapping:
+                    mapping = existing_mapping
+
+                    if normalized_name and mapping.ofd_product_name != normalized_name:
+                        mapping.ofd_product_name = normalized_name
+                    if mapping_data.ofd_product_id and mapping.ofd_product_id != mapping_data.ofd_product_id:
+                        mapping.ofd_product_id = mapping_data.ofd_product_id
+                    if mapping.tech_card_item_id != mapping_data.tech_card_item_id:
+                        mapping.tech_card_item_id = mapping_data.tech_card_item_id
+
+                    # Update existing sale items for this OFD product
+                    if mapping_data.ofd_product_id:
+                        items_result = await session.execute(
+                            select(SaleItem)
+                            .join(Sale, Sale.id == SaleItem.sale_id)
+                            .where(
+                                Sale.connection_id == connection_id,
+                                SaleItem.ofd_product_id == mapping_data.ofd_product_id
+                            )
+                        )
+                    else:
+                        items_result = await session.execute(
+                            select(SaleItem)
+                            .join(Sale, Sale.id == SaleItem.sale_id)
+                            .where(
+                                Sale.connection_id == connection_id,
+                                func.trim(SaleItem.ofd_product_name) == normalized_name
+                            )
+                        )
+                    sale_items = list(items_result.scalars().all())
+                    if not sale_items:
+                        if not mapping_data.ofd_product_id:
+                            items_result = await session.execute(
+                                select(SaleItem)
+                                .join(Sale, Sale.id == SaleItem.sale_id)
+                                .where(
+                                    Sale.connection_id == connection_id,
+                                    func.trim(SaleItem.ofd_product_name) == normalized_name
+                                )
+                            )
+                            sale_items = list(items_result.scalars().all())
+                    sale_ids = {item.sale_id for item in sale_items}
+                    for item in sale_items:
+                        item.product_mapping_id = mapping.id
+                        item.tech_card_item_id = mapping.tech_card_item_id
+                        item.is_mapped = True
+
+                    if sale_ids:
+                        counts_result = await session.execute(
+                            select(
+                                SaleItem.sale_id,
+                                func.count(SaleItem.id).label("items_count"),
+                                func.sum(
+                                    case((SaleItem.is_mapped == False, 1), else_=0)
+                                ).label("unmapped_items_count"),
+                            )
+                            .where(SaleItem.sale_id.in_(sale_ids))
+                            .group_by(SaleItem.sale_id)
+                        )
+                        for row in counts_result:
+                            sale_obj = await session.get(Sale, row.sale_id)
+                            if sale_obj:
+                                sale_obj.items_count = int(row.items_count or 0)
+                                sale_obj.unmapped_items_count = int(row.unmapped_items_count or 0)
+                    success.append(mapping)
                     continue
 
                 # Verify tech_card_item exists
@@ -88,7 +159,7 @@ class ProductMappingService:
                 mapping = ProductMapping(
                     connection_id=connection_id,
                     ofd_product_id=mapping_data.ofd_product_id,
-                    ofd_product_name=mapping_data.ofd_product_name,
+                    ofd_product_name=normalized_name,
                     tech_card_item_id=mapping_data.tech_card_item_id,
                     is_active=True,
                     created_by=created_by_user_id
@@ -97,6 +168,61 @@ class ProductMappingService:
                 session.add(mapping)
                 await session.flush()
                 await session.refresh(mapping, ["tech_card_item"])
+
+                # Update existing sale items for this OFD product
+                if mapping_data.ofd_product_id:
+                    items_result = await session.execute(
+                        select(SaleItem)
+                        .join(Sale, Sale.id == SaleItem.sale_id)
+                        .where(
+                            Sale.connection_id == connection_id,
+                            SaleItem.ofd_product_id == mapping_data.ofd_product_id
+                        )
+                    )
+                else:
+                    items_result = await session.execute(
+                        select(SaleItem)
+                        .join(Sale, Sale.id == SaleItem.sale_id)
+                        .where(
+                            Sale.connection_id == connection_id,
+                            func.trim(SaleItem.ofd_product_name) == normalized_name
+                        )
+                    )
+                sale_items = list(items_result.scalars().all())
+                if not sale_items:
+                    if not mapping_data.ofd_product_id:
+                        items_result = await session.execute(
+                            select(SaleItem)
+                            .join(Sale, Sale.id == SaleItem.sale_id)
+                            .where(
+                                Sale.connection_id == connection_id,
+                                func.trim(SaleItem.ofd_product_name) == normalized_name
+                            )
+                        )
+                        sale_items = list(items_result.scalars().all())
+                sale_ids = {item.sale_id for item in sale_items}
+                for item in sale_items:
+                    item.product_mapping_id = mapping.id
+                    item.tech_card_item_id = mapping_data.tech_card_item_id
+                    item.is_mapped = True
+
+                if sale_ids:
+                    counts_result = await session.execute(
+                        select(
+                            SaleItem.sale_id,
+                            func.count(SaleItem.id).label("items_count"),
+                            func.sum(
+                                case((SaleItem.is_mapped == False, 1), else_=0)
+                            ).label("unmapped_items_count"),
+                        )
+                        .where(SaleItem.sale_id.in_(sale_ids))
+                        .group_by(SaleItem.sale_id)
+                    )
+                    for row in counts_result:
+                        sale_obj = await session.get(Sale, row.sale_id)
+                        if sale_obj:
+                            sale_obj.items_count = int(row.items_count or 0)
+                            sale_obj.unmapped_items_count = int(row.unmapped_items_count or 0)
                 success.append(mapping)
 
             except IntegrityError as e:

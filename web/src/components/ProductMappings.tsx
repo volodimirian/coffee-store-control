@@ -136,7 +136,7 @@ export default function ProductMappings({ businessId, connections }: ProductMapp
   }, [filter, searchQuery, selectedConnectionId]);
 
   const getProductKey = (productId: string | null, productName: string): string => {
-    return `${productId || 'null'}_${productName}`;
+    return productId ? `id:${productId}` : `name:${productName}`;
   };
 
   const handleSelectionChange = (productId: string | null, productName: string, techCardItemId: number | null) => {
@@ -156,7 +156,7 @@ export default function ProductMappings({ businessId, connections }: ProductMapp
         const key = getProductKey(product.id, product.name);
         const selectedId = mappingSelections[key];
         const existingMapping = existingMappings.find(
-          m => m.ofd_product_id === product.id && m.ofd_product_name === product.name
+          m => (product.id ? m.ofd_product_id === product.id : m.ofd_product_name === product.name)
         );
 
         // Create if: has selection AND (no existing mapping OR selection changed)

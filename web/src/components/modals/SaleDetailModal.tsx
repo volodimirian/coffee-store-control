@@ -67,7 +67,7 @@ export default function SaleDetailModal({
       
       // Notify parent to reload
       if (onMappingCreated) {
-        onMappingCreated();
+        await onMappingCreated();
       }
     } catch (err) {
       console.error('Failed to create mapping:', err);
@@ -249,9 +249,9 @@ export default function SaleDetailModal({
                                     {mappingInProgress[item.id] && (
                                       <button
                                         onClick={() => handleCreateMapping(item, mappingInProgress[item.id]!)}
-                                        className="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-700 text-white"
+                                        className="flex items-center px-3 py-2 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white"
                                       >
-                                        <PlusIcon className="w-3 h-3 mr-1" />
+                                        <PlusIcon className="h-4 w-4 mr-1" />
                                         {t('sales.link')}
                                       </button>
                                     )}
