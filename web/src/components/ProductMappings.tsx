@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowPathIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, FunnelIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { ofdAPI, type OFDConnection, type OFDProduct, type ProductMapping } from '~/shared/api/ofd';
 import { techCardsApi, type TechCardItem } from '~/shared/api/techCardsApi';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import { useToast } from '~/shared/lib/useToast';
 import { Protected } from '~/shared/ui';
+import TechCardModal from './modals/TechCardModal';
 
 interface ProductMappingsProps {
   businessId: number;
@@ -35,6 +36,10 @@ export default function ProductMappings({ businessId, connections }: ProductMapp
 
   // Local state for mapping selections
   const [mappingSelections, setMappingSelections] = useState<Record<string, number | null>>({});
+
+  // Tech card creation modal state
+  const [isCreatingTechCard, setIsCreatingTechCard] = useState(false);
+  const [selectedProductForCreate, setSelectedProductForCreate] = useState<OFDProduct | null>(null);
 
   // Load tech card items on mount (load all for dropdown)
   useEffect(() => {
@@ -354,20 +359,32 @@ export default function ProductMappings({ businessId, connections }: ProductMapp
                             )}
                           </td>
                           <td className="px-6 py-4 relative">
-                            <SearchableSelect
-                              options={techCardOptions}
-                              value={
-                                selectedId
-                                  ? techCardOptions.find(opt => opt.id === selectedId) || null
-                                  : null
-                              }
-                              onChange={(selected) =>
-                                handleSelectionChange(product.id, product.name, selected ? Number(selected.id) : null)
-                              }
-                              placeholder={t('ofd.mappings.selectTechCardItem')}
-                              searchPlaceholder={t('ofd.mappings.searchTechCardItem')}
-                              noResultsText={t('ofd.mappings.noTechCardItems')}
-                            />
+                            <div className="space-y-2">
+                              <SearchableSelect
+                                options={techCardOptions}
+                                value={
+                                  selectedId
+                                    ? techCardOptions.find(opt => opt.id === selectedId) || null
+                                    : null
+                                }
+                                onChange={(selected) =>
+                                  handleSelectionChange(product.id, product.name, selected ? Number(selected.id) : null)
+                                }
+                                placeholder={t('ofd.mappings.selectTechCardItem')}
+                                searchPlaceholder={t('ofd.mappings.searchTechCardItem')}
+                                noResultsText={t('ofd.mappings.noTechCardItems')}
+                              />
+                              <button
+                                onClick={() => {
+                                  setSelectedProductForCreate(product);
+                                  setIsCreatingTechCard(true);
+                                }}
+                                className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+                              >
+                                <PlusIcon className="w-4 h-4 mr-1" />
+                                {t('sales.createNewTechCard')}
+                              </button>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {existingMapping ? (
@@ -484,9 +501,56 @@ export default function ProductMappings({ businessId, connections }: ProductMapp
                 {t('common.total')}: {totalItems}
               </div>
             </div>
-          )}
+          )}  
         </>
       )}
+
+      {/* Tech Card Create Modal */}
+      <TechCardModal
+        isOpen={isCreatingTechCard}
+        onClose={() => {
+          setIsCreatingTechCard(false);
+          setSelectedProductForCreate(null);
+        }}
+        onSuccess={async () => {
+          // Reload tech cards list after creation
+          try {
+            let allItems: TechCardItem[] = [];
+            let page = 1;
+            const pageSize = 100;
+            
+            const firstResponse = await techCardsApi.listItems(businessId, { 
+              is_active: true, 
+              page_size: pageSize,
+              page: 1
+            });
+            
+            allItems = [...firstResponse.items];
+            const totalPages = Math.ceil(firstResponse.total / pageSize);
+            
+            if (totalPages > 1) {
+              for (page = 2; page <= totalPages; page++) {
+                const response = await techCardsApi.listItems(businessId, { 
+                  is_active: true, 
+                  page_size: pageSize,
+                  page
+                });
+                allItems = [...allItems, ...response.items];
+              }
+            }
+            
+            setTechCardItems(allItems);
+            success(t('techCards.modal.createSuccess'));
+          } catch (err) {
+            console.error('Failed to reload tech cards:', err);
+          }
+          
+          setIsCreatingTechCard(false);
+          setSelectedProductForCreate(null);
+        }}
+        mode="create"
+        initialName={selectedProductForCreate?.name}
+      />
     </div>
   );
 }

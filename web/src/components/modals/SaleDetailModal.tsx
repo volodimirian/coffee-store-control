@@ -1,12 +1,18 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExclamationTriangleIcon, XMarkIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
-import type { Sale } from '~/shared/api/ofd';
+import { ExclamationTriangleIcon, XMarkIcon, CheckCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
+import type { Sale, SaleItem } from '~/shared/api/ofd';
+import { ofdAPI } from '~/shared/api';
+import { techCardsApi, type TechCardItem } from '~/shared/api/techCardsApi';
+import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
+import TechCardModal from './TechCardModal';
 
 interface SaleDetailModalProps {
   isOpen: boolean;
   sale: Sale | null;
   isLoading: boolean;
   onClose: () => void;
+  onMappingCreated?: () => void;
 }
 
 export default function SaleDetailModal({
@@ -14,8 +20,82 @@ export default function SaleDetailModal({
   sale,
   isLoading,
   onClose,
+  onMappingCreated,
 }: SaleDetailModalProps) {
   const { t } = useTranslation();
+  const [techCards, setTechCards] = useState<TechCardItem[]>([]);
+  const [isLoadingTechCards, setIsLoadingTechCards] = useState(false);
+  const [mappingInProgress, setMappingInProgress] = useState<Record<number, number | null>>({});
+  const [isCreatingTechCard, setIsCreatingTechCard] = useState(false);
+  const [selectedItemForCreate, setSelectedItemForCreate] = useState<SaleItem | null>(null);
+
+  // Load tech cards when modal opens
+  useEffect(() => {
+    const loadTechCards = async () => {
+      if (!isOpen || !sale) return;
+      
+      setIsLoadingTechCards(true);
+      try {
+        const response = await techCardsApi.listItems(sale.business_id, {
+          is_active: true,
+        });
+        setTechCards(response.items);
+      } catch (err) {
+        console.error('Failed to load tech cards:', err);
+      } finally {
+        setIsLoadingTechCards(false);
+      }
+    };
+    
+    loadTechCards();
+  }, [isOpen, sale]);
+
+  const handleCreateMapping = async (item: SaleItem, techCardItemId: number) => {
+    if (!sale) return;
+    
+    try {
+      await ofdAPI.createProductMappings(sale.connection_id, {
+        mappings: [{
+          ofd_product_id: item.ofd_product_id,
+          ofd_product_name: item.ofd_product_name,
+          tech_card_item_id: techCardItemId,
+        }],
+      });
+      
+      // Clear selection
+      setMappingInProgress(prev => ({ ...prev, [item.id]: null }));
+      
+      // Notify parent to reload
+      if (onMappingCreated) {
+        onMappingCreated();
+      }
+    } catch (err) {
+      console.error('Failed to create mapping:', err);
+      alert(t('sales.mappingError'));
+    }
+  };
+
+  const handleTechCardCreated = async () => {
+    if (!selectedItemForCreate || !sale) return;
+    
+    // Reload tech cards list
+    try {
+      const response = await techCardsApi.listItems(sale.business_id, {
+        is_active: true,
+      });
+      setTechCards(response.items);
+    } catch (err) {
+      console.error('Failed to reload tech cards:', err);
+    }
+    
+    // Close create modal and notify parent
+    setIsCreatingTechCard(false);
+    setSelectedItemForCreate(null);
+    
+    if (onMappingCreated) {
+      onMappingCreated();
+    }
+  };
 
   if (!isOpen || !sale) return null;
 
@@ -168,9 +248,52 @@ export default function SaleDetailModal({
                                   </span>
                                 </div>
                               ) : (
-                                <div className="flex items-center text-red-700">
-                                  <XCircleIcon className="w-4 h-4 mr-1" />
-                                  <span className="text-xs">{t('sales.notMapped')}</span>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 min-w-[200px]">
+                                      <SearchableSelect
+                                        options={techCards.map(tc => ({
+                                          id: tc.id.toString(),
+                                          name: tc.name,
+                                        }))}
+                                        value={mappingInProgress[item.id] ? {
+                                          id: mappingInProgress[item.id]!.toString(),
+                                          name: techCards.find(tc => tc.id === mappingInProgress[item.id])?.name || '',
+                                        } : null}
+                                        onChange={(selected: SelectOption | null) => {
+                                          if (selected) {
+                                            setMappingInProgress(prev => ({ 
+                                              ...prev, 
+                                              [item.id]: Number(selected.id) 
+                                            }));
+                                          }
+                                        }}
+                                        placeholder={t('sales.selectTechCard')}
+                                        searchPlaceholder={t('sales.searchTechCard')}
+                                        noResultsText={t('sales.noTechCardsFound')}
+                                        disabled={isLoadingTechCards}
+                                      />
+                                    </div>
+                                    {mappingInProgress[item.id] && (
+                                      <button
+                                        onClick={() => handleCreateMapping(item, mappingInProgress[item.id]!)}
+                                        className="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-700 text-white"
+                                      >
+                                        <PlusIcon className="w-3 h-3 mr-1" />
+                                        {t('sales.link')}
+                                      </button>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedItemForCreate(item);
+                                      setIsCreatingTechCard(true);
+                                    }}
+                                    className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+                                  >
+                                    <PlusIcon className="w-4 h-4 mr-1" />
+                                    {t('sales.createNewTechCard')}
+                                  </button>
                                 </div>
                               )}
                             </td>
@@ -199,6 +322,19 @@ export default function SaleDetailModal({
           </div>
         </div>
       </div>
+
+      {/* Tech Card Create Modal */}
+      <TechCardModal
+        isOpen={isCreatingTechCard}
+        onClose={() => {
+          setIsCreatingTechCard(false);
+          setSelectedItemForCreate(null);
+        }}
+        onSuccess={handleTechCardCreated}
+        mode="create"
+        initialName={selectedItemForCreate?.ofd_product_name}
+        initialPrice={selectedItemForCreate?.price}
+      />
     </div>
   );
 }

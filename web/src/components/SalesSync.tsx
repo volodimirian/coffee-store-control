@@ -489,6 +489,19 @@ export default function SalesSync() {
         sale={saleDetail}
         isLoading={isLoadingDetail}
         onClose={closeModal}
+        onMappingCreated={async () => {
+          // Reload sale details
+          if (selectedSale) {
+            try {
+              const updatedSale = await ofdAPI.getSale(selectedSale.id);
+              setSaleDetail(updatedSale);
+              // Also reload sales list to update counters
+              await loadSales();
+            } catch (err) {
+              console.error('Failed to reload sale:', err);
+            }
+          }
+        }}
       />
     </div>
   );

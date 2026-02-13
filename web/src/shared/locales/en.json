@@ -1047,6 +1047,7 @@
       "optionalNotes": "Notes (optional)",
       "noIngredients": "Add ingredients to recipe",
       "loadDataError": "Failed to load data",
+      "createSuccess": "Product created successfully",
       "errors": {
         "nameRequired": "Name is required",
         "categoryRequired": "Category is required",
@@ -1169,6 +1170,11 @@
     "unmappedItems": "Unmapped",
     "errors": "Errors",
     "moreErrors": "{{count}} more errors...",
+    "reprocess": "Reprocess Mapping",
+    "reprocessing": "Reprocessing...",
+    "confirmReprocess": "Reprocess mapping for all receipts? This will update product links to tech cards based on current settings.",
+    "reprocessSuccess": "Updated: {{updated}}, newly mapped: {{remapped}}, unmapped: {{unmapped}}",
+    "reprocessError": "Reprocessing error",
     "salesList": "Sales List",
     "comingSoon": "Coming soon...",
     "loadingSales": "Loading sales...",
@@ -1201,11 +1207,17 @@
     "mapping": "Mapping",
     "mapped": "Mapped",
     "notMapped": "Not Mapped",
+    "selectTechCard": "Select tech card item",
+    "searchTechCard": "Search...",
+    "noTechCardsFound": "No tech cards found",
+    "link": "Link",
+    "mappingError": "Failed to create mapping",
     "unmappedItemsAlert": "Products need to be mapped to tech cards",
     "unmappedItemsDescription": "Found {{count}} unmapped items. Please map them to tech card products for correct ingredient tracking.",
     "mapProducts": "Map Products",
     "unmappedItemsInReceipt": "{{count}} unmapped items in this receipt",
     "pleaseMapProducts": "Please map these products to tech card items for automatic ingredient expense tracking.",
-    "goToMapping": "Go to Mapping"
+    "goToMapping": "Go to Mapping",
+    "createNewTechCard": "Create New Product"
   }
 }
