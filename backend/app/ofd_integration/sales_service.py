@@ -18,7 +18,7 @@ from app.ofd_integration.service import OFDConnectionService
 from app.core.security import decrypt_api_key
 from app.core_models import Business
 from app.expenses.models import Invoice, InvoiceItem
-from app.tech_cards.models import TechCardItem, TechCardItemIngredient
+from app.tech_cards.models import TechCardItem
 
 
 class SalesService:
