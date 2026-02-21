@@ -1,0 +1,377 @@
+"""Service for managing OFD sales synchronization."""
+from datetime import datetime, date
+from decimal import Decimal
+from typing import List, Dict, Any
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+
+from app.ofd_integration.models import (
+    Sale,
+    SaleItem,
+    OFDConnection,
+    ProductMapping,
+)
+from app.ofd_integration.service import OFDConnectionService
+from app.core.security import decrypt_api_key
+from app.core_models import Business
+from app.expenses.models import Invoice
+
+
+class SalesService:
+    """Service for managing OFD sales synchronization."""
+
+    # Provider limitations
+    AQSI_MAX_DAYS = 90  # AQSI allows max 3 months
+
+    @staticmethod
+    async def _determine_sync_dates(
+        session: AsyncSession,
+        connection: OFDConnection,
+        start_date: date | None,
+        end_date: date | None,
+    ) -> tuple[date, date]:
+        """Determine actual sync dates based on various factors.
+        
+        Logic:
+        1. If start_date provided → use it
+        2. Else if last_sync_at exists → use it as start
+        3. Else check for FIRST (oldest) invoice date in business
+        4. Else use business creation date
+        
+        Args:
+            session: Database session
+            connection: OFD connection
+            start_date: User-provided start date (optional)
+            end_date: User-provided end date (optional)
+            
+        Returns:
+            Tuple of (actual_start_date, actual_end_date)
+        """
+        # Determine end date (default to today)
+        actual_end_date = end_date or date.today()
+        
+        # Determine start date
+        if start_date:
+            # User explicitly provided start date
+            actual_start_date = start_date
+        elif connection.last_sync_at:
+            # Use last sync date as starting point
+            actual_start_date = connection.last_sync_at.date()
+        else:
+            # First time sync - need to determine starting point
+            # Priority 1: First (oldest) invoice date
+            first_invoice_result = await session.execute(
+                select(Invoice.invoice_date)
+                .where(Invoice.business_id == connection.business_id)
+                .order_by(Invoice.invoice_date.asc())  # ASC = oldest first
+                .limit(1)
+            )
+            first_invoice = first_invoice_result.scalar_one_or_none()
+            
+            if first_invoice:
+                # Start from first invoice date
+                actual_start_date = first_invoice.date()
+            else:
+                # Priority 2: Business creation date
+                business_result = await session.execute(
+                    select(Business.created_at)
+                    .where(Business.id == connection.business_id)
+                )
+                business_created = business_result.scalar_one()
+                actual_start_date = business_created.date()
+        
+        # Ensure start_date <= end_date
+        if actual_start_date > actual_end_date:
+            actual_start_date = actual_end_date
+        
+        return actual_start_date, actual_end_date
+
+    @staticmethod
+    async def sync_sales(
+        session: AsyncSession,
+        connection: OFDConnection,
+        start_date: date | None,
+        end_date: date | None,
+        user_id: int,
+    ) -> Dict[str, Any]:
+        """Sync sales from OFD provider for date range.
+        
+        Provider handles pagination/chunking based on its own limitations.
+        
+        Args:
+            session: Database session
+            connection: OFD connection to sync from
+            start_date: Start date for sync (optional, auto-determined)
+            end_date: End date for sync (optional, defaults to today)
+            user_id: ID of user initiating sync
+            
+        Returns:
+            Dict with sync statistics: {
+                "total_receipts": int,
+                "new_receipts": int,
+                "duplicate_receipts": int,
+                "updated_receipts": int,
+                "mapped_items": int,
+                "unmapped_items": int,
+                "errors": List[str],
+                "actual_start_date": date,
+                "actual_end_date": date
+            }
+        """
+        # Determine actual sync dates
+        actual_start_date, actual_end_date = await SalesService._determine_sync_dates(
+            session=session,
+            connection=connection,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # Decrypt API key and get provider instance
+        api_key = decrypt_api_key(connection.api_key_encrypted)
+        base_url = connection.custom_base_url or connection.provider.base_url
+        
+        provider = OFDConnectionService._get_provider_instance(
+            provider_code=connection.provider.code,
+            api_key=api_key,
+            base_url=base_url
+        )
+        
+        # Fetch receipts from OFD (provider handles pagination/chunking)
+        receipts = await provider.get_receipts(
+            from_date=actual_start_date,
+            to_date=actual_end_date,
+            limit=None  # Get all receipts
+        )
+        
+        print(f"[SalesService] Fetched {len(receipts)} receipts from OFD provider")
+        
+        # Get all active mappings for this connection
+        mappings_result = await session.execute(
+            select(ProductMapping)
+            .where(
+                ProductMapping.connection_id == connection.id,
+                ProductMapping.is_active
+            )
+            .options(selectinload(ProductMapping.tech_card_item))
+        )
+        mappings = list(mappings_result.scalars().all())
+        
+        # Create mapping lookup dicts (prefer OFD product ID)
+        mapping_dict: Dict[str, ProductMapping] = {}
+        mapping_name_dict: Dict[str, ProductMapping] = {}
+        for mapping in mappings:
+            normalized_name = (mapping.ofd_product_name or "").strip()
+            if mapping.ofd_product_id:
+                mapping_dict[mapping.ofd_product_id] = mapping
+            if normalized_name:
+                mapping_name_dict[normalized_name] = mapping
+        
+        # Statistics
+        stats: Dict[str, Any] = {
+            "total_receipts": len(receipts),
+            "new_receipts": 0,
+            "duplicate_receipts": 0,
+            "updated_receipts": 0,
+            "mapped_items": 0,
+            "unmapped_items": 0,
+            "errors": [],
+            "actual_start_date": actual_start_date,
+            "actual_end_date": actual_end_date
+        }
+        
+        # Process each receipt
+        for receipt_data in receipts:
+            try:
+                # Check if receipt already exists
+                existing_result = await session.execute(
+                    select(Sale)
+                    .where(
+                        Sale.connection_id == connection.id,
+                        Sale.ofd_receipt_id == receipt_data.receipt_id
+                    )
+                    .options(selectinload(Sale.items))
+                )
+                existing_sale = existing_result.scalar_one_or_none()
+                
+                if existing_sale:
+                    # Update existing receipt (updated_at will be set automatically by SQLAlchemy onupdate)
+                    existing_sale.receipt_datetime = datetime.fromisoformat(
+                        receipt_data.receipt_datetime.replace("Z", "+00:00")
+                    )
+                    existing_sale.total_amount = Decimal(receipt_data.total_amount)
+                    existing_sale.fiscal_document_number = receipt_data.fiscal_document_number
+                    existing_sale.fiscal_sign = receipt_data.fiscal_sign
+                    existing_sale.raw_data = receipt_data.raw_data
+                    
+                    # Delete old items and recreate
+                    for old_item in existing_sale.items:
+                        await session.delete(old_item)
+                    await session.flush()
+                    
+                    sale = existing_sale
+                    stats["updated_receipts"] = stats["updated_receipts"] + 1
+                else:
+                    # Create new Sale record
+                    sale = Sale(
+                        business_id=connection.business_id,
+                        connection_id=connection.id,
+                        ofd_receipt_id=receipt_data.receipt_id,
+                        receipt_datetime=datetime.fromisoformat(
+                            receipt_data.receipt_datetime.replace("Z", "+00:00")
+                        ),
+                        total_amount=Decimal(receipt_data.total_amount),
+                        fiscal_document_number=receipt_data.fiscal_document_number,
+                        fiscal_sign=receipt_data.fiscal_sign,
+                        raw_data=receipt_data.raw_data,
+                        processing_status="pending",
+                        imported_at=datetime.utcnow(),
+                        imported_by=user_id,
+                        items_count=0,
+                        unmapped_items_count=0,
+                    )
+                    session.add(sale)
+                    await session.flush()  # Get sale.id
+                    stats["new_receipts"] = stats["new_receipts"] + 1
+                
+                # Process receipt items
+                items_count = 0
+                unmapped_count = 0
+                items_data = receipt_data.items
+                for item_data in items_data:
+                    ofd_product_id = item_data.product_id
+                    ofd_product_name = (item_data.product_name or "").strip()
+                    
+                    # Debug: log if product name is empty
+                    if not ofd_product_name or ofd_product_name.strip() == "":
+                        print(f"[SalesService] Warning: Empty product name for item in receipt {receipt_data.receipt_id}")
+                        print(f"  product_id: {ofd_product_id}")
+                        print(f"  raw item_data: {item_data}")
+                    
+                    # Try to find mapping
+                    product_mapping: ProductMapping | None = None
+                    if ofd_product_id:
+                        product_mapping = mapping_dict.get(ofd_product_id)
+                    if not product_mapping and ofd_product_name:
+                        product_mapping = mapping_name_dict.get(ofd_product_name)
+                    
+                    is_mapped = product_mapping is not None
+                    product_mapping_id = product_mapping.id if product_mapping else None
+                    tech_card_item_id = product_mapping.tech_card_item_id if product_mapping else None
+                    
+                    if is_mapped:
+                        stats["mapped_items"] = stats["mapped_items"] + 1
+                    else:
+                        stats["unmapped_items"] = stats["unmapped_items"] + 1
+                        unmapped_count += 1
+                    
+                    items_count += 1
+                    
+                    # Create SaleItem
+                    sale_item = SaleItem(
+                        sale_id=sale.id,
+                        product_mapping_id=product_mapping_id,
+                        tech_card_item_id=tech_card_item_id,
+                        ofd_product_id=ofd_product_id,
+                        ofd_product_name=ofd_product_name,
+                        quantity=Decimal(item_data.quantity),
+                        price=Decimal(item_data.price),
+                        total=Decimal(item_data.total),
+                        is_mapped=is_mapped,
+                        processed=False,
+                    )
+                    session.add(sale_item)
+                
+                # Update sale counters
+                sale.items_count = items_count
+                sale.unmapped_items_count = unmapped_count
+                
+            except Exception as e:
+                stats["errors"].append(
+                    f"Receipt {receipt_data.receipt_id}: {str(e)}"
+                )
+                print(f"[SalesService] Error processing receipt {receipt_data.receipt_id}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        # Commit changes to database
+        print(f"[SalesService] Committing {stats['new_receipts']} new and {stats['updated_receipts']} updated receipts to database")
+        await session.commit()
+        print("[SalesService] Successfully committed all changes")
+        
+        return stats
+
+    @staticmethod
+    async def get_sales_by_business(
+        session: AsyncSession,
+        business_id: int,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> tuple[List[Sale], int]:
+        """Get sales for a business with optional date filtering."""
+        query = (
+            select(Sale)
+            .where(Sale.business_id == business_id)
+            .options(selectinload(Sale.items))
+            .order_by(Sale.receipt_datetime.desc())
+        )
+        
+        if start_date:
+            query = query.where(Sale.receipt_datetime >= datetime.combine(start_date, datetime.min.time()))
+        if end_date:
+            query = query.where(Sale.receipt_datetime <= datetime.combine(end_date, datetime.max.time()))
+        
+        # Get total count
+        count_result = await session.execute(
+            select(Sale.id).where(Sale.business_id == business_id)
+        )
+        total = len(list(count_result.scalars().all()))
+        
+        # Get paginated results
+        offset = (page - 1) * page_size
+        query = query.offset(offset).limit(page_size)
+        
+        result = await session.execute(query)
+        sales = list(result.scalars().all())
+        
+        return sales, total
+
+    @staticmethod
+    async def get_sale_by_id(
+        session: AsyncSession,
+        sale_id: int,
+    ) -> Sale | None:
+        """Get sale by ID with items."""
+        result = await session.execute(
+            select(Sale)
+            .where(Sale.id == sale_id)
+            .options(
+                selectinload(Sale.items).selectinload(SaleItem.tech_card_item),
+                selectinload(Sale.items).selectinload(SaleItem.product_mapping),
+            )
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_unmapped_items(
+        session: AsyncSession,
+        business_id: int,
+        limit: int = 100,
+    ) -> List[SaleItem]:
+        """Get unmapped sale items for a business."""
+        result = await session.execute(
+            select(SaleItem)
+            .join(Sale)
+            .where(
+                Sale.business_id == business_id,
+                SaleItem.is_mapped == False  # noqa: E712
+            )
+            .options(selectinload(SaleItem.sale))
+            .order_by(Sale.receipt_datetime.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())

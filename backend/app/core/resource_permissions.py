@@ -26,6 +26,9 @@ class Resource:
     UNITS = "units"
     BUSINESSES = "businesses"
     USERS = "users"
+    OFD_CONNECTIONS = "ofd_connections"
+    PRODUCT_MAPPINGS = "product_mappings"
+    SALES = "sales"
 
 
 # Action types mapping
@@ -39,6 +42,7 @@ class Action:
     ACTIVATE_DEACTIVATE = "activate_deactivate"
     APPROVE = "approve"
     REJECT = "reject"
+    TEST = "test"  # Test connection credentials
     MANAGE_MEMBERS = "manage_members"  # Add/remove members, manage memberships
     GRANT_PERMISSIONS = "grant_permissions"  # Manage member permissions within business
 

@@ -31,7 +31,7 @@ export default function SearchableSelect({
   className = ""
 }: SearchableSelectProps) {
   const [query, setQuery] = useState('');
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, openUpward: false });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, height: 0, openUpward: false });
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
@@ -47,9 +47,10 @@ export default function SearchableSelect({
       const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > dropdownMaxHeight;
       
       setDropdownPosition({
-        top: openUpward ? rect.top + window.scrollY : rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.bottom,
+        left: rect.left,
         width: rect.width,
+        height: rect.height,
         openUpward
       });
     }
@@ -126,8 +127,8 @@ export default function SearchableSelect({
                 <Combobox.Options 
                   className="fixed z-[100] max-h-60 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
                   style={{
-                    top: dropdownPosition.openUpward ? 'auto' : `${dropdownPosition.top + 4}px`,
-                    bottom: dropdownPosition.openUpward ? `${window.innerHeight - dropdownPosition.top + 4}px` : 'auto',
+                    top: dropdownPosition.openUpward ? 'auto' : `${dropdownPosition.top}px`,
+                    bottom: dropdownPosition.openUpward ? `${window.innerHeight - dropdownPosition.top + dropdownPosition.height + 4}px` : 'auto',
                     left: `${dropdownPosition.left}px`,
                     minWidth: `${dropdownPosition.width}px`,
                     maxWidth: '400px',

@@ -76,6 +76,9 @@ class ErrorCode(str, Enum):
     NOT_FOUND = "NOT_FOUND"  # "Resource not found"
     CONFLICT = "CONFLICT"  # "Resource conflict"
     BAD_REQUEST = "BAD_REQUEST"  # "Bad request"
+    
+    # OFD Integration
+    DUPLICATE_CONNECTION = "DUPLICATE_CONNECTION"  # "Business already has a connection to this provider"
 
 
 class ErrorMessages:

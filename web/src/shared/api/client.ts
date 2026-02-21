@@ -7,6 +7,7 @@ import i18n from "~/shared/lib/i18n";
 // Auto-logout functionality for 401 errors
 let logoutHandler: (() => void) | null = null;
 let translateFunction: ((key: string) => string) | null = null;
+let notificationHandler: ((message: string) => void) | null = null;
 
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
@@ -30,9 +31,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
 /**
  * Sets the logout handler and translation function for automatic logout on 401 errors
  */
-export function setLogoutHandler(handler: () => void, t: (key: string) => string) {
+export function setLogoutHandler(handler: () => void, t: (key: string) => string, showNotification?: (message: string) => void) {
   logoutHandler = handler;
   translateFunction = t;
+  if (showNotification) {
+    notificationHandler = showNotification;
+  }
 }
 
 const baseURL = `${import.meta.env.VITE_API_URL ?? "http://localhost:8000"}/api`;
@@ -126,7 +130,11 @@ api.interceptors.response.use(
           if (logoutHandler && translateFunction) {
             try {
               const message = translateFunction('auth.sessionExpired');
-              alert(message);
+              if (notificationHandler) {
+                notificationHandler(message);
+              } else {
+                alert(message);
+              }
               logoutHandler();
             } catch (logoutErr) {
               console.error('Error in logout process:', logoutErr);
@@ -158,7 +166,11 @@ api.interceptors.response.use(
       if (logoutHandler && translateFunction) {
         try {
           const message = translateFunction('auth.sessionExpired');
-          alert(message);
+          if (notificationHandler) {
+            notificationHandler(message);
+          } else {
+            alert(message);
+          }
           logoutHandler();
         } catch (logoutErr) {
           console.error('Error in logout process:', logoutErr);
