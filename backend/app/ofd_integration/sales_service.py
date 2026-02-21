@@ -10,13 +10,15 @@ from sqlalchemy.orm import selectinload
 from app.ofd_integration.models import (
     Sale,
     SaleItem,
+    SaleIngredientExpense,
     OFDConnection,
     ProductMapping,
 )
 from app.ofd_integration.service import OFDConnectionService
 from app.core.security import decrypt_api_key
 from app.core_models import Business
-from app.expenses.models import Invoice
+from app.expenses.models import Invoice, InvoiceItem
+from app.tech_cards.models import TechCardItem, TechCardItemIngredient
 
 
 class SalesService:
@@ -301,6 +303,21 @@ class SalesService:
         await session.commit()
         print("[SalesService] Successfully committed all changes")
         
+        # Process ingredients for mapped sale items (automatic deduction)
+        print("[SalesService] Starting automatic ingredient deduction for mapped sales...")
+        process_stats = await SalesService.process_sale_items(
+            session=session,
+            business_id=connection.business_id
+        )
+        
+        # Add processing stats to main stats
+        stats["ingredients_processed"] = process_stats["total_processed"]
+        stats["ingredient_expenses_created"] = process_stats["expenses_created"]
+        if process_stats["errors"]:
+            stats["errors"].extend(process_stats["errors"])
+        
+        print("[SalesService] Ingredient processing completed")
+        
         return stats
 
     @staticmethod
@@ -375,3 +392,137 @@ class SalesService:
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    @staticmethod
+    async def process_sale_items(
+        session: AsyncSession,
+        business_id: int,
+    ) -> Dict[str, Any]:
+        """Process unprocessed mapped sale items - deduct ingredients from inventory.
+        
+        For each mapped sale item that hasn't been processed:
+        1. Get the TechCardItem and its ingredients
+        2. For each ingredient, calculate quantity to deduct
+        3. Get average cost per unit from recent invoices
+        4. Create SaleIngredientExpense record
+        5. Mark sale_item as processed
+        
+        Args:
+            session: Database session
+            business_id: Business context
+            
+        Returns:
+            Dict with processing statistics:
+            {
+                "total_processed": int,
+                "expenses_created": int,
+                "errors": List[str]
+            }
+        """
+        stats = {
+            "total_processed": 0,
+            "expenses_created": 0,
+            "errors": []
+        }
+        
+        # Get all unprocessed mapped sale items
+        result = await session.execute(
+            select(SaleItem)
+            .join(Sale)
+            .where(
+                Sale.business_id == business_id,
+                SaleItem.is_mapped == True,  # noqa: E712
+                SaleItem.processed == False,  # noqa: E712
+            )
+            .options(
+                selectinload(SaleItem.sale),
+                selectinload(SaleItem.tech_card_item).selectinload(TechCardItem.ingredients),
+            )
+            .order_by(SaleItem.id)
+        )
+        unprocessed_items = list(result.scalars().all())
+        
+        print(f"[SalesService] Processing {len(unprocessed_items)} unprocessed mapped sale items")
+        
+        for sale_item in unprocessed_items:
+            try:
+                if not sale_item.tech_card_item or not sale_item.tech_card_item.ingredients:
+                    # No ingredients to process, just mark as processed
+                    sale_item.processed = True
+                    stats["total_processed"] += 1
+                    continue
+                
+                # For each ingredient in the tech card
+                for ingredient in sale_item.tech_card_item.ingredients:
+                    try:
+                        # Calculate quantity to deduct
+                        # Assume tech card is for 1 serving/portion
+                        # sale_item.quantity is how many portions were sold
+                        quantity_to_deduct = sale_item.quantity * ingredient.quantity
+                        
+                        # Get average cost per unit from recent invoices
+                        # Get last 5 matching invoice items for this category
+                        cost_result = await session.execute(
+                            select(InvoiceItem)
+                            .where(
+                                InvoiceItem.category_id == ingredient.ingredient_category_id,
+                            )
+                            .options(
+                                selectinload(InvoiceItem.invoice),
+                                selectinload(InvoiceItem.unit),
+                            )
+                            .order_by(InvoiceItem.id.desc())
+                            .limit(5)
+                        )
+                        recent_invoice_items = list(cost_result.scalars().all())
+                        
+                        # Calculate weighted average cost per unit
+                        if recent_invoice_items:
+                            total_quantity = sum(Decimal(item.quantity) for item in recent_invoice_items)
+                            total_cost = sum(
+                                Decimal(item.quantity) * Decimal(item.unit_price)
+                                for item in recent_invoice_items
+                            )
+                            avg_cost_per_unit = total_cost / total_quantity if total_quantity > 0 else Decimal("0")
+                        else:
+                            # No previous invoices for this item, use 0 cost
+                            avg_cost_per_unit = Decimal("0")
+                        
+                        # Calculate total cost for this ingredient expense
+                        expense_cost = quantity_to_deduct * avg_cost_per_unit
+                        
+                        # Create SaleIngredientExpense record
+                        ingredient_expense = SaleIngredientExpense(
+                            sale_item_id=sale_item.id,
+                            tech_card_item_id=sale_item.tech_card_item_id,
+                            category_id=ingredient.ingredient_category_id,
+                            quantity=quantity_to_deduct,
+                            unit_id=ingredient.unit_id,
+                            cost=expense_cost,
+                        )
+                        session.add(ingredient_expense)
+                        stats["expenses_created"] += 1
+                        
+                        print(f"[SalesService] Created expense: {quantity_to_deduct} {ingredient.unit.symbol} @ {avg_cost_per_unit} = {expense_cost}")
+                        
+                    except Exception as e:
+                        error_msg = f"Error processing ingredient for sale_item {sale_item.id}, category {ingredient.ingredient_category_id}: {str(e)}"
+                        stats["errors"].append(error_msg)
+                        print(f"[SalesService] {error_msg}")
+                        continue
+                
+                # Mark sale item as processed
+                sale_item.processed = True
+                stats["total_processed"] += 1
+                
+            except Exception as e:
+                error_msg = f"Error processing sale_item {sale_item.id}: {str(e)}"
+                stats["errors"].append(error_msg)
+                print(f"[SalesService] {error_msg}")
+                continue
+        
+        # Commit changes
+        await session.commit()
+        print(f"[SalesService] Processed {stats['total_processed']} items, created {stats['expenses_created']} expenses")
+        
+        return stats

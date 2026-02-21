@@ -166,6 +166,8 @@ class SaleSyncResponse(BaseModel):
     updated_receipts: int = Field(default=0, description="Existing receipts updated")
     mapped_items: int = Field(..., description="Items with product mapping")
     unmapped_items: int = Field(..., description="Items without product mapping")
+    ingredients_processed: int = Field(default=0, description="Sale items processed for ingredient deduction")
+    ingredient_expenses_created: int = Field(default=0, description="Ingredient expense records created")
     errors: list[str] = Field(default_factory=list, description="Import errors")
     actual_start_date: date = Field(..., description="Actual start date used for sync")
     actual_end_date: date = Field(..., description="Actual end date used for sync")
