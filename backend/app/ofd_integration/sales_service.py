@@ -478,9 +478,9 @@ class SalesService:
                         
                         # Calculate weighted average cost per unit
                         if recent_invoice_items:
-                            total_quantity = sum(Decimal(item.quantity) for item in recent_invoice_items)
+                            total_quantity = sum(item.quantity for item in recent_invoice_items)
                             total_cost = sum(
-                                Decimal(item.quantity) * Decimal(item.unit_price)
+                                item.quantity * item.unit_price
                                 for item in recent_invoice_items
                             )
                             avg_cost_per_unit = total_cost / total_quantity if total_quantity > 0 else Decimal("0")
