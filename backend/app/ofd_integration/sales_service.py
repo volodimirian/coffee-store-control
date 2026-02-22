@@ -447,6 +447,8 @@ class SalesService:
         
         # Type hint for stats dict
         errors_list: List[str] = cast(List[str], stats["errors"])
+        total_processed_count: int = 0
+        expenses_created_count: int = 0
         
         print(f"[SalesService] Processing {len(unprocessed_items)} unprocessed mapped sale items")
         
@@ -455,7 +457,7 @@ class SalesService:
                 if not sale_item.tech_card_item or not sale_item.tech_card_item.ingredients:
                     # No ingredients to process, just mark as processed
                     sale_item.processed = True
-                    stats["total_processed"] += 1
+                    total_processed_count += 1
                     continue
                 
                 # For each ingredient in the tech card
@@ -505,7 +507,7 @@ class SalesService:
                             cost=expense_cost,
                         )
                         session.add(ingredient_expense)
-                        stats["expenses_created"] += 1
+                        expenses_created_count += 1
                         
                         print(f"[SalesService] Created expense: {quantity_to_deduct} {ingredient.unit.symbol} @ {avg_cost_per_unit} = {expense_cost}")
                         
@@ -517,7 +519,7 @@ class SalesService:
                 
                 # Mark sale item as processed
                 sale_item.processed = True
-                stats["total_processed"] += 1
+                total_processed_count += 1
                 
             except Exception as e:
                 error_msg = f"Error processing sale_item {sale_item.id}: {str(e)}"
@@ -527,6 +529,11 @@ class SalesService:
         
         # Commit changes
         await session.commit()
-        print(f"[SalesService] Processed {stats['total_processed']} items, created {stats['expenses_created']} expenses")
+        
+        # Update stats dict with counts
+        stats["total_processed"] = total_processed_count
+        stats["expenses_created"] = expenses_created_count
+        
+        print(f"[SalesService] Processed {total_processed_count} items, created {expenses_created_count} expenses")
         
         return stats
