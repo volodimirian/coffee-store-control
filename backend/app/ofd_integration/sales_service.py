@@ -1,7 +1,7 @@
 """Service for managing OFD sales synchronization."""
 from datetime import datetime, date
 from decimal import Decimal
-from typing import List, Dict, Any
+from typing import List, Dict, Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -183,6 +183,9 @@ class SalesService:
             "actual_end_date": actual_end_date
         }
         
+        # Type hint for errors list
+        errors_list: List[str] = cast(List[str], stats["errors"])
+        
         # Process each receipt
         for receipt_data in receipts:
             try:
@@ -290,7 +293,7 @@ class SalesService:
                 sale.unmapped_items_count = unmapped_count
                 
             except Exception as e:
-                stats["errors"].append(
+                errors_list.append(
                     f"Receipt {receipt_data.receipt_id}: {str(e)}"
                 )
                 print(f"[SalesService] Error processing receipt {receipt_data.receipt_id}: {e}")
@@ -442,6 +445,9 @@ class SalesService:
         )
         unprocessed_items = list(result.scalars().all())
         
+        # Type hint for stats dict
+        errors_list: List[str] = cast(List[str], stats["errors"])
+        
         print(f"[SalesService] Processing {len(unprocessed_items)} unprocessed mapped sale items")
         
         for sale_item in unprocessed_items:
@@ -476,17 +482,15 @@ class SalesService:
                         )
                         recent_invoice_items = list(cost_result.scalars().all())
                         
-                        # Calculate weighted average cost per unit
+                        # Calculate weighted average cost per unit (default to 0)
+                        avg_cost_per_unit = Decimal(0)
                         if recent_invoice_items:
-                            total_quantity = sum(item.quantity for item in recent_invoice_items)
-                            total_cost = sum(
+                            total_quantity = cast(Decimal, sum(item.quantity for item in recent_invoice_items))
+                            total_cost = cast(Decimal, sum(
                                 item.quantity * item.unit_price
                                 for item in recent_invoice_items
-                            )
+                            ))
                             avg_cost_per_unit = total_cost / total_quantity
-                        else:
-                            # No previous invoices for this item, use 0 cost
-                            avg_cost_per_unit = Decimal("0")
                         
                         # Calculate total cost for this ingredient expense
                         expense_cost = quantity_to_deduct * avg_cost_per_unit
@@ -507,7 +511,7 @@ class SalesService:
                         
                     except Exception as e:
                         error_msg = f"Error processing ingredient for sale_item {sale_item.id}, category {ingredient.ingredient_category_id}: {str(e)}"
-                        stats["errors"].append(error_msg)
+                        errors_list.append(error_msg)
                         print(f"[SalesService] {error_msg}")
                         continue
                 
@@ -517,7 +521,7 @@ class SalesService:
                 
             except Exception as e:
                 error_msg = f"Error processing sale_item {sale_item.id}: {str(e)}"
-                stats["errors"].append(error_msg)
+                errors_list.append(error_msg)
                 print(f"[SalesService] {error_msg}")
                 continue
         
