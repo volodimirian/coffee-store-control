@@ -483,7 +483,7 @@ class SalesService:
                                 item.quantity * item.unit_price
                                 for item in recent_invoice_items
                             )
-                            avg_cost_per_unit = total_cost / total_quantity if total_quantity > Decimal("0") else Decimal("0")
+                            avg_cost_per_unit = total_cost / total_quantity
                         else:
                             # No previous invoices for this item, use 0 cost
                             avg_cost_per_unit = Decimal("0")
