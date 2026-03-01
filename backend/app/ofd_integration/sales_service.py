@@ -18,7 +18,7 @@ from app.ofd_integration.service import OFDConnectionService
 from app.core.security import decrypt_api_key
 from app.core_models import Business
 from app.expenses.models import Invoice, InvoiceItem
-from app.tech_cards.models import TechCardItem
+from app.tech_cards.models import TechCardItem, TechCardItemIngredient
 
 
 class SalesService:
@@ -429,6 +429,7 @@ class SalesService:
         }
         
         # Get all unprocessed mapped sale items
+        # Use populate_existing to ensure fresh load after previous commit
         result = await session.execute(
             select(SaleItem)
             .join(Sale)
@@ -439,9 +440,12 @@ class SalesService:
             )
             .options(
                 selectinload(SaleItem.sale),
-                selectinload(SaleItem.tech_card_item).selectinload(TechCardItem.ingredients),
+                selectinload(SaleItem.tech_card_item)
+                    .selectinload(TechCardItem.ingredients)
+                    .selectinload(TechCardItemIngredient.unit),
             )
             .order_by(SaleItem.id)
+            .execution_options(populate_existing=True)
         )
         unprocessed_items = list(result.scalars().all())
         
