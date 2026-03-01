@@ -453,6 +453,9 @@ class SalesService:
         print(f"[SalesService] Processing {len(unprocessed_items)} unprocessed mapped sale items")
         
         for sale_item in unprocessed_items:
+            # Save ID early to avoid lazy-load issues in error handler
+            sale_item_id = sale_item.id
+            
             try:
                 if not sale_item.tech_card_item or not sale_item.tech_card_item.ingredients:
                     # No ingredients to process, just mark as processed
@@ -462,6 +465,9 @@ class SalesService:
                 
                 # For each ingredient in the tech card
                 for ingredient in sale_item.tech_card_item.ingredients:
+                    # Save ingredient ID early
+                    ingredient_category_id = ingredient.ingredient_category_id
+                    
                     try:
                         # Calculate quantity to deduct
                         # Assume tech card is for 1 serving/portion
@@ -512,7 +518,7 @@ class SalesService:
                         print(f"[SalesService] Created expense: {quantity_to_deduct} {ingredient.unit.symbol} @ {avg_cost_per_unit} = {expense_cost}")
                         
                     except Exception as e:
-                        error_msg = f"Error processing ingredient for sale_item {sale_item.id}, category {ingredient.ingredient_category_id}: {str(e)}"
+                        error_msg = f"Error processing ingredient for sale_item {sale_item_id}, category {ingredient_category_id}: {str(e)}"
                         errors_list.append(error_msg)
                         print(f"[SalesService] {error_msg}")
                         continue
@@ -522,7 +528,7 @@ class SalesService:
                 total_processed_count += 1
                 
             except Exception as e:
-                error_msg = f"Error processing sale_item {sale_item.id}: {str(e)}"
+                error_msg = f"Error processing sale_item {sale_item_id}: {str(e)}"
                 errors_list.append(error_msg)
                 print(f"[SalesService] {error_msg}")
                 continue
