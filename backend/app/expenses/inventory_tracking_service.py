@@ -3,12 +3,12 @@ Service for optimized inventory tracking data.
 Combines sections, categories, invoices, and invoice items into single response.
 """
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from typing import cast
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from collections import defaultdict
 
 from app.expenses.models import (
@@ -23,8 +23,16 @@ from app.expenses.inventory_tracking_schemas import (
     CategoryDataSchema,
     DayDataSchema,
     PurchaseDetailSchema,
+    SaleExpenseDetailSchema,
 )
 from app.expenses.unit_service import UnitService
+
+# Import OFD integration models for sale expenses
+try:
+    from app.ofd_integration.models import SaleIngredientExpense, Sale
+    OFD_AVAILABLE = True
+except ImportError:
+    OFD_AVAILABLE = False
 
 
 class InventoryTrackingService:
@@ -82,7 +90,48 @@ class InventoryTrackingService:
         invoices_result = await session.execute(invoices_stmt)
         invoices = invoices_result.scalars().all()
 
-        # 4. Group invoice items by category and date for fast lookup
+        # 4. Load sale ingredient expenses (from OFD integration) for the month
+        # NOTE: This section can be easily extracted to separate endpoint later if needed
+        sales_expenses_by_category_date: dict[int, dict[str, list]] = defaultdict(lambda: defaultdict(list))
+        
+        if OFD_AVAILABLE:
+            # Import SaleItem model needed for join
+            from app.ofd_integration.models import SaleItem
+            
+            # Query sale_ingredient_expenses joined with sales to get receipt info
+            # Filter by created_at date falling within the month
+            sales_expenses_stmt = (
+                select(SaleIngredientExpense)
+                .join(SaleIngredientExpense.sale_item)
+                .join(SaleItem.sale)
+                .where(
+                    and_(
+                        Sale.business_id == business_id,
+                        func.date(SaleIngredientExpense.created_at) >= month_start,
+                        func.date(SaleIngredientExpense.created_at) < month_end,
+                    )
+                )
+                .options(
+                    selectinload(SaleIngredientExpense.sale_item).selectinload(SaleItem.sale),
+                    selectinload(SaleIngredientExpense.tech_card_item),
+                )
+            )
+            
+            try:
+                sales_expenses_result = await session.execute(sales_expenses_stmt)
+                sales_expenses = sales_expenses_result.scalars().all()
+                
+                # Group by category_id and date
+                for expense in sales_expenses:
+                    date_str = expense.created_at.strftime("%Y-%m-%d")
+                    category_id = int(expense.category_id)
+                    sales_expenses_by_category_date[category_id][date_str].append(expense)
+            except Exception as e:
+                # If OFD tables don't exist or query fails, continue without sales data
+                print(f"[InventoryTracking] Warning: Could not load sale expenses: {e}")
+                pass
+
+        # 5. Group invoice items by category and date for fast lookup
         # Structure: category_id -> date_str -> list[InvoiceItem]
         items_by_category_date: dict[int, dict[str, list[InvoiceItem]]] = defaultdict(lambda: defaultdict(list))
         
@@ -155,14 +204,40 @@ class InventoryTrackingService:
                             )
                         )
 
+                    # Process sales expenses (OFD deductions) for this category/date
+                    day_sale_expenses = sales_expenses_by_category_date[cast(int, category.id)].get(date_str, [])
+                    
+                    usage_qty = Decimal("0")
+                    usage_amount = Decimal("0")
+                    sale_expense_details = []
+                    
+                    for expense in day_sale_expenses:
+                        # Add quantity and cost to usage totals
+                        usage_qty += Decimal(str(expense.quantity))
+                        usage_amount += Decimal(str(expense.cost))
+                        
+                        # Build sale expense detail for modal
+                        sale_expense_details.append(
+                            SaleExpenseDetailSchema(
+                                sale_id=cast(int, expense.sale_item.sale_id),
+                                receipt_id=cast(str, expense.sale_item.sale.ofd_receipt_id),
+                                receipt_datetime=expense.sale_item.sale.receipt_datetime.isoformat(),
+                                tech_card_item_name=cast(str, expense.tech_card_item.name),
+                                quantity_sold=Decimal(str(expense.sale_item.quantity)),
+                                ingredient_quantity=Decimal(str(expense.quantity)),
+                                cost=Decimal(str(expense.cost)),
+                            )
+                        )
+
                     daily_data_list.append(
                         DayDataSchema(
                             date=date_str,
                             purchases_qty=purchases_qty,
                             purchases_amount=purchases_amount,
-                            usage_qty=Decimal("0"),  # TODO: Add from expense records
-                            usage_amount=Decimal("0"),  # TODO: Add from expense records
+                            usage_qty=usage_qty,
+                            usage_amount=usage_amount,
                             purchase_details=purchase_details,
+                            sale_expense_details=sale_expense_details,
                         )
                     )
 

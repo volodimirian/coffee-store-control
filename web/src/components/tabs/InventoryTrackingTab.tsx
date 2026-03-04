@@ -23,11 +23,13 @@ import {
   monthPeriodsApi,
   inventoryTrackingApi,
   type PurchaseDetail,
+  type SaleExpenseDetail,
 } from '~/shared/api/expenses';
 import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
 import InvoiceModal from '~/components/modals/InvoiceModal';
 import CategoryModal from '~/components/modals/CategoryModal';
 import SectionModal from '~/components/modals/SectionModal';
+import ExpenseDetailModal from '~/components/modals/ExpenseDetailModal';
 import { Protected } from '~/shared/ui';
 import { formatCurrencyCompact } from '~/shared/lib/helpers';
 import type { 
@@ -52,9 +54,10 @@ interface TableCategory {
 interface DayData {
   purchasesQty: number; // quantity from InvoiceItems (including PENDING)
   purchasesAmount: number; // money amount from InvoiceItems
-  usageQty: number; // quantity from ExpenseRecords - TODO
-  usageAmount: number; // money amount from ExpenseRecords - TODO
+  usageQty: number; // quantity from SaleIngredientExpense (OFD sales)
+  usageAmount: number; // money amount from SaleIngredientExpense (OFD sales)
   purchaseDetails: PurchaseDetail[]; // details for tooltip
+  saleExpenseDetails: SaleExpenseDetail[]; // OFD sale details for modal
 }
 
 export default function InventoryTrackingTab() {
@@ -73,6 +76,15 @@ export default function InventoryTrackingTab() {
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
   const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(null);
   const [selectedSectionIdForCreate, setSelectedSectionIdForCreate] = useState<number | null>(null);
+  
+  // Expense detail modal state
+  const [isExpenseDetailModalOpen, setIsExpenseDetailModalOpen] = useState(false);
+  const [expenseDetailData, setExpenseDetailData] = useState<{
+    categoryName: string;
+    unitSymbol: string;
+    date: string;
+    saleExpenses: SaleExpenseDetail[];
+  } | null>(null);
 
   // Get locale for date-fns
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -144,6 +156,23 @@ export default function InventoryTrackingTab() {
     loadData();
   };
 
+  const handleExpenseCellClick = (
+    categoryName: string,
+    unitSymbol: string,
+    date: string,
+    saleExpenses: SaleExpenseDetail[]
+  ) => {
+    if (saleExpenses.length > 0) {
+      setExpenseDetailData({
+        categoryName,
+        unitSymbol,
+        date,
+        saleExpenses,
+      });
+      setIsExpenseDetailModalOpen(true);
+    }
+  };
+
   // Load all data for the current month
   const loadData = useCallback(async () => {
     if (!currentLocation) return;
@@ -205,6 +234,7 @@ export default function InventoryTrackingTab() {
               usageQty: parseFloat(dayData.usage_qty),
               usageAmount: parseFloat(dayData.usage_amount),
               purchaseDetails: dayData.purchase_details,
+              saleExpenseDetails: dayData.sale_expense_details || [],
             });
           });
 
@@ -591,8 +621,17 @@ export default function InventoryTrackingTab() {
                                           </div>
                                         )}
                                         {dayData.usageQty !== 0 && (
-                                          <div className="text-red-600">
-                                            {formatQty(dayData.usageQty)}
+                                          <div 
+                                            className="text-red-600 cursor-pointer hover:underline"
+                                            onClick={() => handleExpenseCellClick(
+                                              tableCategory.category.name,
+                                              tableCategory.unitSymbol,
+                                              dateKey,
+                                              dayData.saleExpenseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForDetails')}
+                                          >
+                                            -{formatQty(dayData.usageQty)}
                                           </div>
                                         )}
                                         {dayData.purchasesQty === 0 && dayData.usageQty === 0 && (
@@ -612,12 +651,21 @@ export default function InventoryTrackingTab() {
                                       <div className="space-y-0.5">
                                         {dayData.purchasesAmount !== 0 && (
                                           <div className="text-green-600 font-semibold">
-                                            {formatCurrencyCompact(dayData.purchasesAmount)}
+                                            +{formatCurrencyCompact(dayData.purchasesAmount)}
                                           </div>
                                         )}
                                         {dayData.usageAmount !== 0 && (
-                                          <div className="text-red-600 font-semibold">
-                                            {formatCurrencyCompact(dayData.usageAmount)}
+                                          <div 
+                                            className="text-red-600 font-semibold cursor-pointer hover:underline"
+                                            onClick={() => handleExpenseCellClick(
+                                              tableCategory.category.name,
+                                              tableCategory.unitSymbol,
+                                              dateKey,
+                                              dayData.saleExpenseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForDetails')}
+                                          >
+                                            -{formatCurrencyCompact(dayData.usageAmount)}
                                           </div>
                                         )}
                                         {dayData.purchasesAmount === 0 && dayData.usageAmount === 0 && (
@@ -702,6 +750,19 @@ export default function InventoryTrackingTab() {
           onSectionUpdated={handleSectionUpdated}
         />
       )}
+
+      {/* Expense Detail Modal - shows sale expenses from OFD */}
+      <ExpenseDetailModal
+        isOpen={isExpenseDetailModalOpen}
+        onClose={() => {
+          setIsExpenseDetailModalOpen(false);
+          setExpenseDetailData(null);
+        }}
+        categoryName={expenseDetailData?.categoryName || ''}
+        unitSymbol={expenseDetailData?.unitSymbol || ''}
+        date={expenseDetailData?.date || ''}
+        saleExpenses={expenseDetailData?.saleExpenses || []}
+      />
     </div>
   );
 }

@@ -709,6 +709,16 @@ export interface PurchaseDetail {
   was_converted: boolean;
 }
 
+export interface SaleExpenseDetail {
+  sale_id: number;
+  receipt_id: string;
+  receipt_datetime: string;
+  tech_card_item_name: string;
+  quantity_sold: string;
+  ingredient_quantity: string;
+  cost: string;
+}
+
 export interface DayData {
   date: string;
   purchases_qty: string;
@@ -716,6 +726,7 @@ export interface DayData {
   usage_qty: string;
   usage_amount: string;
   purchase_details: PurchaseDetail[];
+  sale_expense_details: SaleExpenseDetail[];
 }
 
 export interface CategoryData {
