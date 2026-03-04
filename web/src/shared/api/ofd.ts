@@ -329,4 +329,10 @@ export const ofdAPI = {
     const response = await api.get<Sale>(`/ofd/sales/${saleId}`);
     return response.data;
   },
+
+  // Update all sales processing status for a business
+  updateSalesStatus: async (businessId: number): Promise<{ message: string; updated_counts: { processed: number; pending: number; error: number } }> => {
+    const response = await api.post(`/ofd/business/${businessId}/update-sales-status`);
+    return response.data;
+  },
 };

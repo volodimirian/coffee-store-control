@@ -1234,6 +1234,9 @@
     "unmappedItemsInReceipt": "{{count}} unmapped items in this receipt",
     "pleaseMapProducts": "Please map these products to tech card items for automatic ingredient expense tracking.",
     "goToMapping": "Go to Mapping",
-    "createNewTechCard": "Create New Product"
+    "createNewTechCard": "Create New Product",
+    "updateStatusesHint": "Update processing status for all receipts",
+    "statusesUpdated": "Statuses updated: processed {{processed}}, pending {{pending}}",
+    "updateStatusError": "Failed to update statuses"
   }
 }

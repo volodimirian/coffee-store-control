@@ -556,6 +556,27 @@ async def get_sale_detail(
     return SaleDetailResponse.model_validate(sale)
 
 
+@router.post("/business/{business_id}/update-sales-status")
+async def update_sales_processing_status(
+    business_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.OFD_CONNECTIONS, Action.EDIT))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """
+    Update processing_status for all Sales based on their items' processed state.
+    Useful for fixing statuses after migrations or bulk processing.
+    """
+    updated_counts = await SalesService.update_sales_processing_status(
+        session=session,
+        business_id=business_id,
+    )
+    
+    return {
+        "message": "Sales processing status updated",
+        "updated_counts": updated_counts,
+    }
+
+
 @router.get("/business/{business_id}/unmapped-items")
 async def get_unmapped_sale_items(
     business_id: int,

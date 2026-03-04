@@ -540,6 +540,37 @@ class SalesService:
         # Commit changes
         await session.commit()
         
+        # Update processing_status for all affected Sales
+        # Get unique sale_ids from processed items
+        affected_sale_ids = set(item.sale_id for item in unprocessed_items)
+        
+        if affected_sale_ids:
+            # Re-fetch Sales to check their processing status
+            sales_result = await session.execute(
+                select(Sale)
+                .where(Sale.id.in_(affected_sale_ids))
+                .options(selectinload(Sale.items))
+            )
+            affected_sales = sales_result.scalars().all()
+            
+            for sale in affected_sales:
+                # Check if all mapped items are processed
+                all_processed = all(
+                    (not item.is_mapped) or item.processed 
+                    for item in sale.items
+                )
+                
+                if all_processed:
+                    sale.processing_status = "processed"
+                    sale.processed_at = datetime.utcnow()
+                else:
+                    # Some items still pending
+                    sale.processing_status = "pending"
+            
+            # Commit status updates
+            await session.commit()
+            print(f"[SalesService] Updated processing_status for {len(affected_sales)} sales")
+        
         # Update stats dict with counts
         stats["total_processed"] = total_processed_count
         stats["expenses_created"] = expenses_created_count
@@ -547,3 +578,56 @@ class SalesService:
         print(f"[SalesService] Processed {total_processed_count} items, created {expenses_created_count} expenses")
         
         return stats
+
+    @staticmethod
+    async def update_sales_processing_status(
+        session: AsyncSession,
+        business_id: int,
+    ) -> Dict[str, int]:
+        """
+        Update processing_status for all Sales based on their items' processed state.
+        Useful for fixing status after migrations or bulk processing.
+        
+        Returns:
+            Dict with counts of updated sales by status
+        """
+        # Get all Sales for business
+        result = await session.execute(
+            select(Sale)
+            .where(Sale.business_id == business_id)
+            .options(selectinload(Sale.items))
+        )
+        sales = result.scalars().all()
+        
+        updated_counts = {
+            "processed": 0,
+            "pending": 0,
+            "error": 0,
+        }
+        
+        for sale in sales:
+            old_status = sale.processing_status
+            
+            # Determine new status based on items
+            all_processed = all(
+                (not item.is_mapped) or item.processed 
+                for item in sale.items
+            )
+            
+            if all_processed and sale.items_count > 0:
+                sale.processing_status = "processed"
+                if not sale.processed_at:
+                    sale.processed_at = datetime.utcnow()
+                updated_counts["processed"] += 1
+            else:
+                sale.processing_status = "pending"
+                updated_counts["pending"] += 1
+            
+            # Log if status changed
+            if old_status != sale.processing_status:
+                print(f"[SalesService] Sale {sale.id}: {old_status} -> {sale.processing_status}")
+        
+        await session.commit()
+        
+        print(f"[SalesService] Updated processing status for {len(sales)} sales: {updated_counts}")
+        return updated_counts

@@ -1236,6 +1236,9 @@
     "unmappedItemsInReceipt": "В этом чеке {{count}} несвязанных позиций",
     "pleaseMapProducts": "Пожалуйста, свяжите эти товары с продуктами из техкарты для автоматического списания ингредиентов.",
     "goToMapping": "Перейти к связыванию",
-    "createNewTechCard": "Создать новый товар"
+    "createNewTechCard": "Создать новый товар",
+    "updateStatusesHint": "Обновить статусы обработки всех чеков",
+    "statusesUpdated": "Обновлено статусов: обработано {{processed}}, ожидает {{pending}}",
+    "updateStatusError": "Ошибка обновления статусов"
   }
 }

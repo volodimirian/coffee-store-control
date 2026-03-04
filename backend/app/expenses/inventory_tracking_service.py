@@ -99,7 +99,7 @@ class InventoryTrackingService:
             from app.ofd_integration.models import SaleItem
             
             # Query sale_ingredient_expenses joined with sales to get receipt info
-            # Filter by created_at date falling within the month
+            # IMPORTANT: Filter and group by RECEIPT DATE (receipt_datetime), not created_at!
             sales_expenses_stmt = (
                 select(SaleIngredientExpense)
                 .join(SaleIngredientExpense.sale_item)
@@ -107,8 +107,8 @@ class InventoryTrackingService:
                 .where(
                     and_(
                         Sale.business_id == business_id,
-                        func.date(SaleIngredientExpense.created_at) >= month_start,
-                        func.date(SaleIngredientExpense.created_at) < month_end,
+                        func.date(Sale.receipt_datetime) >= month_start,
+                        func.date(Sale.receipt_datetime) < month_end,
                     )
                 )
                 .options(
@@ -121,9 +121,11 @@ class InventoryTrackingService:
                 sales_expenses_result = await session.execute(sales_expenses_stmt)
                 sales_expenses = sales_expenses_result.scalars().all()
                 
-                # Group by category_id and date
+                # Group by category_id and RECEIPT DATE (not created_at!)
                 for expense in sales_expenses:
-                    date_str = expense.created_at.strftime("%Y-%m-%d")
+                    # Use receipt date from Sale, not expense created_at
+                    receipt_date = expense.sale_item.sale.receipt_datetime.date()
+                    date_str = receipt_date.strftime("%Y-%m-%d")
                     category_id = int(expense.category_id)
                     sales_expenses_by_category_date[category_id][date_str].append(expense)
             except Exception as e:
