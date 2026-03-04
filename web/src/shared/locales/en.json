@@ -1206,6 +1206,7 @@
     "unmapped": "unmapped",
     "status_pending": "Pending",
     "status_processed": "Processed",
+    "status_partially_processed": "Partially Processed",
     "status_error": "Error",
     "previous": "Previous",
     "next": "Next",
@@ -1236,7 +1237,13 @@
     "goToMapping": "Go to Mapping",
     "createNewTechCard": "Create New Product",
     "updateStatusesHint": "Update processing status for all receipts",
-    "statusesUpdated": "Statuses updated: processed {{processed}}, pending {{pending}}",
-    "updateStatusError": "Failed to update statuses"
+    "statusesUpdated": "Statuses successfully updated",
+    "statusesUpdatedDetails": "Processed: {{processed}}, partial: {{partially_processed}}, pending: {{pending}}",
+    "updateStatusError": "Failed to update statuses",
+    "processSale": "Process Receipt",
+    "processing": "Processing...",
+    "saleProcessed": "Receipt processed",
+    "saleProcessedDetails": "Processed items: {{items}}, created expenses: {{expenses}}",
+    "processSaleError": "Failed to process receipt"
   }
 }

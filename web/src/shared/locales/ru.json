@@ -1208,6 +1208,7 @@
     "unmapped": "не связано",
     "status_pending": "Ожидает",
     "status_processed": "Обработан",
+    "status_partially_processed": "Частично обработан",
     "status_error": "Ошибка",
     "previous": "Назад",
     "next": "Далее",
@@ -1238,7 +1239,13 @@
     "goToMapping": "Перейти к связыванию",
     "createNewTechCard": "Создать новый товар",
     "updateStatusesHint": "Обновить статусы обработки всех чеков",
-    "statusesUpdated": "Обновлено статусов: обработано {{processed}}, ожидает {{pending}}",
-    "updateStatusError": "Ошибка обновления статусов"
+    "statusesUpdated": "Статусы успешно обновлены",
+    "statusesUpdatedDetails": "Обработано: {{processed}}, частично: {{partially_processed}}, ожидает: {{pending}}",
+    "updateStatusError": "Ошибка обновления статусов",
+    "processSale": "Обработать чек",
+    "processing": "Обработка...",
+    "saleProcessed": "Чек обработан",
+    "saleProcessedDetails": "Обработано позиций: {{items}}, создано расходов: {{expenses}}",
+    "processSaleError": "Ошибка обработки чека"
   }
 }

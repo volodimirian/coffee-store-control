@@ -7,10 +7,13 @@ import Input from '~/shared/ui/Input';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import { useAppContext } from '~/shared/context/AppContext';
 import SaleDetailModal from '~/components/modals/SaleDetailModal';
+import { useToast } from '~/shared/lib/useToast';
+import Toast from '~/shared/ui/Toast';
 
 export default function SalesSync() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
+  const { toast, success, error: showError, hideToast } = useToast();
   const [connections, setConnections] = useState<OFDConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState<number | null>(null);
   const [startDate, setStartDate] = useState('');
@@ -146,14 +149,21 @@ export default function SalesSync() {
       // Reload sales list to show updated statuses
       await loadSales();
       
-      // Show success message (optional - you can add a toast notification)
-      alert(t('sales.statusesUpdated', { 
-        processed: result.updated_counts.processed, 
-        pending: result.updated_counts.pending 
-      }));
+      // Show success notification
+      success(
+        t('sales.statusesUpdated'),
+        t('sales.statusesUpdatedDetails', { 
+          processed: result.updated_counts.processed,
+          partially_processed: result.updated_counts.partially_processed || 0,
+          pending: result.updated_counts.pending 
+        })
+      );
     } catch (err) {
       console.error('[SalesSync] Failed to update statuses:', err);
-      setError(err instanceof Error ? err.message : t('sales.updateStatusError'));
+      showError(
+        t('sales.updateStatusError'),
+        err instanceof Error ? err.message : undefined
+      );
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -482,9 +492,11 @@ export default function SalesSync() {
                             className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               sale.processing_status === 'processed'
                                 ? 'bg-green-100 text-green-800'
-                                : sale.processing_status === 'error'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                : sale.processing_status === 'partially_processed'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : sale.processing_status === 'error'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-yellow-100 text-yellow-800'
                             }`}
                           >
                             {t(`sales.status_${sale.processing_status}`)}
@@ -542,6 +554,15 @@ export default function SalesSync() {
             }
           }
         }}
+      />
+
+      {/* Toast Notifications */}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={hideToast}
       />
     </div>
   );

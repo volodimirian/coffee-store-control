@@ -152,6 +152,14 @@ class ProductMapping(Base):
     )
 
 
+class SaleStatus:
+    """Sale processing status constants."""
+    PENDING = "pending"
+    PARTIALLY_PROCESSED = "partially_processed"
+    PROCESSED = "processed"
+    ERROR = "error"
+
+
 class Sale(Base):
     """Receipts/Sales from OFD."""
 
@@ -169,8 +177,8 @@ class Sale(Base):
     fiscal_sign: Mapped[str | None] = mapped_column(String(200), nullable=True)
     raw_data: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"))
     processing_status: Mapped[str] = mapped_column(
-        String(20), default="pending"
-    )  # pending, processed, error
+        String(20), default=SaleStatus.PENDING
+    )  # pending, partially_processed, processed, error
     processing_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

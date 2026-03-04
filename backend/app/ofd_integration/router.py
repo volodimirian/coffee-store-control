@@ -577,6 +577,27 @@ async def update_sales_processing_status(
     }
 
 
+@router.post("/sales/{sale_id}/process")
+async def process_single_sale(
+    sale_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(Resource.OFD_CONNECTIONS, Action.EDIT))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """
+    Process ingredient expenses for a single sale.
+    Re-processes all unprocessed mapped items in the sale.
+    """
+    result = await SalesService.process_single_sale(
+        session=session,
+        sale_id=sale_id,
+    )
+    
+    if not result["success"]:
+        raise HTTPException(status_code=404, detail=result.get("error", "Processing failed"))
+    
+    return result
+
+
 @router.get("/business/{business_id}/unmapped-items")
 async def get_unmapped_sale_items(
     business_id: int,
