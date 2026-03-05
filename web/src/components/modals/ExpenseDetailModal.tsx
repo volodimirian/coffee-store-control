@@ -1,15 +1,17 @@
 import { XMarkIcon, ShoppingCartIcon, ReceiptRefundIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
+import { parseISO, format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import type { SaleExpenseDetail } from '~/shared/api/expenses';
+import type { Unit } from '~/shared/api/types';
 import { formatCurrency } from '~/shared/lib/helpers';
 
 interface ExpenseDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   categoryName: string;
-  unitSymbol: string;
+  selectedUnitId: number;
+  availableUnits: Unit[];
   date: string; // YYYY-MM-DD
   saleExpenses: SaleExpenseDetail[];
 }
@@ -18,7 +20,8 @@ export default function ExpenseDetailModal({
   isOpen,
   onClose,
   categoryName,
-  unitSymbol,
+  selectedUnitId,
+  availableUnits,
   date,
   saleExpenses,
 }: ExpenseDetailModalProps) {
@@ -27,11 +30,32 @@ export default function ExpenseDetailModal({
   if (!isOpen) return null;
 
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
-  const formattedDate = format(new Date(date), 'dd MMMM yyyy', { locale: dateLocale });
+  // Fix timezone issue - parse date correctly to avoid date shift
+  const formattedDate = format(parseISO(date + 'T12:00:00'), 'dd MMMM yyyy', { locale: dateLocale });
 
-  // Calculate totals
+  // Find selected unit for display
+  const selectedUnit = availableUnits.find((u) => u.id === selectedUnitId);
+  const displayUnitSymbol = selectedUnit?.symbol || '';
+
+  // Convert quantity from actual unit (from receipt) to selected unit
+  const convertModalQuantity = (qty: number, fromUnitSymbol: string): number => {
+    // Find unit by symbol from the receipt data
+    const fromUnit = availableUnits.find((u) => u.symbol === fromUnitSymbol);
+    const toUnit = availableUnits.find((u) => u.id === selectedUnitId);
+
+    if (!fromUnit || !toUnit || fromUnit.id === selectedUnitId) {
+      return qty;
+    }
+
+    const fromFactor = parseFloat(fromUnit.conversion_factor?.toString() || '1');
+    const toFactor = parseFloat(toUnit.conversion_factor?.toString() || '1');
+
+    return (qty * fromFactor) / toFactor;
+  };
+
+  // Calculate totals with conversion
   const totalQuantity = saleExpenses.reduce(
-    (sum, expense) => sum + parseFloat(expense.ingredient_quantity),
+    (sum, expense) => sum + convertModalQuantity(parseFloat(expense.ingredient_quantity), expense.unit_symbol),
     0
   );
   const totalCost = saleExpenses.reduce(
@@ -39,7 +63,7 @@ export default function ExpenseDetailModal({
     0
   );
 
-  // Group by tech_card_item_name for summary
+  // Group by tech_card_item_name for summary with conversion
   const groupedByProduct = saleExpenses.reduce((acc, expense) => {
     const key = expense.tech_card_item_name;
     if (!acc[key]) {
@@ -51,7 +75,7 @@ export default function ExpenseDetailModal({
       };
     }
     acc[key].receipts.push(expense);
-    acc[key].totalQty += parseFloat(expense.ingredient_quantity);
+    acc[key].totalQty += convertModalQuantity(parseFloat(expense.ingredient_quantity), expense.unit_symbol);
     acc[key].totalCost += parseFloat(expense.cost);
     return acc;
   }, {} as Record<string, { name: string; receipts: SaleExpenseDetail[]; totalQty: number; totalCost: number }>);
@@ -117,22 +141,24 @@ export default function ExpenseDetailModal({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
-                      {Object.values(groupedByProduct).map((product, idx) => (
-                        <tr key={idx}>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {product.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-right">
-                            {product.receipts.length}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                            {formatCurrency(product.totalQty, 2, '')} {unitSymbol}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
-                            {formatCurrency(product.totalCost, 2)}
-                          </td>
-                        </tr>
-                      ))}
+                      {Object.values(groupedByProduct).map((product, idx) => {
+                        return (
+                          <tr key={idx}>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              {product.name}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-700 text-right">
+                              {product.receipts.length}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                              {formatCurrency(product.totalQty, 2, '')} {displayUnitSymbol}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                              {formatCurrency(product.totalCost, 2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -173,6 +199,7 @@ export default function ExpenseDetailModal({
                         {saleExpenses.map((expense, idx) => {
                           const receiptDate = new Date(expense.receipt_datetime);
                           const receiptTime = format(receiptDate, 'HH:mm');
+                          const convertedQty = convertModalQuantity(parseFloat(expense.ingredient_quantity), expense.unit_symbol);
                           
                           return (
                             <tr key={idx} className="hover:bg-gray-50">
@@ -191,7 +218,7 @@ export default function ExpenseDetailModal({
                                 {formatCurrency(parseFloat(expense.quantity_sold), 0, '')}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                {formatCurrency(parseFloat(expense.ingredient_quantity), 2, '')} {unitSymbol}
+                                {formatCurrency(convertedQty, 2, '')} {displayUnitSymbol}
                               </td>
                               <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
                                 {formatCurrency(parseFloat(expense.cost), 2)}
@@ -218,7 +245,7 @@ export default function ExpenseDetailModal({
               <div className="text-sm">
                 <span className="text-gray-600">{t('expenses.inventoryTracking.totalQuantity')}:</span>{' '}
                 <span className="font-semibold text-gray-900">
-                  {formatCurrency(totalQuantity, 2, '')} {unitSymbol}
+                  {formatCurrency(totalQuantity, 2, '')} {displayUnitSymbol}
                 </span>
               </div>
               <div className="text-sm">

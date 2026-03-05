@@ -116,6 +116,15 @@ export const unitsApi = {
     const response = await api.post<Unit>(`/expenses/units/${unitId}/restore`);
     return response.data;
   },
+
+  /**
+   * Get all units that can be converted to/from the given unit
+   * Returns units in the same conversion family (same base unit)
+   */
+  getConvertible: async (unitId: number): Promise<Unit[]> => {
+    const response = await api.get<Unit[]>(`/expenses/units/${unitId}/convertible`);
+    return response.data;
+  },
 };
 
 // ============ Month Periods API ============
@@ -715,7 +724,8 @@ export interface SaleExpenseDetail {
   receipt_datetime: string;
   tech_card_item_name: string;
   quantity_sold: string;
-  ingredient_quantity: string;
+  ingredient_quantity: string; // As stored in DB (in ingredient's unit)
+  unit_symbol: string; // Unit from expense record
   cost: string;
 }
 
@@ -733,6 +743,7 @@ export interface CategoryData {
   category_id: number;
   category_name: string;
   unit_symbol: string;
+  default_unit_id: number;  // For unit conversion selector
   daily_data: DayData[];
 }
 

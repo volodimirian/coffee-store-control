@@ -22,6 +22,7 @@ import { useAppContext } from '~/shared/context/AppContext';
 import { 
   monthPeriodsApi,
   inventoryTrackingApi,
+  unitsApi,
   type PurchaseDetail,
   type SaleExpenseDetail,
 } from '~/shared/api/expenses';
@@ -30,11 +31,14 @@ import InvoiceModal from '~/components/modals/InvoiceModal';
 import CategoryModal from '~/components/modals/CategoryModal';
 import SectionModal from '~/components/modals/SectionModal';
 import ExpenseDetailModal from '~/components/modals/ExpenseDetailModal';
+import PurchaseDetailModal from '~/components/modals/PurchaseDetailModal';
+import UnitSelector from '~/components/UnitSelector';
 import { Protected } from '~/shared/ui';
-import { formatCurrencyCompact } from '~/shared/lib/helpers';
+import { formatCurrencyCompact, formatCurrency } from '~/shared/lib/helpers';
 import type { 
   ExpenseSection,
   ExpenseCategory,
+  Unit,
 } from '~/shared/api/types';
 
 // Interface for table data structure by section
@@ -81,10 +85,27 @@ export default function InventoryTrackingTab() {
   const [isExpenseDetailModalOpen, setIsExpenseDetailModalOpen] = useState(false);
   const [expenseDetailData, setExpenseDetailData] = useState<{
     categoryName: string;
-    unitSymbol: string;
+    selectedUnitId: number;
+    availableUnits: Unit[];
     date: string;
     saleExpenses: SaleExpenseDetail[];
   } | null>(null);
+
+  // Purchase detail modal state
+  const [isPurchaseDetailModalOpen, setIsPurchaseDetailModalOpen] = useState(false);
+  const [purchaseDetailData, setPurchaseDetailData] = useState<{
+    categoryName: string;
+    unitSymbol: string;
+    date: string;
+    purchases: PurchaseDetail[];
+  } | null>(null);
+
+  // Unit conversion state
+  const [categoryUnits, setCategoryUnits] = useState<Map<number, {
+    availableUnits: Unit[];
+    selectedUnitId: number;
+    defaultUnitId: number;
+  }>>(new Map());
 
   // Get locale for date-fns
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -93,6 +114,46 @@ export default function InventoryTrackingTab() {
   const formatQty = (value: number): string => {
     return value % 1 === 0 ? value.toFixed(0) : value.toFixed(2);
   };
+
+  // Convert quantity by unit symbol (used for actual receipt/invoice data)
+  const convertQuantityBySymbol = (
+    quantity: number,
+    fromUnitSymbol: string,
+    toUnitId: number,
+    categoryId: number
+  ): number => {
+    const categoryUnitData = categoryUnits.get(categoryId);
+    if (!categoryUnitData) {
+      return quantity;
+    }
+
+    const fromUnit = categoryUnitData.availableUnits.find((u) => u.symbol === fromUnitSymbol);
+    const toUnit = categoryUnitData.availableUnits.find((u) => u.id === toUnitId);
+
+    if (!fromUnit || !toUnit || fromUnit.id === toUnitId) {
+      return quantity;
+    }
+
+    const fromFactor = parseFloat(fromUnit.conversion_factor?.toString() || '1');
+    const toFactor = parseFloat(toUnit.conversion_factor?.toString() || '1');
+
+    return (quantity * fromFactor) / toFactor;
+  };
+
+  // Handle unit selection change for a category
+  const handleUnitChange = useCallback((categoryId: number, newUnitId: number) => {
+    setCategoryUnits((prev) => {
+      const newMap = new Map(prev);
+      const categoryData = newMap.get(categoryId);
+      if (categoryData) {
+        newMap.set(categoryId, {
+          ...categoryData,
+          selectedUnitId: newUnitId,
+        });
+      }
+      return newMap;
+    });
+  }, []);
 
   const handlePrevMonth = () => {
     setCurrentDate(subMonths(currentDate, 1));
@@ -158,18 +219,37 @@ export default function InventoryTrackingTab() {
 
   const handleExpenseCellClick = (
     categoryName: string,
-    unitSymbol: string,
+    selectedUnitId: number,
+    availableUnits: Unit[],
     date: string,
     saleExpenses: SaleExpenseDetail[]
   ) => {
     if (saleExpenses.length > 0) {
       setExpenseDetailData({
         categoryName,
-        unitSymbol,
+        selectedUnitId,
+        availableUnits,
         date,
         saleExpenses,
       });
       setIsExpenseDetailModalOpen(true);
+    }
+  };
+
+  const handlePurchaseCellClick = (
+    categoryName: string,
+    unitSymbol: string,
+    date: string,
+    purchases: PurchaseDetail[]
+  ) => {
+    if (purchases.length > 0) {
+      setPurchaseDetailData({
+        categoryName,
+        unitSymbol,
+        date,
+        purchases,
+      });
+      setIsPurchaseDetailModalOpen(true);
     }
   };
 
@@ -242,6 +322,7 @@ export default function InventoryTrackingTab() {
             category: {
               id: categoryData.category_id,
               name: categoryData.category_name,
+              default_unit_id: categoryData.default_unit_id,
             } as ExpenseCategory,
             unitSymbol: categoryData.unit_symbol,
             dailyData: dailyDataMap,
@@ -257,6 +338,51 @@ export default function InventoryTrackingTab() {
         };
       });
 
+      // Load available units for each category BEFORE setting table sections
+      const unitsMap = new Map<number, {
+        availableUnits: Unit[];
+        selectedUnitId: number;
+        defaultUnitId: number;
+      }>();
+
+      await Promise.all(
+        sections.flatMap((section) =>
+          section.categories.map(async (category) => {
+            try {
+              const availableUnits = await unitsApi.getConvertible(category.category.default_unit_id);
+              
+              // Check localStorage for saved preference
+              const savedUnitId = localStorage.getItem(`inventoryTracking_unit_${category.category.id}`);
+              let selectedUnitId = category.category.default_unit_id;
+              
+              if (savedUnitId) {
+                const unitId = parseInt(savedUnitId, 10);
+                // Verify saved unit is still available
+                if (availableUnits.some((u) => u.id === unitId)) {
+                  selectedUnitId = unitId;
+                }
+              }
+
+              unitsMap.set(category.category.id, {
+                availableUnits,
+                selectedUnitId,
+                defaultUnitId: category.category.default_unit_id,
+              });
+            } catch (err) {
+              console.error(`Failed to load units for category ${category.category.id}:`, err);
+              // If failed, just use default unit
+              unitsMap.set(category.category.id, {
+                availableUnits: [],
+                selectedUnitId: category.category.default_unit_id,
+                defaultUnitId: category.category.default_unit_id,
+              });
+            }
+          })
+        )
+      );
+
+      // Set both states together to ensure units are available when rendering
+      setCategoryUnits(unitsMap);
       setTableSections(sections);
     } catch (err) {
       console.error('Failed to load inventory tracking data:', err);
@@ -558,7 +684,12 @@ export default function InventoryTrackingTab() {
                       
                       {/* Category Rows */}
                       {!isCollapsed && tableSection.categories.map((tableCategory) => {
-                        // Calculate totals
+                        // Get unit data for this category
+                        const categoryUnitData = categoryUnits.get(tableCategory.category.id);
+                        const selectedUnitId = categoryUnitData?.selectedUnitId || tableCategory.category.default_unit_id;
+                        const selectedUnit = categoryUnitData?.availableUnits.find((u) => u.id === selectedUnitId);
+
+                        // Calculate totals with proper conversion
                         let totalPurchasesAmount = 0;
                         let totalUsageAmount = 0;
                         let totalPurchasesQty = 0;
@@ -570,19 +701,49 @@ export default function InventoryTrackingTab() {
                           if (dayData) {
                             totalPurchasesAmount += dayData.purchasesAmount;
                             totalUsageAmount += dayData.usageAmount;
-                            totalPurchasesQty += dayData.purchasesQty;
-                            totalUsageQty += dayData.usageQty;
+                            
+                            // Convert and sum purchases from actual records
+                            totalPurchasesQty += dayData.purchaseDetails.reduce((sum, detail) => {
+                              const qty = parseFloat(detail.original_quantity);
+                              return sum + convertQuantityBySymbol(
+                                qty,
+                                detail.original_unit_symbol || '',
+                                selectedUnitId,
+                                tableCategory.category.id
+                              );
+                            }, 0);
+                            
+                            // Convert and sum expenses from actual records
+                            totalUsageQty += dayData.saleExpenseDetails.reduce((sum, detail) => {
+                              const qty = parseFloat(detail.ingredient_quantity);
+                              return sum + convertQuantityBySymbol(
+                                qty,
+                                detail.unit_symbol,
+                                selectedUnitId,
+                                tableCategory.category.id
+                              );
+                            }, 0);
                           }
                         });
-
-                        const totalAmount = totalPurchasesAmount - totalUsageAmount;
-                        const totalQty = totalPurchasesQty - totalUsageQty;
 
                         return (
                           <tr key={`category-${tableCategory.category.id}`} className="group hover:bg-gray-50 border-b border-gray-100">
                             <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
-                              <div className="flex items-center justify-between">
-                                <span>{tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}</span>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {tableCategory.category.name}
+                                    {selectedUnit && ` (${selectedUnit.symbol})`}
+                                  </span>
+                                  {categoryUnitData && categoryUnitData.availableUnits.length > 1 && (
+                                    <UnitSelector
+                                      categoryId={tableCategory.category.id}
+                                      defaultUnitId={selectedUnitId}
+                                      availableUnits={categoryUnitData.availableUnits}
+                                      onUnitChange={(unitId) => handleUnitChange(tableCategory.category.id, unitId)}
+                                    />
+                                  )}
+                                </div>
                                 <Protected permission={{ resource: 'subcategories', action: 'edit' }}>
                                   <button
                                     onClick={() => handleEditCategory(tableCategory.category)}
@@ -598,6 +759,31 @@ export default function InventoryTrackingTab() {
                               const dateKey = format(day, 'yyyy-MM-dd');
                               const dayData = tableCategory.dailyData.get(dateKey);
                               const isToday = isSameDay(day, new Date());
+                              
+                              // Convert quantities for display - sum converted values from actual records
+                              const displayPurchasesQty = dayData
+                                ? dayData.purchaseDetails.reduce((sum, detail) => {
+                                    const qty = parseFloat(detail.original_quantity);
+                                    return sum + convertQuantityBySymbol(
+                                      qty,
+                                      detail.original_unit_symbol || '',
+                                      selectedUnitId,
+                                      tableCategory.category.id
+                                    );
+                                  }, 0)
+                                : 0;
+
+                              const displayUsageQty = dayData
+                                ? dayData.saleExpenseDetails.reduce((sum, detail) => {
+                                    const qty = parseFloat(detail.ingredient_quantity);
+                                    return sum + convertQuantityBySymbol(
+                                      qty,
+                                      detail.unit_symbol,
+                                      selectedUnitId,
+                                      tableCategory.category.id
+                                    );
+                                  }, 0)
+                                : 0;
                               
                               return (
                                 <React.Fragment key={`${day.toISOString()}-cat`}>
@@ -616,8 +802,17 @@ export default function InventoryTrackingTab() {
                                     {dayData ? (
                                       <div className="space-y-0.5">
                                         {dayData.purchasesQty !== 0 && (
-                                          <div className="text-green-600 cursor-help">
-                                            {formatQty(dayData.purchasesQty)}
+                                          <div 
+                                            className="text-green-600 cursor-pointer hover:underline"
+                                            onClick={() => handlePurchaseCellClick(
+                                              tableCategory.category.name,
+                                              selectedUnit?.symbol || tableCategory.unitSymbol,
+                                              dateKey,
+                                              dayData.purchaseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForPurchaseDetails')}
+                                          >
+                                            {formatQty(displayPurchasesQty)}
                                           </div>
                                         )}
                                         {dayData.usageQty !== 0 && (
@@ -625,13 +820,14 @@ export default function InventoryTrackingTab() {
                                             className="text-red-600 cursor-pointer hover:underline"
                                             onClick={() => handleExpenseCellClick(
                                               tableCategory.category.name,
-                                              tableCategory.unitSymbol,
+                                              selectedUnitId,
+                                              categoryUnitData?.availableUnits || [],
                                               dateKey,
                                               dayData.saleExpenseDetails
                                             )}
                                             title={t('expenses.inventoryTracking.clickForDetails')}
                                           >
-                                            -{formatQty(dayData.usageQty)}
+                                            -{formatQty(displayUsageQty)}
                                           </div>
                                         )}
                                         {dayData.purchasesQty === 0 && dayData.usageQty === 0 && (
@@ -650,8 +846,17 @@ export default function InventoryTrackingTab() {
                                     {dayData ? (
                                       <div className="space-y-0.5">
                                         {dayData.purchasesAmount !== 0 && (
-                                          <div className="text-green-600 font-semibold">
-                                            +{formatCurrencyCompact(dayData.purchasesAmount)}
+                                          <div 
+                                            className="text-green-600 font-semibold cursor-pointer hover:underline"
+                                            onClick={() => handlePurchaseCellClick(
+                                              tableCategory.category.name,
+                                              tableCategory.unitSymbol,
+                                              dateKey,
+                                              dayData.purchaseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForPurchaseDetails')}
+                                          >
+                                            +{formatCurrency(dayData.purchasesAmount, 2)}
                                           </div>
                                         )}
                                         {dayData.usageAmount !== 0 && (
@@ -659,21 +864,22 @@ export default function InventoryTrackingTab() {
                                             className="text-red-600 font-semibold cursor-pointer hover:underline"
                                             onClick={() => handleExpenseCellClick(
                                               tableCategory.category.name,
-                                              tableCategory.unitSymbol,
+                                              selectedUnitId,
+                                              categoryUnitData?.availableUnits || [],
                                               dateKey,
                                               dayData.saleExpenseDetails
                                             )}
                                             title={t('expenses.inventoryTracking.clickForDetails')}
                                           >
-                                            -{formatCurrencyCompact(dayData.usageAmount)}
+                                            -{formatCurrency(dayData.usageAmount, 2)}
                                           </div>
                                         )}
                                         {dayData.purchasesAmount === 0 && dayData.usageAmount === 0 && (
-                                          <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
+                                          <div className="text-gray-400">{formatCurrency(0, 2)}</div>
                                         )}
                                       </div>
                                     ) : (
-                                      <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
+                                      <div className="text-gray-400">{formatCurrency(0, 2)}</div>
                                     )}
                                   </td>
                                   {/* Spacing column between days */}
@@ -682,13 +888,37 @@ export default function InventoryTrackingTab() {
                               );
                             })}
                             <td className="px-2 py-2 text-center text-xs border-x whitespace-nowrap">
-                              <div className={totalQty > 0 ? 'text-green-600' : totalQty < 0 ? 'text-red-600' : 'text-gray-900'}>
-                                {formatQty(totalQty)}
+                              <div className="space-y-0.5">
+                                {totalPurchasesQty !== 0 && (
+                                  <div className="text-green-600 font-semibold">
+                                    +{formatQty(totalPurchasesQty)}
+                                  </div>
+                                )}
+                                {totalUsageQty !== 0 && (
+                                  <div className="text-red-600 font-semibold">
+                                    -{formatQty(totalUsageQty)}
+                                  </div>
+                                )}
+                                {totalPurchasesQty === 0 && totalUsageQty === 0 && (
+                                  <div className="text-gray-400">0</div>
+                                )}
                               </div>
                             </td>
                             <td className="px-2 py-2 text-center text-xs whitespace-nowrap">
-                              <div className={totalAmount > 0 ? 'text-green-600 font-bold' : totalAmount < 0 ? 'text-red-600 font-bold' : 'text-gray-900 font-bold'}>
-                                {formatCurrencyCompact(totalAmount)}
+                              <div className="space-y-0.5">
+                                {totalPurchasesAmount !== 0 && (
+                                  <div className="text-green-600 font-semibold">
+                                    +{formatCurrency(totalPurchasesAmount, 2)}
+                                  </div>
+                                )}
+                                {totalUsageAmount !== 0 && (
+                                  <div className="text-red-600 font-semibold">
+                                    -{formatCurrency(totalUsageAmount, 2)}
+                                  </div>
+                                )}
+                                {totalPurchasesAmount === 0 && totalUsageAmount === 0 && (
+                                  <div className="text-gray-400">{formatCurrency(0, 2)}</div>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -759,9 +989,23 @@ export default function InventoryTrackingTab() {
           setExpenseDetailData(null);
         }}
         categoryName={expenseDetailData?.categoryName || ''}
-        unitSymbol={expenseDetailData?.unitSymbol || ''}
+        selectedUnitId={expenseDetailData?.selectedUnitId || 0}
+        availableUnits={expenseDetailData?.availableUnits || []}
         date={expenseDetailData?.date || ''}
         saleExpenses={expenseDetailData?.saleExpenses || []}
+      />
+
+      {/* Purchase Detail Modal - shows invoices purchases */}
+      <PurchaseDetailModal
+        isOpen={isPurchaseDetailModalOpen}
+        onClose={() => {
+          setIsPurchaseDetailModalOpen(false);
+          setPurchaseDetailData(null);
+        }}
+        categoryName={purchaseDetailData?.categoryName || ''}
+        unitSymbol={purchaseDetailData?.unitSymbol || ''}
+        date={purchaseDetailData?.date || ''}
+        purchases={purchaseDetailData?.purchases || []}
       />
     </div>
   );

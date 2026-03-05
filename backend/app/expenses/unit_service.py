@@ -232,6 +232,40 @@ class UnitService:
         return hierarchy
 
     @staticmethod
+    async def get_convertible_units(
+        session: AsyncSession,
+        unit_id: int,
+    ) -> List[Unit]:
+        """
+        Get all units that can be converted to/from the given unit.
+        Returns units in the same conversion family (same base unit).
+        """
+        # Get the source unit
+        unit = await UnitService.get_unit_by_id(session, unit_id)
+        if not unit:
+            return []
+        
+        # Find the base unit
+        # If unit has a base_unit_id, that's the base; otherwise, this unit IS the base
+        base_unit_id = getattr(unit, 'base_unit_id') or unit_id
+        
+        # Get all units with the same base unit (including the base unit itself)
+        query = select(Unit).where(
+            and_(
+                Unit.business_id == getattr(unit, 'business_id'),
+                Unit.is_active,
+                # Either: this is the base unit, or has the same base_unit_id
+                (
+                    (Unit.id == base_unit_id) | 
+                    (Unit.base_unit_id == base_unit_id)
+                )
+            )
+        ).order_by(Unit.name)
+        
+        result = await session.execute(query)
+        return list(result.scalars().all())
+
+    @staticmethod
     async def convert_quantity(
         session: AsyncSession,
         quantity: Decimal,

@@ -25,7 +25,8 @@ class SaleExpenseDetailSchema(BaseModel):
     receipt_datetime: str  # ISO format
     tech_card_item_name: str  # What product was sold
     quantity_sold: Decimal  # How many portions sold
-    ingredient_quantity: Decimal  # How much ingredient was deducted
+    ingredient_quantity: Decimal  # Quantity as stored in DB (in ingredient's unit)
+    unit_symbol: str  # Unit symbol from expense record
     cost: Decimal  # Ingredient cost for this deduction
 
 
@@ -45,6 +46,7 @@ class CategoryDataSchema(BaseModel):
     category_id: int
     category_name: str
     unit_symbol: str
+    default_unit_id: int  # For unit conversion selector
     daily_data: list[DayDataSchema]
 
 

@@ -3,12 +3,12 @@ Service for optimized inventory tracking data.
 Combines sections, categories, invoices, and invoice items into single response.
 """
 
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import cast
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import selectinload
 from collections import defaultdict
 
 from app.expenses.models import (
@@ -218,7 +218,11 @@ class InventoryTrackingService:
                         usage_qty += Decimal(str(expense.quantity))
                         usage_amount += Decimal(str(expense.cost))
                         
+                        # Get unit symbol from expense (as stored in DB)
+                        expense_unit_symbol = units_map.get(cast(int, expense.unit_id), "")
+                        
                         # Build sale expense detail for modal
+                        # Return data AS IS from DB - conversion will happen on frontend
                         sale_expense_details.append(
                             SaleExpenseDetailSchema(
                                 sale_id=cast(int, expense.sale_item.sale_id),
@@ -227,6 +231,7 @@ class InventoryTrackingService:
                                 tech_card_item_name=cast(str, expense.tech_card_item.name),
                                 quantity_sold=Decimal(str(expense.sale_item.quantity)),
                                 ingredient_quantity=Decimal(str(expense.quantity)),
+                                unit_symbol=expense_unit_symbol,
                                 cost=Decimal(str(expense.cost)),
                             )
                         )
@@ -255,6 +260,7 @@ class InventoryTrackingService:
                         category_id=cast(int, category.id),
                         category_name=cast(str, category.name),
                         unit_symbol=unit_symbol,
+                        default_unit_id=cast(int, category.default_unit_id),
                         daily_data=daily_data_list,
                     )
                 )
