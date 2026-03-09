@@ -41,7 +41,11 @@
     "confirmDeletionMessage": "Are you sure you want to delete this item? This action cannot be undone.",
     "all": "All",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "unit": "Unit",
+    "notes": "Notes",
+    "optional": "optional",
+    "saveAll": "Save All"
   },
   "navigation": {
     "home": "Home",
@@ -637,12 +641,68 @@
       "loadingError": "Failed to load inventory data",
       "noCategories": "No categories found",
       "noCategoriesDescription": "Create expense categories to start tracking inventory",
+      "clickForDetails": "Click to view details",
+      "clickForPurchaseDetails": "Click to view invoice details",
+      "expenseDetails": "Expense Details",
+      "purchaseDetails": "Purchase Details",
+      "noPurchases": "No purchases for this day",
+      "purchasesByInvoice": "Invoices",
+      "itemDetails": "Item Details",
+      "itemsCount": "Items",
+      "totalInvoices": "Total Invoices",
+      "noExpenses": "No expenses for this day",
+      "expensesByProduct": "Expenses by Product",
+      "receiptDetails": "Receipt Details",
+      "product": "Product",
+      "receiptsCount": "Receipts",
+      "quantity": "Quantity",
+      "cost": "Cost",
+      "receiptId": "Receipt ID",
+      "dateTime": "Time",
+      "soldQty": "Sold",
+      "ingredientQty": "Used",
+      "totalReceipts": "Total Receipts",
+      "totalQuantity": "Total Quantity",
+      "totalCost": "Total Cost",
+      "converted": "Converted",
       "table": {
         "category": "Category",
         "qty": "Qty",
         "amount": "Amount",
         "total": "Total",
         "sectionTotal": "Section Total"
+      }
+    },
+    "startingInventory": {
+      "setStartingInventory": "Set Starting Inventory",
+      "starting": "Starting",
+      "monthYear": "{{month}}/{{year}}",
+      "actualQuantity": "Actual Quantity",
+      "calculated": "Calculated",
+      "discrepancy": "Discrepancy",
+      "notesPlaceholder": "Reason for discrepancy (optional)",
+      "title": "Starting Inventory",
+      "noDataToSave": "No data to save"
+    },
+    "periods": {
+      "closeMonth": "Close Month",
+      "reopenMonth": "Reopen Month",
+      "closeWarning": "You are about to close this month:",
+      "closeEffect1": "New invoices and expenses cannot be added",
+      "closeEffect2": "All balance calculations will be finalized",
+      "closeEffect3": "Data will be used for the next month",
+      "canReopen": "You can reopen the month",
+      "reopenHint": "if corrections are needed.",
+      "confirmClose": "Close Month",
+      "reopenWarning": "You are about to reopen {{month}} for corrections.",
+      "willClose": "Will be closed",
+      "reopenNote": "Important",
+      "reopenNoteText": "After making changes, make sure to close this month again so the data flows correctly to the next period.",
+      "confirmReopen": "Reopen Month",
+      "status": {
+        "active": "Active",
+        "closed": "Closed",
+        "archived": "Archived"
       }
     },
     "reports": {
@@ -1190,6 +1250,7 @@
     "unmapped": "unmapped",
     "status_pending": "Pending",
     "status_processed": "Processed",
+    "status_partially_processed": "Partially Processed",
     "status_error": "Error",
     "previous": "Previous",
     "next": "Next",
@@ -1218,6 +1279,15 @@
     "unmappedItemsInReceipt": "{{count}} unmapped items in this receipt",
     "pleaseMapProducts": "Please map these products to tech card items for automatic ingredient expense tracking.",
     "goToMapping": "Go to Mapping",
-    "createNewTechCard": "Create New Product"
+    "createNewTechCard": "Create New Product",
+    "updateStatusesHint": "Update processing status for all receipts",
+    "statusesUpdated": "Statuses successfully updated",
+    "statusesUpdatedDetails": "Processed: {{processed}}, partial: {{partially_processed}}, pending: {{pending}}",
+    "updateStatusError": "Failed to update statuses",
+    "processSale": "Process Receipt",
+    "processing": "Processing...",
+    "saleProcessed": "Receipt processed",
+    "saleProcessedDetails": "Processed items: {{items}}, created expenses: {{expenses}}",
+    "processSaleError": "Failed to process receipt"
   }
 }

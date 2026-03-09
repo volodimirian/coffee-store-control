@@ -329,4 +329,16 @@ export const ofdAPI = {
     const response = await api.get<Sale>(`/ofd/sales/${saleId}`);
     return response.data;
   },
+
+  // Update all sales processing status for a business
+  updateSalesStatus: async (businessId: number): Promise<{ message: string; updated_counts: { processed: number; pending: number; partially_processed?: number; error: number } }> => {
+    const response = await api.post(`/ofd/business/${businessId}/update-sales-status`);
+    return response.data;
+  },
+
+  // Process a single sale (create ingredient expenses)
+  processSale: async (saleId: number): Promise<{ success: boolean; processed_items: number; expenses_created: number; errors?: string[] }> => {
+    const response = await api.post(`/ofd/sales/${saleId}/process`);
+    return response.data;
+  },
 };

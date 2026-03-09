@@ -41,7 +41,11 @@
     "retry": "Повторить",
     "all": "Все",
     "active": "Активен",
-    "inactive": "Неактивен"
+    "inactive": "Неактивен",
+    "unit": "Единица измерения",
+    "notes": "Примечания",
+    "optional": "опционально",
+    "saveAll": "Сохранить все"
   },
   "navigation": {
     "home": "Главная",
@@ -791,12 +795,68 @@
       "loadingError": "Ошибка загрузки данных инвентаря",
       "noCategories": "Категории не найдены",
       "noCategoriesDescription": "Создайте категории расходов для начала учета",
+      "clickForDetails": "Нажмите для просмотра деталей",
+      "clickForPurchaseDetails": "Нажмите для просмотра накладных",
+      "expenseDetails": "Детали расходов",
+      "purchaseDetails": "Детали накладных",
+      "noPurchases": "Накладных за этот день нет",
+      "purchasesByInvoice": "Накладные",
+      "itemDetails": "Детализация по позициям",
+      "itemsCount": "Позиций",
+      "totalInvoices": "Всего накладных",
+      "noExpenses": "Расходов за этот день нет",
+      "expensesByProduct": "Расходы по продуктам",
+      "receiptDetails": "Детализация по чекам",
+      "product": "Продукт",
+      "receiptsCount": "Чеков",
+      "quantity": "Количество",
+      "cost": "Стоимость",
+      "receiptId": "ID чека",
+      "dateTime": "Время",
+      "soldQty": "Продано",
+      "ingredientQty": "Израсходовано",
+      "totalReceipts": "Всего чеков",
+      "totalQuantity": "Общее количество",
+      "totalCost": "Общая стоимость",
+      "converted": "Конвертировано",
       "table": {
         "category": "Категория",
         "qty": "Кол-во",
         "amount": "Сумма",
         "total": "Итого",
         "sectionTotal": "Итого по секции"
+      }
+    },
+    "startingInventory": {
+      "setStartingInventory": "Установить начальные остатки",
+      "starting": "Начало",
+      "monthYear": "{{month}}/{{year}}",
+      "actualQuantity": "Фактическое количество",
+      "calculated": "Расчётное",
+      "discrepancy": "Расхождение",
+      "notesPlaceholder": "Причина расхождения (опционально)",
+      "title": "Начальные остатки",
+      "noDataToSave": "Нет данных для сохранения"
+    },
+    "periods": {
+      "closeMonth": "Закрыть месяц",
+      "reopenMonth": "Открыть месяц",
+      "closeWarning": "Вы собираетесь закрыть этот месяц:",
+      "closeEffect1": "Новые счета и расходы не смогут быть добавлены",
+      "closeEffect2": "Все расчеты остатков будут зафиксированы",
+      "closeEffect3": "Данные будут использованы для следующего месяца",
+      "canReopen": "Можно повторно открыть месяц",
+      "reopenHint": "если потребуется внести исправления.",
+      "confirmClose": "Закрыть месяц",
+      "reopenWarning": "Вы собираетесь открыть месяц {{month}} для внесения исправлений.",
+      "willClose": "Будет закрыт",
+      "reopenNote": "Важно",
+      "reopenNoteText": "После внесения изменений обязательно закройте этот месяц снова, чтобы данные корректно передались в следующий период.",
+      "confirmReopen": "Открыть месяц",
+      "status": {
+        "active": "Активный",
+        "closed": "Закрыт",
+        "archived": "Архивирован"
       }
     },
     "reports": {
@@ -1192,6 +1252,7 @@
     "unmapped": "не связано",
     "status_pending": "Ожидает",
     "status_processed": "Обработан",
+    "status_partially_processed": "Частично обработан",
     "status_error": "Ошибка",
     "previous": "Назад",
     "next": "Далее",
@@ -1220,6 +1281,15 @@
     "unmappedItemsInReceipt": "В этом чеке {{count}} несвязанных позиций",
     "pleaseMapProducts": "Пожалуйста, свяжите эти товары с продуктами из техкарты для автоматического списания ингредиентов.",
     "goToMapping": "Перейти к связыванию",
-    "createNewTechCard": "Создать новый товар"
+    "createNewTechCard": "Создать новый товар",
+    "updateStatusesHint": "Обновить статусы обработки всех чеков",
+    "statusesUpdated": "Статусы успешно обновлены",
+    "statusesUpdatedDetails": "Обработано: {{processed}}, частично: {{partially_processed}}, ожидает: {{pending}}",
+    "updateStatusError": "Ошибка обновления статусов",
+    "processSale": "Обработать чек",
+    "processing": "Обработка...",
+    "saleProcessed": "Чек обработан",
+    "saleProcessedDetails": "Обработано позиций: {{items}}, создано расходов: {{expenses}}",
+    "processSaleError": "Ошибка обработки чека"
   }
 }

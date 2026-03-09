@@ -1,7 +1,7 @@
 """Service for managing OFD sales synchronization."""
 from datetime import datetime, date
 from decimal import Decimal
-from typing import List, Dict, Any
+from typing import List, Dict, Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -10,13 +10,17 @@ from sqlalchemy.orm import selectinload
 from app.ofd_integration.models import (
     Sale,
     SaleItem,
+    SaleIngredientExpense,
     OFDConnection,
     ProductMapping,
+    SaleStatus,
 )
 from app.ofd_integration.service import OFDConnectionService
 from app.core.security import decrypt_api_key
 from app.core_models import Business
-from app.expenses.models import Invoice
+from app.expenses.models import Invoice, InvoiceItem
+from app.expenses.unit_service import UnitService
+from app.tech_cards.models import TechCardItem, TechCardItemIngredient
 
 
 class SalesService:
@@ -181,6 +185,9 @@ class SalesService:
             "actual_end_date": actual_end_date
         }
         
+        # Type hint for errors list
+        errors_list: List[str] = cast(List[str], stats["errors"])
+        
         # Process each receipt
         for receipt_data in receipts:
             try:
@@ -225,7 +232,7 @@ class SalesService:
                         fiscal_document_number=receipt_data.fiscal_document_number,
                         fiscal_sign=receipt_data.fiscal_sign,
                         raw_data=receipt_data.raw_data,
-                        processing_status="pending",
+                        processing_status=SaleStatus.PENDING,
                         imported_at=datetime.utcnow(),
                         imported_by=user_id,
                         items_count=0,
@@ -288,7 +295,7 @@ class SalesService:
                 sale.unmapped_items_count = unmapped_count
                 
             except Exception as e:
-                stats["errors"].append(
+                errors_list.append(
                     f"Receipt {receipt_data.receipt_id}: {str(e)}"
                 )
                 print(f"[SalesService] Error processing receipt {receipt_data.receipt_id}: {e}")
@@ -300,6 +307,21 @@ class SalesService:
         print(f"[SalesService] Committing {stats['new_receipts']} new and {stats['updated_receipts']} updated receipts to database")
         await session.commit()
         print("[SalesService] Successfully committed all changes")
+        
+        # Process ingredients for mapped sale items (automatic deduction)
+        print("[SalesService] Starting automatic ingredient deduction for mapped sales...")
+        process_stats = await SalesService.process_sale_items(
+            session=session,
+            business_id=connection.business_id
+        )
+        
+        # Add processing stats to main stats
+        stats["ingredients_processed"] = process_stats["total_processed"]
+        stats["ingredient_expenses_created"] = process_stats["expenses_created"]
+        if process_stats["errors"]:
+            stats["errors"].extend(process_stats["errors"])
+        
+        print("[SalesService] Ingredient processing completed")
         
         return stats
 
@@ -375,3 +397,458 @@ class SalesService:
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    @staticmethod
+    async def process_sale_items(
+        session: AsyncSession,
+        business_id: int,
+    ) -> Dict[str, Any]:
+        """Process unprocessed mapped sale items - deduct ingredients from inventory.
+        
+        For each mapped sale item that hasn't been processed:
+        1. Get the TechCardItem and its ingredients
+        2. For each ingredient, calculate quantity to deduct
+        3. Get average cost per unit from recent invoices
+        4. Create SaleIngredientExpense record
+        5. Mark sale_item as processed
+        
+        Args:
+            session: Database session
+            business_id: Business context
+            
+        Returns:
+            Dict with processing statistics:
+            {
+                "total_processed": int,
+                "expenses_created": int,
+                "errors": List[str]
+            }
+        """
+        stats = {
+            "total_processed": 0,
+            "expenses_created": 0,
+            "errors": []
+        }
+        
+        # Get all unprocessed mapped sale items
+        # Use populate_existing to ensure fresh load after previous commit
+        result = await session.execute(
+            select(SaleItem)
+            .join(Sale)
+            .where(
+                Sale.business_id == business_id,
+                SaleItem.is_mapped == True,  # noqa: E712
+                SaleItem.processed == False,  # noqa: E712
+            )
+            .options(
+                selectinload(SaleItem.sale),
+                selectinload(SaleItem.tech_card_item)
+                    .selectinload(TechCardItem.ingredients)
+                    .selectinload(TechCardItemIngredient.unit),
+            )
+            .order_by(SaleItem.id)
+            .execution_options(populate_existing=True)
+        )
+        unprocessed_items = list(result.scalars().all())
+        
+        # Type hint for stats dict
+        errors_list: List[str] = cast(List[str], stats["errors"])
+        total_processed_count: int = 0
+        expenses_created_count: int = 0
+        
+        print(f"[SalesService] Processing {len(unprocessed_items)} unprocessed mapped sale items")
+        
+        for sale_item in unprocessed_items:
+            # Save ID early to avoid lazy-load issues in error handler
+            sale_item_id = sale_item.id
+            
+            try:
+                if not sale_item.tech_card_item or not sale_item.tech_card_item.ingredients:
+                    # No ingredients to process, just mark as processed
+                    sale_item.processed = True
+                    total_processed_count += 1
+                    continue
+                
+                # For each ingredient in the tech card
+                for ingredient in sale_item.tech_card_item.ingredients:
+                    # Save ingredient ID early
+                    ingredient_category_id = ingredient.ingredient_category_id
+                    
+                    try:
+                        # Calculate quantity to deduct
+                        # Assume tech card is for 1 serving/portion
+                        # sale_item.quantity is how many portions were sold
+                        quantity_to_deduct = sale_item.quantity * ingredient.quantity
+                        
+                        # Get average cost per unit from recent invoices
+                        # Get last 5 matching invoice items for this category
+                        cost_result = await session.execute(
+                            select(InvoiceItem)
+                            .where(
+                                InvoiceItem.category_id == ingredient.ingredient_category_id,
+                            )
+                            .options(
+                                selectinload(InvoiceItem.invoice),
+                                selectinload(InvoiceItem.unit),
+                            )
+                            .order_by(InvoiceItem.id.desc())
+                            .limit(5)
+                        )
+                        recent_invoice_items = list(cost_result.scalars().all())
+                        
+                        # Calculate weighted average cost per unit (default to 0)
+                        # CRITICAL: Convert all invoice quantities to ingredient's unit for accurate pricing
+                        avg_cost_per_unit = Decimal(0)
+                        if recent_invoice_items:
+                            total_quantity = Decimal(0)
+                            total_cost = Decimal(0)
+                            
+                            # Convert each invoice item quantity to ingredient's unit
+                            for item in recent_invoice_items:
+                                item_qty = Decimal(str(item.quantity))
+                                item_unit_id = cast(int, item.unit_id)
+                                target_unit_id = int(ingredient.unit_id)
+                                
+                                # Convert quantity to ingredient's unit
+                                if item_unit_id != target_unit_id:
+                                    converted_qty, error = await UnitService.convert_quantity(
+                                        session,
+                                        item_qty,
+                                        item_unit_id,
+                                        target_unit_id
+                                    )
+                                    if converted_qty is not None and not error:
+                                        item_qty = converted_qty
+                                    else:
+                                        # Log warning but continue with original quantity
+                                        print(f"[SalesService] Warning: Unit conversion failed for invoice item {item.id}: {error}")
+                                        # Skip this item if conversion fails to avoid incorrect calculations
+                                        continue
+                                
+                                # Add to totals (cost remains the same, quantity is converted)
+                                total_quantity += item_qty
+                                total_cost += Decimal(str(item.quantity)) * Decimal(str(item.unit_price))
+                            
+                            # Calculate average cost per unit in ingredient's measurement unit
+                            if total_quantity > 0:
+                                avg_cost_per_unit = total_cost / total_quantity
+                        
+                        # Calculate total cost for this ingredient expense
+                        expense_cost = quantity_to_deduct * avg_cost_per_unit
+                        
+                        # Create SaleIngredientExpense record
+                        ingredient_expense = SaleIngredientExpense(
+                            sale_item_id=sale_item.id,
+                            tech_card_item_id=sale_item.tech_card_item_id,
+                            category_id=ingredient.ingredient_category_id,
+                            quantity=quantity_to_deduct,
+                            unit_id=ingredient.unit_id,
+                            cost=expense_cost,
+                        )
+                        session.add(ingredient_expense)
+                        expenses_created_count += 1
+                        
+                        print(f"[SalesService] Created expense: {quantity_to_deduct} {ingredient.unit.symbol} @ {avg_cost_per_unit} = {expense_cost}")
+                        
+                    except Exception as e:
+                        error_msg = f"Error processing ingredient for sale_item {sale_item_id}, category {ingredient_category_id}: {str(e)}"
+                        errors_list.append(error_msg)
+                        print(f"[SalesService] {error_msg}")
+                        continue
+                
+                # Mark sale item as processed
+                sale_item.processed = True
+                total_processed_count += 1
+                
+            except Exception as e:
+                error_msg = f"Error processing sale_item {sale_item_id}: {str(e)}"
+                errors_list.append(error_msg)
+                print(f"[SalesService] {error_msg}")
+                continue
+        
+        # Commit changes
+        await session.commit()
+        
+        # Update processing_status for all affected Sales
+        # Get unique sale_ids from processed items
+        affected_sale_ids = set(item.sale_id for item in unprocessed_items)
+        
+        if affected_sale_ids:
+            # Re-fetch Sales to check their processing status
+            sales_result = await session.execute(
+                select(Sale)
+                .where(Sale.id.in_(affected_sale_ids))
+                .options(selectinload(Sale.items))
+            )
+            affected_sales = sales_result.scalars().all()
+            
+            for sale in affected_sales:
+                # Same logic as update_sales_processing_status
+                # Check if all MAPPED items are processed
+                mapped_items = [item for item in sale.items if item.is_mapped]
+                
+                if not mapped_items:
+                    # No mapped items - remains pending
+                    sale.processing_status = SaleStatus.PENDING
+                else:
+                    processed_mapped = sum(1 for item in mapped_items if item.processed)
+                    
+                    if processed_mapped == len(mapped_items):
+                        # All mapped items processed
+                        sale.processing_status = SaleStatus.PROCESSED
+                        sale.processed_at = datetime.utcnow()
+                    elif processed_mapped > 0:
+                        # Some but not all mapped items processed
+                        sale.processing_status = SaleStatus.PARTIALLY_PROCESSED
+                    else:
+                        # No mapped items processed yet
+                        sale.processing_status = SaleStatus.PENDING
+            
+            # Commit status updates
+            await session.commit()
+            print(f"[SalesService] Updated processing_status for {len(affected_sales)} sales")
+        
+        # Update stats dict with counts
+        stats["total_processed"] = total_processed_count
+        stats["expenses_created"] = expenses_created_count
+        
+        print(f"[SalesService] Processed {total_processed_count} items, created {expenses_created_count} expenses")
+        
+        return stats
+
+    @staticmethod
+    async def update_sales_processing_status(
+        session: AsyncSession,
+        business_id: int,
+    ) -> Dict[str, int]:
+        """
+        Update processing_status for all Sales based on their items' processed state.
+        Useful for fixing status after migrations or bulk processing.
+        
+        Returns:
+            Dict with counts of updated sales by status
+        """
+        # Get all Sales for business
+        result = await session.execute(
+            select(Sale)
+            .where(Sale.business_id == business_id)
+            .options(selectinload(Sale.items))
+        )
+        sales = result.scalars().all()
+        
+        updated_counts = {
+            "processed": 0,
+            "partially_processed": 0,
+            "pending": 0,
+            "error": 0,
+        }
+        
+        for sale in sales:
+            old_status = sale.processing_status
+            
+            # Determine new status based on items
+            # LOGIC: 
+            # - If no mapped items exist -> "pending" (nothing to process)
+            # - If all mapped items are processed -> "processed"
+            # - If some (but not all) mapped items processed -> "partially_processed"
+            # - Otherwise -> "pending" (no mapped items processed yet)
+            mapped_items = [item for item in sale.items if item.is_mapped]
+            
+            if not mapped_items:
+                # No items are mapped - can't process
+                sale.processing_status = SaleStatus.PENDING
+                updated_counts["pending"] += 1
+            else:
+                # Count how many mapped items are processed
+                processed_mapped = sum(1 for item in mapped_items if item.processed)
+                
+                if processed_mapped == len(mapped_items):
+                    # All mapped items processed
+                    sale.processing_status = SaleStatus.PROCESSED
+                    if not sale.processed_at:
+                        sale.processed_at = datetime.utcnow()
+                    updated_counts["processed"] += 1
+                elif processed_mapped > 0:
+                    # Some but not all mapped items processed
+                    sale.processing_status = SaleStatus.PARTIALLY_PROCESSED
+                    updated_counts["partially_processed"] += 1
+                else:
+                    # No mapped items processed yet
+                    sale.processing_status = SaleStatus.PENDING
+                    updated_counts["pending"] += 1
+            
+            # Log if status changed
+            if old_status != sale.processing_status:
+                print(f"[SalesService] Sale {sale.id}: {old_status} -> {sale.processing_status}")
+        
+        await session.commit()
+        
+        print(f"[SalesService] Updated processing status for {len(sales)} sales: {updated_counts}")
+        return updated_counts
+
+    @staticmethod
+    async def process_single_sale(
+        session: AsyncSession,
+        sale_id: int,
+    ) -> Dict[str, Any]:
+        """
+        Process ingredient expenses for a single sale.
+        Re-processes all unprocessed mapped items in the sale.
+        
+        Args:
+            session: Database session
+            sale_id: ID of the sale to process
+            
+        Returns:
+            Dict with processing results
+        """
+        # Get sale with items and tech card data
+        result = await session.execute(
+            select(Sale)
+            .where(Sale.id == sale_id)
+            .options(
+                selectinload(Sale.items).selectinload(SaleItem.tech_card_item).selectinload(TechCardItem.ingredients)
+            )
+        )
+        sale = result.scalar_one_or_none()
+        
+        if not sale:
+            return {
+                "success": False,
+                "error": "Sale not found",
+                "processed_items": 0,
+                "expenses_created": 0,
+            }
+        
+        # Get unprocessed mapped items
+        unprocessed_items = [
+            item for item in sale.items 
+            if item.is_mapped and not item.processed
+        ]
+        
+        if not unprocessed_items:
+            return {
+                "success": True,
+                "message": "No unprocessed mapped items",
+                "processed_items": 0,
+                "expenses_created": 0,
+            }
+        
+        # Use same logic as process_sale_items but for single sale
+        processed_count = 0
+        expenses_count = 0
+        errors = []
+        
+        for sale_item in unprocessed_items:
+            try:
+                # Check if tech card item exists
+                if not sale_item.tech_card_item:
+                    errors.append(f"Sale item {sale_item.id} has no tech card item")
+                    continue
+                
+                # Process each ingredient in tech card
+                for ingredient in sale_item.tech_card_item.ingredients:
+                    ingredient_category_id = ingredient.ingredient_category_id
+                    
+                    try:
+                        # Calculate quantity to deduct
+                        quantity_to_deduct = sale_item.quantity * ingredient.quantity
+                        
+                        # Get average cost from recent invoices (last 5)
+                        cost_result = await session.execute(
+                            select(InvoiceItem)
+                            .where(InvoiceItem.category_id == ingredient_category_id)
+                            .options(
+                                selectinload(InvoiceItem.invoice),
+                                selectinload(InvoiceItem.unit),
+                            )
+                            .order_by(InvoiceItem.id.desc())
+                            .limit(5)
+                        )
+                        recent_invoice_items = list(cost_result.scalars().all())
+                        
+                        # Calculate weighted average with unit conversion
+                        avg_cost_per_unit = Decimal(0)
+                        if recent_invoice_items:
+                            total_quantity = Decimal(0)
+                            total_cost = Decimal(0)
+                            
+                            for item in recent_invoice_items:
+                                item_qty = Decimal(str(item.quantity))
+                                item_unit_id = cast(int, item.unit_id)
+                                target_unit_id = int(ingredient.unit_id)
+                                
+                                # Convert to ingredient's unit
+                                if item_unit_id != target_unit_id:
+                                    converted_qty, error = await UnitService.convert_quantity(
+                                        session, item_qty, item_unit_id, target_unit_id
+                                    )
+                                    if converted_qty is not None and not error:
+                                        item_qty = converted_qty
+                                    else:
+                                        print(f"[process_single_sale] Unit conversion failed: {error}")
+                                        continue
+                                
+                                total_quantity += item_qty
+                                total_cost += Decimal(str(item.quantity)) * Decimal(str(item.unit_price))
+                            
+                            if total_quantity > 0:
+                                avg_cost_per_unit = total_cost / total_quantity
+                        
+                        # Calculate expense cost
+                        expense_cost = quantity_to_deduct * avg_cost_per_unit
+                        
+                        # Create expense record
+                        ingredient_expense = SaleIngredientExpense(
+                            sale_item_id=sale_item.id,
+                            tech_card_item_id=sale_item.tech_card_item_id,
+                            category_id=ingredient_category_id,
+                            quantity=quantity_to_deduct,
+                            unit_id=ingredient.unit_id,
+                            cost=expense_cost,
+                        )
+                        session.add(ingredient_expense)
+                        expenses_count += 1
+                        
+                    except Exception as e:
+                        error_msg = f"Error processing ingredient {ingredient_category_id}: {str(e)}"
+                        errors.append(error_msg)
+                        print(f"[process_single_sale] {error_msg}")
+                        continue
+                
+                # Mark item as processed
+                sale_item.processed = True
+                processed_count += 1
+                
+            except Exception as e:
+                error_msg = f"Error processing sale_item {sale_item.id}: {str(e)}"
+                errors.append(error_msg)
+                print(f"[process_single_sale] {error_msg}")
+                continue
+        
+        # Commit changes
+        await session.commit()
+        
+        # Update sale processing status
+        await session.refresh(sale, ["items"])
+        mapped_items = [item for item in sale.items if item.is_mapped]
+        
+        if mapped_items:
+            processed_mapped = sum(1 for item in mapped_items if item.processed)
+            
+            if processed_mapped == len(mapped_items):
+                sale.processing_status = SaleStatus.PROCESSED
+                sale.processed_at = datetime.utcnow()
+            elif processed_mapped > 0:
+                sale.processing_status = SaleStatus.PARTIALLY_PROCESSED
+            else:
+                sale.processing_status = SaleStatus.PENDING
+            
+            await session.commit()
+        
+        return {
+            "success": True,
+            "processed_items": processed_count,
+            "expenses_created": expenses_count,
+            "errors": errors,
+        }

@@ -7,10 +7,13 @@ import Input from '~/shared/ui/Input';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import { useAppContext } from '~/shared/context/AppContext';
 import SaleDetailModal from '~/components/modals/SaleDetailModal';
+import { useToast } from '~/shared/lib/useToast';
+import Toast from '~/shared/ui/Toast';
 
 export default function SalesSync() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
+  const { toast, success, error: showError, hideToast } = useToast();
   const [connections, setConnections] = useState<OFDConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState<number | null>(null);
   const [startDate, setStartDate] = useState('');
@@ -19,6 +22,7 @@ export default function SalesSync() {
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
   const [syncStats, setSyncStats] = useState<SyncSalesResponse | null>(null);
   const [error, setError] = useState('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   // Sales list state
   const [sales, setSales] = useState<Sale[]>([]);
@@ -131,6 +135,37 @@ export default function SalesSync() {
       setError(err instanceof Error ? err.message : t('sales.syncError'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStatuses = async () => {
+    if (!currentLocation) return;
+    
+    setIsUpdatingStatus(true);
+    try {
+      const result = await ofdAPI.updateSalesStatus(currentLocation.id);
+      console.log('[SalesSync] Updated statuses:', result);
+      
+      // Reload sales list to show updated statuses
+      await loadSales();
+      
+      // Show success notification
+      success(
+        t('sales.statusesUpdated'),
+        t('sales.statusesUpdatedDetails', { 
+          processed: result.updated_counts.processed,
+          partially_processed: result.updated_counts.partially_processed || 0,
+          pending: result.updated_counts.pending 
+        })
+      );
+    } catch (err) {
+      console.error('[SalesSync] Failed to update statuses:', err);
+      showError(
+        t('sales.updateStatusError'),
+        err instanceof Error ? err.message : undefined
+      );
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -254,12 +289,12 @@ export default function SalesSync() {
           </div>
 
           {/* Sync Button */}
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               type="button"
               onClick={handleSync}
-              disabled={isLoading}
-              className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+              disabled={isLoading || isUpdatingStatus}
+              className="flex items-center justify-center flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
             >
               {isLoading ? (
                 <>
@@ -271,6 +306,21 @@ export default function SalesSync() {
                   <ArrowPathIcon className="h-4 w-4 mr-2" />
                   {t('sales.syncButton')}
                 </>
+              )}
+            </button>
+            
+            {/* Update Statuses Button */}
+            <button
+              type="button"
+              onClick={handleUpdateStatuses}
+              disabled={isLoading || isUpdatingStatus}
+              className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:bg-gray-300 disabled:text-gray-500"
+              title={t('sales.updateStatusesHint')}
+            >
+              {isUpdatingStatus ? (
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircleIcon className="h-4 w-4" />
               )}
             </button>
           </div>
@@ -442,9 +492,11 @@ export default function SalesSync() {
                             className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               sale.processing_status === 'processed'
                                 ? 'bg-green-100 text-green-800'
-                                : sale.processing_status === 'error'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                : sale.processing_status === 'partially_processed'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : sale.processing_status === 'error'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-yellow-100 text-yellow-800'
                             }`}
                           >
                             {t(`sales.status_${sale.processing_status}`)}
@@ -502,6 +554,15 @@ export default function SalesSync() {
             }
           }
         }}
+      />
+
+      {/* Toast Notifications */}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={hideToast}
       />
     </div>
   );

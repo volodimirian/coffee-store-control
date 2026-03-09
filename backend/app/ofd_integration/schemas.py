@@ -2,7 +2,10 @@
 
 from datetime import datetime, date
 from decimal import Decimal
+from typing import Literal
 from pydantic import BaseModel, Field
+
+from app.ofd_integration.models import SaleStatus
 
 
 # ========== OFD Provider Schemas ==========
@@ -138,7 +141,9 @@ class SaleResponse(BaseModel):
     total_amount: Decimal
     fiscal_document_number: str | None
     fiscal_sign: str | None
-    processing_status: str
+    processing_status: Literal[
+        "pending", "partially_processed", "processed", "error"
+    ]  # Use SaleStatus constants
     processing_error: str | None
     processed_at: datetime | None
     imported_at: datetime
@@ -166,6 +171,8 @@ class SaleSyncResponse(BaseModel):
     updated_receipts: int = Field(default=0, description="Existing receipts updated")
     mapped_items: int = Field(..., description="Items with product mapping")
     unmapped_items: int = Field(..., description="Items without product mapping")
+    ingredients_processed: int = Field(default=0, description="Sale items processed for ingredient deduction")
+    ingredient_expenses_created: int = Field(default=0, description="Ingredient expense records created")
     errors: list[str] = Field(default_factory=list, description="Import errors")
     actual_start_date: date = Field(..., description="Actual start date used for sync")
     actual_end_date: date = Field(..., description="Actual end date used for sync")

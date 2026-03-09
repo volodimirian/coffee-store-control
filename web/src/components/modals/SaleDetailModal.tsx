@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon, CheckCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckCircleIcon, PlusIcon, CogIcon } from '@heroicons/react/24/outline';
 import type { Sale, SaleItem } from '~/shared/api/ofd';
 import { ofdAPI } from '~/shared/api';
 import { techCardsApi, type TechCardItem } from '~/shared/api/techCardsApi';
 import SearchableSelect, { type SelectOption } from '~/shared/ui/SearchableSelect';
 import TechCardModal from './TechCardModal';
+import { useToast } from '~/shared/lib/useToast';
+import Toast from '~/shared/ui/Toast';
 
 interface SaleDetailModalProps {
   isOpen: boolean;
@@ -23,11 +25,13 @@ export default function SaleDetailModal({
   onMappingCreated,
 }: SaleDetailModalProps) {
   const { t } = useTranslation();
+  const { toast, success, error: showError, hideToast } = useToast();
   const [techCards, setTechCards] = useState<TechCardItem[]>([]);
   const [isLoadingTechCards, setIsLoadingTechCards] = useState(false);
   const [mappingInProgress, setMappingInProgress] = useState<Record<number, number | null>>({});
   const [isCreatingTechCard, setIsCreatingTechCard] = useState(false);
   const [selectedItemForCreate, setSelectedItemForCreate] = useState<SaleItem | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Load tech cards when modal opens
   useEffect(() => {
@@ -94,6 +98,36 @@ export default function SaleDetailModal({
     
     if (onMappingCreated) {
       onMappingCreated();
+    }
+  };
+
+  const handleProcessSale = async () => {
+    if (!sale) return;
+    
+    setIsProcessing(true);
+    try {
+      const result = await ofdAPI.processSale(sale.id);
+      
+      success(
+        t('sales.saleProcessed'),
+        t('sales.saleProcessedDetails', {
+          items: result.processed_items,
+          expenses: result.expenses_created,
+        })
+      );
+      
+      // Reload sale data
+      if (onMappingCreated) {
+        await onMappingCreated();
+      }
+    } catch (err) {
+      console.error('Failed to process sale:', err);
+      showError(
+        t('sales.processSaleError'),
+        err instanceof Error ? err.message : undefined
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -284,7 +318,19 @@ export default function SaleDetailModal({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+            <div>
+              {sale && sale.items && sale.items.some(item => item.is_mapped && !item.processed) && (
+                <button
+                  onClick={handleProcessSale}
+                  disabled={isProcessing}
+                  className="flex items-center px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CogIcon className="h-4 w-4 mr-2" />
+                  {isProcessing ? t('sales.processing') : t('sales.processSale')}
+                </button>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
@@ -306,6 +352,15 @@ export default function SaleDetailModal({
         mode="create"
         initialName={selectedItemForCreate?.ofd_product_name}
         initialPrice={selectedItemForCreate?.price}
+      />
+
+      {/* Toast Notifications */}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={hideToast}
       />
     </div>
   );

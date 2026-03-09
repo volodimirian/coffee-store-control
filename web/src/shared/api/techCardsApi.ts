@@ -59,6 +59,36 @@ export interface TechCardItemFilters {
   approval_status?: string;
 }
 
+export interface StartingInventory {
+  id: number;
+  business_id: number;
+  category_id: number;
+  quantity: string;
+  unit_id: number;
+  inventory_date: string;
+  notes?: string;
+  created_by: number;
+  created_at: string;
+  // Nested
+  category_name?: string;
+  unit_name?: string;
+  unit_symbol?: string;
+  created_by_name?: string;
+}
+
+export interface StartingInventoryWithCalculated extends StartingInventory {
+  calculated_quantity: string;
+  discrepancy: string;
+}
+
+export interface StartingInventoryCreate {
+  category_id: number;
+  quantity: string;
+  unit_id: number;
+  inventory_date: string;
+  notes?: string;
+}
+
 class TechCardsApi {
   /**
    * List tech card items with filters
@@ -135,6 +165,73 @@ class TechCardsApi {
     const response = await api.post<TechCardItem>(
       `/tech-cards/business/${businessId}/items/${itemId}/approval`,
       { approval_status: approvalStatus }
+    );
+    return response.data;
+  }
+
+  // ========== Starting Inventory Methods ==========
+
+  /**
+   * Get all starting inventories for a month
+   */
+  async getStartingInventoryForMonth(
+    businessId: number,
+    year: number,
+    month: number
+  ): Promise<StartingInventoryWithCalculated[]> {
+    const response = await api.get<StartingInventoryWithCalculated[]>(
+      `/tech-cards/business/${businessId}/starting-inventory`,
+      { params: { year, month } }
+    );
+    return response.data;
+  }
+
+  /**
+   * Get starting inventory for specific category
+   */
+  async getStartingInventoryForCategory(
+    businessId: number,
+    categoryId: number,
+    year: number,
+    month: number
+  ): Promise<StartingInventoryWithCalculated> {
+    const response = await api.get<StartingInventoryWithCalculated>(
+      `/tech-cards/business/${businessId}/starting-inventory/category/${categoryId}`,
+      { params: { year, month } }
+    );
+    return response.data;
+  }
+
+  /**
+   * Create or update single starting inventory
+   */
+  async createOrUpdateStartingInventory(
+    businessId: number,
+    year: number,
+    month: number,
+    data: StartingInventoryCreate
+  ): Promise<StartingInventory> {
+    const response = await api.post<StartingInventory>(
+      `/tech-cards/business/${businessId}/starting-inventory`,
+      data,
+      { params: { year, month } }
+    );
+    return response.data;
+  }
+
+  /**
+   * Bulk create or update starting inventories
+   */
+  async bulkUpsertStartingInventory(
+    businessId: number,
+    year: number,
+    month: number,
+    items: StartingInventoryCreate[]
+  ): Promise<StartingInventory[]> {
+    const response = await api.post<StartingInventory[]>(
+      `/tech-cards/business/${businessId}/starting-inventory/bulk`,
+      items,
+      { params: { year, month } }
     );
     return response.data;
   }
