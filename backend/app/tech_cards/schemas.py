@@ -181,6 +181,12 @@ class StartingInventoryListOut(BaseModel):
     page_size: int
 
 
+class StartingInventoryWithCalculated(StartingInventoryOut):
+    """Schema for starting inventory with calculated comparison."""
+    calculated_quantity: Decimal = Field(..., description="Calculated opening balance from previous month")
+    discrepancy: Decimal = Field(..., description="Difference between manual and calculated")
+
+
 # ========== Inventory Balance Schemas ==========
 
 class InventoryBalanceOut(BaseModel):

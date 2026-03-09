@@ -1,6 +1,6 @@
 """Technology Card service for recipe management and cost calculations."""
 
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, cast
 
@@ -13,6 +13,7 @@ from app.tech_cards.models import (
     TechCardItemIngredient,
     IngredientCostHistory,
     ApprovalStatus,
+    StartingInventory,
 )
 from app.tech_cards.schemas import (
     TechCardItemCreate,
@@ -454,3 +455,177 @@ class IngredientCostService:
             date_range_from=min(r.purchase_date for r in records),
             date_range_to=max(r.purchase_date for r in records),
         )
+
+
+class StartingInventoryService:
+    """Service for managing starting inventory (month opening balances)."""
+
+    @staticmethod
+    async def get_by_category_and_month(
+        db: AsyncSession,
+        business_id: int,
+        category_id: int,
+        year: int,
+        month: int,
+    ) -> Optional[StartingInventory]:
+        """Get starting inventory for specific category and month."""
+        first_day = date(year, month, 1)
+        query = select(StartingInventory).where(
+            and_(
+                StartingInventory.business_id == business_id,
+                StartingInventory.category_id == category_id,
+                StartingInventory.inventory_date == first_day,
+            )
+        )
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_all_for_month(
+        db: AsyncSession,
+        business_id: int,
+        year: int,
+        month: int,
+    ) -> list[StartingInventory]:
+        """Get all starting inventories for a business in a specific month."""
+        first_day = date(year, month, 1)
+        query = (
+            select(StartingInventory)
+            .options(
+                selectinload(StartingInventory.category),
+                selectinload(StartingInventory.unit),
+                selectinload(StartingInventory.created_by_user),
+            )
+            .where(
+                and_(
+                    StartingInventory.business_id == business_id,
+                    StartingInventory.inventory_date == first_day,
+                )
+            )
+            .order_by(StartingInventory.category_id)
+        )
+        result = await db.execute(query)
+        return list(result.scalars().all())
+
+    @staticmethod
+    async def create_or_update(
+        db: AsyncSession,
+        business_id: int,
+        category_id: int,
+        quantity: Decimal,
+        unit_id: int,
+        year: int,
+        month: int,
+        created_by: int,
+        notes: Optional[str] = None,
+    ) -> StartingInventory:
+        """Create new or update existing starting inventory."""
+        first_day = date(year, month, 1)
+
+        # Check if exists
+        existing = await StartingInventoryService.get_by_category_and_month(
+            db, business_id, category_id, year, month
+        )
+
+        if existing:
+            # Update existing
+            existing.quantity = quantity
+            existing.unit_id = unit_id
+            existing.notes = notes
+            existing.created_by = created_by
+            existing.created_at = datetime.utcnow()
+            await db.commit()
+            await db.refresh(existing)
+            return existing
+        else:
+            # Create new
+            new_record = StartingInventory(
+                business_id=business_id,
+                category_id=category_id,
+                quantity=quantity,
+                unit_id=unit_id,
+                inventory_date=first_day,
+                created_by=created_by,
+                notes=notes,
+            )
+            db.add(new_record)
+            await db.commit()
+            await db.refresh(new_record)
+            return new_record
+
+    @staticmethod
+    async def bulk_upsert(
+        db: AsyncSession,
+        business_id: int,
+        year: int,
+        month: int,
+        inventory_data: list[dict],
+        created_by: int,
+    ) -> list[StartingInventory]:
+        """Bulk create or update starting inventories."""
+        results = []
+        for item in inventory_data:
+            record = await StartingInventoryService.create_or_update(
+                db=db,
+                business_id=business_id,
+                category_id=item["category_id"],
+                quantity=item["quantity"],
+                unit_id=item["unit_id"],
+                year=year,
+                month=month,
+                created_by=created_by,
+                notes=item.get("notes"),
+            )
+            results.append(record)
+        return results
+
+    @staticmethod
+    async def get_calculated_opening_balance(
+        db: AsyncSession,
+        business_id: int,
+        category_id: int,
+        year: int,
+        month: int,
+    ) -> Decimal:
+        """
+        Calculate opening balance from previous month's closing balance.
+        Closing Balance = Opening + Purchases - Usage
+        """
+        # Get previous month
+        if month == 1:
+            prev_year = year - 1
+            prev_month = 12
+        else:
+            prev_year = year
+            prev_month = month - 1
+
+        # Get closing balance from inventory_balance table
+        from app.expenses.models import InventoryBalance, MonthPeriod
+
+        # Find previous month period
+        period_query = select(MonthPeriod).where(
+            and_(
+                MonthPeriod.year == prev_year,
+                MonthPeriod.month == prev_month,
+            )
+        )
+        period_result = await db.execute(period_query)
+        prev_period = period_result.scalar_one_or_none()
+
+        if not prev_period:
+            return Decimal(0)
+
+        # Get balance
+        balance_query = select(InventoryBalance).where(
+            and_(
+                InventoryBalance.category_id == category_id,
+                InventoryBalance.month_period_id == prev_period.id,
+            )
+        )
+        balance_result = await db.execute(balance_query)
+        balance = balance_result.scalar_one_or_none()
+
+        if not balance:
+            return Decimal(0)
+
+        return cast(Decimal, balance.closing_balance)
