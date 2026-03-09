@@ -263,8 +263,8 @@ export default function InventoryTrackingTab() {
     // Load all periods to find if there's an active one
     try {
       const year = getYear(currentDate);
-      const periods = await monthPeriodsApi.getAll(currentLocation!.business_id, { year });
-      setAllPeriods(periods);
+      const periods = await monthPeriodsApi.list({ business_id: currentLocation!.id, year });
+      setAllPeriods(periods.periods);
       setIsReopenMonthModalOpen(true);
     } catch (err) {
       console.error('Failed to load periods:', err);
@@ -1241,7 +1241,7 @@ export default function InventoryTrackingTab() {
         onConfirm={confirmReopenMonth}
         monthName={format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
         currentActiveMonthName={
-          allPeriods.find(p => p.status === 'ACTIVE' && p.id !== currentPeriod?.id)?.name
+          allPeriods.find(p => p.status === 'active' && p.id !== currentPeriod?.id)?.name
         }
         loading={isClosingMonth}
       />

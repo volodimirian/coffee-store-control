@@ -132,6 +132,7 @@ export const unitsApi = {
 interface MonthPeriodListParams {
   business_id: number;
   status?: string;
+  year?: number;
   is_active?: boolean;
   skip?: number;
   limit?: number;
