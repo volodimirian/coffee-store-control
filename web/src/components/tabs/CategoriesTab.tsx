@@ -16,6 +16,8 @@ import { getShowInactivePreference, setShowInactivePreference } from '~/shared/l
 import { usePermissions } from '~/shared/lib/usePermissions';
 import { can } from '~/shared/utils/permissions';
 import { Protected } from '~/shared/ui';
+import { useToast } from '~/shared/lib/useToast';
+import Toast from '~/shared/ui/Toast';
 import SectionModal from '~/components/modals/SectionModal';
 import CategoryModal from '~/components/modals/CategoryModal';
 import ConfirmDeleteModal from '~/components/modals/ConfirmDeleteModal';
@@ -272,6 +274,7 @@ export default function CategoriesTab() {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
   const { permissions, isLoading: isLoadingPermissions } = usePermissions();
+  const { toast, error: showError, hideToast } = useToast();
   
   const [activeSections, setActiveSections] = useState<SectionWithCategories[]>([]);
   const [inactiveSections, setInactiveSections] = useState<SectionWithCategories[]>([]);
@@ -457,7 +460,7 @@ export default function CategoriesTab() {
         setPendingDeleteAction(null);
       } catch (err) {
         console.error(`Error deleting ${deleteType}:`, err);
-        alert(t(`expenses.categories.errorDelete${deleteType === 'section' ? 'Section' : 'Category'}`));
+        showError(t(`expenses.categories.errorDelete${deleteType === 'section' ? 'Section' : 'Category'}`));
       }
     }
   };
@@ -920,6 +923,14 @@ export default function CategoriesTab() {
         onConfirm={handleConfirmDelete}
         type={deleteType}
         itemName={deleteItemName}
+      />
+
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onClose={hideToast}
       />
     </div>
   );

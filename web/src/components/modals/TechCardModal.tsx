@@ -18,13 +18,15 @@ interface TechCardModalProps {
   onSuccess: () => void;
   item?: TechCardItem | null;
   mode: 'create' | 'edit' | 'view';
+  initialName?: string;
+  initialPrice?: string;
 }
 
 interface IngredientRow extends TechCardItemIngredient {
   tempId: string;
 }
 
-export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }: TechCardModalProps) {
+export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode, initialName, initialPrice }: TechCardModalProps) {
   const { t } = useTranslation();
   const { currentLocation } = useAppContext();
   const isViewing = mode === 'view';
@@ -114,14 +116,14 @@ export default function TechCardModal({ isOpen, onClose, onSuccess, item, mode }
     } else if (!item && isOpen) {
       // Reset form for create mode
       setFormData({
-        name: '',
+        name: initialName || '',
         description: '',
-        selling_price: '',
+        selling_price: initialPrice || '',
         is_active: true,
       });
       setIngredients([]);
     }
-  }, [item, isOpen]);
+  }, [item, isOpen, initialName, initialPrice]);
 
   const handleAddIngredient = () => {
     setIngredients([

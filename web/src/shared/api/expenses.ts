@@ -116,6 +116,15 @@ export const unitsApi = {
     const response = await api.post<Unit>(`/expenses/units/${unitId}/restore`);
     return response.data;
   },
+
+  /**
+   * Get all units that can be converted to/from the given unit
+   * Returns units in the same conversion family (same base unit)
+   */
+  getConvertible: async (unitId: number): Promise<Unit[]> => {
+    const response = await api.get<Unit[]>(`/expenses/units/${unitId}/convertible`);
+    return response.data;
+  },
 };
 
 // ============ Month Periods API ============
@@ -176,6 +185,30 @@ export const monthPeriodsApi = {
    */
   delete: async (periodId: number): Promise<void> => {
     await api.delete(`/expenses/periods/${periodId}`);
+  },
+
+  /**
+   * Close a period (finalize month calculations)
+   */
+  close: async (periodId: number): Promise<MonthPeriod> => {
+    const response = await api.post<MonthPeriod>(`/expenses/periods/${periodId}/close`);
+    return response.data;
+  },
+
+  /**
+   * Reopen a closed period (allow corrections)
+   */
+  reopen: async (periodId: number): Promise<MonthPeriod> => {
+    const response = await api.post<MonthPeriod>(`/expenses/periods/${periodId}/reopen`);
+    return response.data;
+  },
+
+  /**
+   * Archive a closed period (permanent historical record)
+   */
+  archive: async (periodId: number): Promise<MonthPeriod> => {
+    const response = await api.post<MonthPeriod>(`/expenses/periods/${periodId}/archive`);
+    return response.data;
   },
 };
 
@@ -709,6 +742,17 @@ export interface PurchaseDetail {
   was_converted: boolean;
 }
 
+export interface SaleExpenseDetail {
+  sale_id: number;
+  receipt_id: string;
+  receipt_datetime: string;
+  tech_card_item_name: string;
+  quantity_sold: string;
+  ingredient_quantity: string; // As stored in DB (in ingredient's unit)
+  unit_symbol: string; // Unit from expense record
+  cost: string;
+}
+
 export interface DayData {
   date: string;
   purchases_qty: string;
@@ -716,12 +760,14 @@ export interface DayData {
   usage_qty: string;
   usage_amount: string;
   purchase_details: PurchaseDetail[];
+  sale_expense_details: SaleExpenseDetail[];
 }
 
 export interface CategoryData {
   category_id: number;
   category_name: string;
   unit_symbol: string;
+  default_unit_id: number;  // For unit conversion selector
   daily_data: DayData[];
 }
 

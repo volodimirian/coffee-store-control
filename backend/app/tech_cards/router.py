@@ -1,16 +1,19 @@
 """Technology Card API router."""
 
-from typing import Optional
+from typing import Optional, cast
 from decimal import Decimal
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.permissions import PermissionChecker
 from app.deps import get_current_user, get_db_dep
 from app.core_models import User
 from app.businesses.service import BusinessService
-from app.tech_cards.service import TechCardService, IngredientCostService
+from app.tech_cards.service import TechCardService, IngredientCostService, StartingInventoryService
 from app.tech_cards.schemas import (
     TechCardItemCreate,
     TechCardItemUpdate,
@@ -18,6 +21,9 @@ from app.tech_cards.schemas import (
     TechCardItemListOut,
     TechCardItemApprovalUpdate,
     IngredientCostSummary,
+    StartingInventoryCreate,
+    StartingInventoryOut,
+    StartingInventoryWithCalculated,
 )
 from app.core.error_codes import ErrorCode
 
@@ -381,3 +387,330 @@ async def get_ingredient_cost_summary(
         )
 
     return summary
+
+
+# ========== Starting Inventory Endpoints ==========
+
+@router.get(
+    "/business/{business_id}/starting-inventory",
+    response_model=list[StartingInventoryWithCalculated]
+)
+async def get_starting_inventory_for_month(
+    business_id: int,
+    year: int = Query(..., ge=2020, le=2100, description="Year"),
+    month: int = Query(..., ge=1, le=12, description="Month"),
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+    _: None = Depends(
+        PermissionChecker(permission_name="view_tech_card_items")
+    ),
+):
+    """
+    Get all starting inventories for a month.
+    Returns manual values + calculated values for comparison.
+    For categories without manual entries, returns only calculated values.
+    """
+    # Check if user has access to business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=business_id,
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this business",
+        )
+
+    # Get all active categories for the business (through sections)
+    from app.expenses.models import ExpenseSection, ExpenseCategory
+    stmt = select(ExpenseCategory).join(ExpenseSection).where(
+        ExpenseSection.business_id == business_id,
+        ExpenseCategory.is_active == True,
+        ExpenseSection.is_active == True,
+    ).options(
+        selectinload(ExpenseCategory.default_unit),
+    )
+    result = await session.execute(stmt)
+    all_categories = result.scalars().all()
+
+    # Get manual entries
+    manual_records = await StartingInventoryService.get_all_for_month(
+        session, business_id, year, month
+    )
+    
+    # Create map of manual records by category_id
+    manual_map = {cast(int, record.category_id): record for record in manual_records}
+
+    # For each category, get calculated value and create result
+    results = []
+    for category in all_categories:
+        calculated = await StartingInventoryService.get_calculated_opening_balance(
+            session, business_id, category.id, year, month
+        )
+        
+        # Debug logging
+        print(f"[DEBUG] Category: {category.name}, Calculated: {calculated}, Type: {type(calculated)}")
+        
+        manual_record = manual_map.get(category.id)
+        
+        if manual_record:
+            # Category has manual entry
+            record_dict = {
+                "id": manual_record.id,
+                "business_id": manual_record.business_id,
+                "category_id": manual_record.category_id,
+                "quantity": manual_record.quantity,
+                "unit_id": manual_record.unit_id,
+                "inventory_date": manual_record.inventory_date,
+                "notes": manual_record.notes,
+                "created_by": manual_record.created_by,
+                "created_at": manual_record.created_at,
+                "category_name": cast(str, manual_record.category.name) if manual_record.category else None,
+                "unit_name": cast(str, manual_record.unit.name) if manual_record.unit else None,
+                "unit_symbol": cast(str, manual_record.unit.symbol) if manual_record.unit else None,
+                "created_by_name": (
+                    cast(str, manual_record.created_by_user.username)
+                    if manual_record.created_by_user
+                    else None
+                ),
+                "calculated_quantity": calculated,
+                "discrepancy": manual_record.quantity - calculated,
+            }
+        else:
+            # Category has no manual entry, return calculated only
+            from datetime import date
+            first_day = date(year, month, 1)
+            record_dict = {
+                "id": 0,  # No manual record exists
+                "business_id": business_id,
+                "category_id": category.id,
+                "quantity": None,  # No manual entry - frontend will use calculated_quantity
+                "unit_id": category.default_unit_id,
+                "inventory_date": first_day.isoformat(),
+                "notes": None,
+                "created_by": current_user.id,
+                "created_at": datetime.utcnow(),
+                "category_name": cast(str, category.name),
+                "unit_name": cast(str, category.default_unit.name) if category.default_unit else None,
+                "unit_symbol": cast(str, category.default_unit.symbol) if category.default_unit else None,
+                "created_by_name": None,
+                "calculated_quantity": calculated,
+                "discrepancy": Decimal("0") - calculated,
+            }
+        
+        results.append(record_dict)
+
+    return results
+
+
+@router.post(
+    "/business/{business_id}/starting-inventory",
+    response_model=StartingInventoryOut,
+    status_code=status.HTTP_201_CREATED
+)
+async def create_or_update_starting_inventory(
+    business_id: int,
+    data: StartingInventoryCreate,
+    year: int = Query(..., ge=2020, le=2100, description="Year"),
+    month: int = Query(..., ge=1, le=12, description="Month"),
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+    _: None = Depends(
+        PermissionChecker(permission_name="create_tech_card_items")
+    ),
+):
+    """Create or update starting inventory for a category."""
+    # Check if user has access to business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=business_id,
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this business",
+        )
+
+    record = await StartingInventoryService.create_or_update(
+        db=session,
+        business_id=business_id,
+        category_id=data.category_id,
+        quantity=data.quantity,
+        unit_id=data.unit_id,
+        year=year,
+        month=month,
+        created_by=current_user.id,
+        notes=data.notes,
+    )
+
+    # Build response with nested data
+    await session.refresh(record, ["category", "unit", "created_by_user"])
+    
+    return StartingInventoryOut(
+        id=record.id,
+        business_id=record.business_id,
+        category_id=record.category_id,
+        quantity=record.quantity,
+        unit_id=record.unit_id,
+        inventory_date=record.inventory_date,
+        notes=record.notes,
+        created_by=record.created_by,
+        created_at=record.created_at,
+        category_name=cast(str, record.category.name) if record.category else None,
+        unit_name=cast(str, record.unit.name) if record.unit else None,
+        unit_symbol=cast(str, record.unit.symbol) if record.unit else None,
+        created_by_name=(
+            cast(str, record.created_by_user.username)
+            if record.created_by_user
+            else None
+        ),
+    )
+
+
+@router.post(
+    "/business/{business_id}/starting-inventory/bulk",
+    response_model=list[StartingInventoryOut]
+)
+async def bulk_upsert_starting_inventory(
+    business_id: int,
+    items: list[StartingInventoryCreate],
+    year: int = Query(..., ge=2020, le=2100, description="Year"),
+    month: int = Query(..., ge=1, le=12, description="Month"),
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+    _: None = Depends(
+        PermissionChecker(permission_name="create_tech_card_items")
+    ),
+):
+    """Bulk create or update starting inventories."""
+    # Check if user has access to business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=business_id,
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this business",
+        )
+
+    inventory_data = [
+        {
+            "category_id": item.category_id,
+            "quantity": item.quantity,
+            "unit_id": item.unit_id,
+            "notes": item.notes,
+        }
+        for item in items
+    ]
+
+    records = await StartingInventoryService.bulk_upsert(
+        db=session,
+        business_id=business_id,
+        year=year,
+        month=month,
+        inventory_data=inventory_data,
+        created_by=current_user.id,
+    )
+
+    # Build response with nested data
+    results = []
+    for record in records:
+        await session.refresh(record, ["category", "unit", "created_by_user"])
+        results.append(
+            StartingInventoryOut(
+                id=record.id,
+                business_id=record.business_id,
+                category_id=record.category_id,
+                quantity=record.quantity,
+                unit_id=record.unit_id,
+                inventory_date=record.inventory_date,
+                notes=record.notes,
+                created_by=record.created_by,
+                created_at=record.created_at,
+                category_name=cast(str, record.category.name) if record.category else None,
+                unit_name=cast(str, record.unit.name) if record.unit else None,
+                unit_symbol=cast(str, record.unit.symbol) if record.unit else None,
+                created_by_name=(
+                    cast(str, record.created_by_user.username)
+                    if record.created_by_user
+                    else None
+                ),
+            )
+        )
+
+    return results
+
+
+@router.get(
+    "/business/{business_id}/starting-inventory/category/{category_id}",
+    response_model=StartingInventoryWithCalculated
+)
+async def get_starting_inventory_for_category(
+    business_id: int,
+    category_id: int,
+    year: int = Query(..., ge=2020, le=2100, description="Year"),
+    month: int = Query(..., ge=1, le=12, description="Month"),
+    session: AsyncSession = Depends(get_db_dep),
+    current_user: User = Depends(get_current_user),
+    _: None = Depends(
+        PermissionChecker(permission_name="view_tech_card_items")
+    ),
+):
+    """Get starting inventory for specific category with calculated comparison."""
+    # Check if user has access to business
+    has_access = await BusinessService.can_user_manage_business(
+        session=session,
+        user_id=current_user.id,
+        business_id=business_id,
+    )
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this business",
+        )
+
+    manual = await StartingInventoryService.get_by_category_and_month(
+        session, business_id, category_id, year, month
+    )
+
+    calculated = await StartingInventoryService.get_calculated_opening_balance(
+        session, business_id, category_id, year, month
+    )
+
+    if manual:
+        await session.refresh(manual, ["category", "unit", "created_by_user"])
+        return StartingInventoryWithCalculated(
+            id=manual.id,
+            business_id=manual.business_id,
+            category_id=manual.category_id,
+            quantity=manual.quantity,
+            unit_id=manual.unit_id,
+            inventory_date=manual.inventory_date,
+            notes=manual.notes,
+            created_by=manual.created_by,
+            created_at=manual.created_at,
+            category_name=cast(str, manual.category.name) if manual.category else None,
+            unit_name=cast(str, manual.unit.name) if manual.unit else None,
+            unit_symbol=cast(str, manual.unit.symbol) if manual.unit else None,
+            created_by_name=(
+                cast(str, manual.created_by_user.username)
+                if manual.created_by_user
+                else None
+            ),
+            calculated_quantity=calculated,
+            discrepancy=manual.quantity - calculated,
+        )
+    else:
+        # No manual entry - return calculated value only (as if manual = calculated)
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": ErrorCode.NOT_FOUND,
+                "message": "No starting inventory found for this category and month",
+                "calculated_opening_balance": float(calculated),
+            },
+        )

@@ -6,6 +6,8 @@ import {
   ChevronUpIcon,
   PlusIcon,
   PencilIcon,
+  LockClosedIcon,
+  LockOpenIcon,
 } from '@heroicons/react/24/outline';
 import { 
   format, 
@@ -14,7 +16,8 @@ import {
   startOfMonth, 
   endOfMonth, 
   eachDayOfInterval,
-  isSameDay
+  isSameDay,
+  getYear
 } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
@@ -22,17 +25,28 @@ import { useAppContext } from '~/shared/context/AppContext';
 import { 
   monthPeriodsApi,
   inventoryTrackingApi,
+  unitsApi,
   type PurchaseDetail,
+  type SaleExpenseDetail,
 } from '~/shared/api/expenses';
+import { techCardsApi, type StartingInventoryWithCalculated } from '~/shared/api';
 import CreateExpenseModal from '~/components/modals/CreateExpenseModal';
 import InvoiceModal from '~/components/modals/InvoiceModal';
 import CategoryModal from '~/components/modals/CategoryModal';
 import SectionModal from '~/components/modals/SectionModal';
+import ExpenseDetailModal from '~/components/modals/ExpenseDetailModal';
+import PurchaseDetailModal from '~/components/modals/PurchaseDetailModal';
+import StartingInventoryModal from '~/components/modals/StartingInventoryModal';
+import CloseMonthModal from '~/components/modals/CloseMonthModal';
+import ReopenMonthModal from '~/components/modals/ReopenMonthModal';
+import UnitSelector from '~/components/UnitSelector';
 import { Protected } from '~/shared/ui';
-import { formatCurrencyCompact } from '~/shared/lib/helpers';
+import { formatCurrencyCompact, formatCurrency } from '~/shared/lib/helpers';
 import type { 
   ExpenseSection,
   ExpenseCategory,
+  Unit,
+  MonthPeriod,
 } from '~/shared/api/types';
 
 // Interface for table data structure by section
@@ -45,6 +59,8 @@ interface TableSection {
 interface TableCategory {
   category: ExpenseCategory;
   unitSymbol: string; // Unit symbol for display
+  startingQuantity: number | null; // Starting inventory for the month
+  startingUnitId: number | null; // Unit ID for starting inventory (for conversion)
   dailyData: Map<string, DayData>; // key: YYYY-MM-DD
 }
 
@@ -52,9 +68,10 @@ interface TableCategory {
 interface DayData {
   purchasesQty: number; // quantity from InvoiceItems (including PENDING)
   purchasesAmount: number; // money amount from InvoiceItems
-  usageQty: number; // quantity from ExpenseRecords - TODO
-  usageAmount: number; // money amount from ExpenseRecords - TODO
+  usageQty: number; // quantity from SaleIngredientExpense (OFD sales)
+  usageAmount: number; // money amount from SaleIngredientExpense (OFD sales)
   purchaseDetails: PurchaseDetail[]; // details for tooltip
+  saleExpenseDetails: SaleExpenseDetail[]; // OFD sale details for modal
 }
 
 export default function InventoryTrackingTab() {
@@ -73,6 +90,44 @@ export default function InventoryTrackingTab() {
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
   const [selectedSection, setSelectedSection] = useState<ExpenseSection | null>(null);
   const [selectedSectionIdForCreate, setSelectedSectionIdForCreate] = useState<number | null>(null);
+  
+  // Expense detail modal state
+  const [isExpenseDetailModalOpen, setIsExpenseDetailModalOpen] = useState(false);
+  const [expenseDetailData, setExpenseDetailData] = useState<{
+    categoryName: string;
+    selectedUnitId: number;
+    availableUnits: Unit[];
+    date: string;
+    saleExpenses: SaleExpenseDetail[];
+  } | null>(null);
+
+  // Purchase detail modal state
+  const [isPurchaseDetailModalOpen, setIsPurchaseDetailModalOpen] = useState(false);
+  const [purchaseDetailData, setPurchaseDetailData] = useState<{
+    categoryName: string;
+    selectedUnitId: number;
+    availableUnits: Unit[];
+    date: string;
+    purchases: PurchaseDetail[];
+  } | null>(null);
+
+  // Starting inventory modal state
+  const [isStartingInventoryModalOpen, setIsStartingInventoryModalOpen] = useState(false);
+  const [allCategories, setAllCategories] = useState<ExpenseCategory[]>([]);
+
+  // Month period state
+  const [currentPeriod, setCurrentPeriod] = useState<MonthPeriod | null>(null);
+  const [isCloseMonthModalOpen, setIsCloseMonthModalOpen] = useState(false);
+  const [isReopenMonthModalOpen, setIsReopenMonthModalOpen] = useState(false);
+  const [isClosingMonth, setIsClosingMonth] = useState(false);
+  const [allPeriods, setAllPeriods] = useState<MonthPeriod[]>([]);
+
+  // Unit conversion state
+  const [categoryUnits, setCategoryUnits] = useState<Map<number, {
+    availableUnits: Unit[];
+    selectedUnitId: number;
+    defaultUnitId: number;
+  }>>(new Map());
 
   // Get locale for date-fns
   const dateLocale = i18n.language === 'ru' ? ru : enUS;
@@ -81,6 +136,46 @@ export default function InventoryTrackingTab() {
   const formatQty = (value: number): string => {
     return value % 1 === 0 ? value.toFixed(0) : value.toFixed(2);
   };
+
+  // Convert quantity by unit symbol (used for actual receipt/invoice data)
+  const convertQuantityBySymbol = (
+    quantity: number,
+    fromUnitSymbol: string,
+    toUnitId: number,
+    categoryId: number
+  ): number => {
+    const categoryUnitData = categoryUnits.get(categoryId);
+    if (!categoryUnitData) {
+      return quantity;
+    }
+
+    const fromUnit = categoryUnitData.availableUnits.find((u) => u.symbol === fromUnitSymbol);
+    const toUnit = categoryUnitData.availableUnits.find((u) => u.id === toUnitId);
+
+    if (!fromUnit || !toUnit || fromUnit.id === toUnitId) {
+      return quantity;
+    }
+
+    const fromFactor = parseFloat(fromUnit.conversion_factor?.toString() || '1');
+    const toFactor = parseFloat(toUnit.conversion_factor?.toString() || '1');
+
+    return (quantity * fromFactor) / toFactor;
+  };
+
+  // Handle unit selection change for a category
+  const handleUnitChange = useCallback((categoryId: number, newUnitId: number) => {
+    setCategoryUnits((prev) => {
+      const newMap = new Map(prev);
+      const categoryData = newMap.get(categoryId);
+      if (categoryData) {
+        newMap.set(categoryId, {
+          ...categoryData,
+          selectedUnitId: newUnitId,
+        });
+      }
+      return newMap;
+    });
+  }, []);
 
   const handlePrevMonth = () => {
     setCurrentDate(subMonths(currentDate, 1));
@@ -144,6 +239,96 @@ export default function InventoryTrackingTab() {
     loadData();
   };
 
+  const handleCloseMonth = async () => {
+    if (!currentPeriod) return;
+    
+    setIsClosingMonth(true);
+    try {
+      const updatedPeriod = await monthPeriodsApi.close(currentPeriod.id);
+      setCurrentPeriod(updatedPeriod);
+      setIsCloseMonthModalOpen(false);
+      // Reload data to reflect closed status
+      await loadData();
+    } catch (err) {
+      console.error('Failed to close month:', err);
+      setError(t('errors.failedToSave'));
+    } finally {
+      setIsClosingMonth(false);
+    }
+  };
+
+  const handleReopenMonth = async () => {
+    if (!currentPeriod) return;
+    
+    // Load all periods to find if there's an active one
+    try {
+      const year = getYear(currentDate);
+      const periods = await monthPeriodsApi.getAll(currentLocation!.business_id, { year });
+      setAllPeriods(periods);
+      setIsReopenMonthModalOpen(true);
+    } catch (err) {
+      console.error('Failed to load periods:', err);
+      // Open modal anyway, just without showing which period will be closed
+      setIsReopenMonthModalOpen(true);
+    }
+  };
+
+  const confirmReopenMonth = async () => {
+    if (!currentPeriod) return;
+    
+    setIsClosingMonth(true);
+    try {
+      const updatedPeriod = await monthPeriodsApi.reopen(currentPeriod.id);
+      setCurrentPeriod(updatedPeriod);
+      setIsReopenMonthModalOpen(false);
+      // Reload data to reflect reopened status
+      await loadData();
+    } catch (err) {
+      console.error('Failed to reopen month:', err);
+      setError(t('errors.failedToSave'));
+    } finally {
+      setIsClosingMonth(false);
+    }
+  };
+
+  const handleExpenseCellClick = (
+    categoryName: string,
+    selectedUnitId: number,
+    availableUnits: Unit[],
+    date: string,
+    saleExpenses: SaleExpenseDetail[]
+  ) => {
+    if (saleExpenses.length > 0) {
+      setExpenseDetailData({
+        categoryName,
+        selectedUnitId,
+        availableUnits,
+        date,
+        saleExpenses,
+      });
+      setIsExpenseDetailModalOpen(true);
+    }
+  };
+
+  const handlePurchaseCellClick = (
+    categoryName: string,
+    selectedUnitId: number,
+    availableUnits: Unit[],
+    date: string,
+    purchases: PurchaseDetail[]
+  ) => {
+    if (purchases.length > 0) {
+      setPurchaseDetailData({
+        categoryName,
+        selectedUnitId,
+        availableUnits,
+        date,
+        purchases,
+      });
+      setIsPurchaseDetailModalOpen(true);
+    }
+  };
+
   // Load all data for the current month
   const loadData = useCallback(async () => {
     if (!currentLocation) return;
@@ -183,6 +368,9 @@ export default function InventoryTrackingTab() {
           status: 'active',
         });
       }
+      
+      // Store current period in state for status display and actions
+      setCurrentPeriod(period);
       // Period created or found - we don't need to store it
 
       // 2. OPTIMIZED: Get ALL data in ONE request (replaces 800+ requests)
@@ -192,7 +380,28 @@ export default function InventoryTrackingTab() {
         month
       );
 
-      // 3. Transform backend data to component format
+      // 3. Get starting inventory for the month
+      const startingInventoryMap = new Map<number, { quantity: string; unit_id: number }>();
+      try {
+        const startingData = await techCardsApi.getStartingInventoryForMonth(
+          currentLocation.id,
+          year,
+          month
+        );
+        console.log('[DEBUG] Starting inventory data received:', startingData.length, 'records');
+        startingData.forEach((item: StartingInventoryWithCalculated) => {
+          console.log(`[DEBUG] Category ${item.category_id}: quantity=${item.quantity}, calculated=${item.calculated_quantity}`);
+          startingInventoryMap.set(item.category_id, {
+            // Use manual quantity if set, otherwise use calculated from previous month
+            quantity: item.quantity || item.calculated_quantity,
+            unit_id: item.unit_id,
+          });
+        });
+      } catch (err) {
+        console.warn('Starting inventory not available for this month:', err);
+      }
+
+      // 4. Transform backend data to component format
       const sections: TableSection[] = summaryData.sections.map((sectionData) => {
         const tableCategories: TableCategory[] = sectionData.categories.map((categoryData) => {
           // Convert daily data array to Map for fast lookup
@@ -205,15 +414,24 @@ export default function InventoryTrackingTab() {
               usageQty: parseFloat(dayData.usage_qty),
               usageAmount: parseFloat(dayData.usage_amount),
               purchaseDetails: dayData.purchase_details,
+              saleExpenseDetails: dayData.sale_expense_details || [],
             });
           });
+
+          // Get starting inventory for this category
+          const startingInv = startingInventoryMap.get(categoryData.category_id);
+          const startingQty = startingInv ? parseFloat(startingInv.quantity) : null;
+          const startingUnitId = startingInv ? startingInv.unit_id : null;
 
           return {
             category: {
               id: categoryData.category_id,
               name: categoryData.category_name,
+              default_unit_id: categoryData.default_unit_id,
             } as ExpenseCategory,
             unitSymbol: categoryData.unit_symbol,
+            startingQuantity: startingQty,
+            startingUnitId: startingUnitId,
             dailyData: dailyDataMap,
           };
         });
@@ -227,7 +445,58 @@ export default function InventoryTrackingTab() {
         };
       });
 
+      // Load available units for each category BEFORE setting table sections
+      const unitsMap = new Map<number, {
+        availableUnits: Unit[];
+        selectedUnitId: number;
+        defaultUnitId: number;
+      }>();
+
+      await Promise.all(
+        sections.flatMap((section) =>
+          section.categories.map(async (category) => {
+            try {
+              const availableUnits = await unitsApi.getConvertible(category.category.default_unit_id);
+              
+              // Check localStorage for saved preference
+              const savedUnitId = localStorage.getItem(`inventoryTracking_unit_${category.category.id}`);
+              let selectedUnitId = category.category.default_unit_id;
+              
+              if (savedUnitId) {
+                const unitId = parseInt(savedUnitId, 10);
+                // Verify saved unit is still available
+                if (availableUnits.some((u) => u.id === unitId)) {
+                  selectedUnitId = unitId;
+                }
+              }
+
+              unitsMap.set(category.category.id, {
+                availableUnits,
+                selectedUnitId,
+                defaultUnitId: category.category.default_unit_id,
+              });
+            } catch (err) {
+              console.error(`Failed to load units for category ${category.category.id}:`, err);
+              // If failed, just use default unit
+              unitsMap.set(category.category.id, {
+                availableUnits: [],
+                selectedUnitId: category.category.default_unit_id,
+                defaultUnitId: category.category.default_unit_id,
+              });
+            }
+          })
+        )
+      );
+
+      // Set both states together to ensure units are available when rendering
+      setCategoryUnits(unitsMap);
       setTableSections(sections);
+      
+      // Collect all categories for starting inventory modal
+      const allCats: ExpenseCategory[] = sections.flatMap((section) =>
+        section.categories.map((cat) => cat.category)
+      );
+      setAllCategories(allCats);
     } catch (err) {
       console.error('Failed to load inventory tracking data:', err);
       setError(t('expenses.inventoryTracking.loadingError'));
@@ -305,9 +574,56 @@ export default function InventoryTrackingTab() {
           >
             {t('common.today')}
           </button>
+
+          {/* Period Status Badge */}
+          {currentPeriod && (
+            <>
+              <div className="h-6 w-px bg-gray-300" /> {/* Divider */}
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  currentPeriod.status === 'active'
+                    ? 'bg-green-100 text-green-800'
+                    : currentPeriod.status === 'closed'
+                    ? 'bg-gray-100 text-gray-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}
+              >
+                {t(`expenses.periods.status.${currentPeriod.status}`)}
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Month Closing Controls */}
+          {currentPeriod && (
+            <>
+              {currentPeriod.status === 'active' && (
+                <Protected permission={{ resource: 'invoices', action: 'edit' }}>
+                  <button
+                    onClick={() => setIsCloseMonthModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                  >
+                    <LockClosedIcon className="h-4 w-4" />
+                    {t('expenses.periods.closeMonth')}
+                  </button>
+                </Protected>
+              )}
+              {currentPeriod.status === 'closed' && (
+                <Protected permission={{ resource: 'invoices', action: 'edit' }}>
+                  <button
+                    onClick={handleReopenMonth}
+                    disabled={isClosingMonth}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    <LockOpenIcon className="h-4 w-4" />
+                    {isClosingMonth ? t('common.processing') : t('expenses.periods.reopenMonth')}
+                  </button>
+                </Protected>
+              )}
+            </>
+          )}
+
           <Protected permission={{ resource: 'invoices', action: 'create' }}>
             <button
               onClick={() => setIsInvoiceModalOpen(true)}
@@ -327,6 +643,15 @@ export default function InventoryTrackingTab() {
             >
               <PlusIcon className="h-4 w-4 mr-1" />
               {t('expenses.modals.createExpense.createButton')}
+            </button>
+          </Protected>
+          <Protected permission={{ resource: 'tech_card_items', action: 'create' }}>
+            <button
+              onClick={() => setIsStartingInventoryModalOpen(true)}
+              className="flex items-center px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              <PencilIcon className="h-4 w-4 mr-1" />
+              {t('expenses.startingInventory.setStartingInventory')}
             </button>
           </Protected>
         </div>
@@ -349,6 +674,12 @@ export default function InventoryTrackingTab() {
                     className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r z-10 min-w-[250px]"
                   >
                     {t('expenses.inventoryTracking.table.category')}
+                  </th>
+                  <th
+                    rowSpan={2}
+                    className="bg-gray-50 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r min-w-[80px]"
+                  >
+                    {t('expenses.startingInventory.starting')}
                   </th>
                   {monthDays.map((day) => {
                     const isToday = isSameDay(day, new Date());
@@ -434,7 +765,7 @@ export default function InventoryTrackingTab() {
                       {/* Spacing between sections */}
                       {sectionIndex > 0 && (
                         <tr className="bg-gray-100">
-                          <td colSpan={monthDays.length * 3 + 4} className="h-8"></td>
+                          <td colSpan={monthDays.length * 3 + 5} className="h-8"></td>
                         </tr>
                       )}
                       
@@ -480,6 +811,8 @@ export default function InventoryTrackingTab() {
                             </div>
                           </div>
                         </td>
+                        {/* Empty cell for Starting Inventory column */}
+                        <td className="bg-blue-50 hover:bg-blue-100 border-r"></td>
                         {monthDays.map((day) => {
                           const dateKey = format(day, 'yyyy-MM-dd');
                           const dayTotals = sectionDailyTotals.get(dateKey);
@@ -528,7 +861,12 @@ export default function InventoryTrackingTab() {
                       
                       {/* Category Rows */}
                       {!isCollapsed && tableSection.categories.map((tableCategory) => {
-                        // Calculate totals
+                        // Get unit data for this category
+                        const categoryUnitData = categoryUnits.get(tableCategory.category.id);
+                        const selectedUnitId = categoryUnitData?.selectedUnitId || tableCategory.category.default_unit_id;
+                        const selectedUnit = categoryUnitData?.availableUnits.find((u) => u.id === selectedUnitId);
+
+                        // Calculate totals with proper conversion
                         let totalPurchasesAmount = 0;
                         let totalUsageAmount = 0;
                         let totalPurchasesQty = 0;
@@ -540,19 +878,49 @@ export default function InventoryTrackingTab() {
                           if (dayData) {
                             totalPurchasesAmount += dayData.purchasesAmount;
                             totalUsageAmount += dayData.usageAmount;
-                            totalPurchasesQty += dayData.purchasesQty;
-                            totalUsageQty += dayData.usageQty;
+                            
+                            // Convert and sum purchases from actual records
+                            totalPurchasesQty += dayData.purchaseDetails.reduce((sum, detail) => {
+                              const qty = parseFloat(detail.original_quantity);
+                              return sum + convertQuantityBySymbol(
+                                qty,
+                                detail.original_unit_symbol || '',
+                                selectedUnitId,
+                                tableCategory.category.id
+                              );
+                            }, 0);
+                            
+                            // Convert and sum expenses from actual records
+                            totalUsageQty += dayData.saleExpenseDetails.reduce((sum, detail) => {
+                              const qty = parseFloat(detail.ingredient_quantity);
+                              return sum + convertQuantityBySymbol(
+                                qty,
+                                detail.unit_symbol,
+                                selectedUnitId,
+                                tableCategory.category.id
+                              );
+                            }, 0);
                           }
                         });
-
-                        const totalAmount = totalPurchasesAmount - totalUsageAmount;
-                        const totalQty = totalPurchasesQty - totalUsageQty;
 
                         return (
                           <tr key={`category-${tableCategory.category.id}`} className="group hover:bg-gray-50 border-b border-gray-100">
                             <td className="sticky left-0 bg-white hover:bg-gray-50 px-6 py-2 text-sm text-gray-900 border-r z-10">
-                              <div className="flex items-center justify-between">
-                                <span>{tableCategory.category.name}{tableCategory.unitSymbol && ` (${tableCategory.unitSymbol})`}</span>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {tableCategory.category.name}
+                                    {selectedUnit && ` (${selectedUnit.symbol})`}
+                                  </span>
+                                  {categoryUnitData && categoryUnitData.availableUnits.length > 1 && (
+                                    <UnitSelector
+                                      categoryId={tableCategory.category.id}
+                                      defaultUnitId={selectedUnitId}
+                                      availableUnits={categoryUnitData.availableUnits}
+                                      onUnitChange={(unitId) => handleUnitChange(tableCategory.category.id, unitId)}
+                                    />
+                                  )}
+                                </div>
                                 <Protected permission={{ resource: 'subcategories', action: 'edit' }}>
                                   <button
                                     onClick={() => handleEditCategory(tableCategory.category)}
@@ -564,10 +932,59 @@ export default function InventoryTrackingTab() {
                                 </Protected>
                               </div>
                             </td>
+                            {/* Starting Inventory Column */}
+                            <td className="bg-white hover:bg-gray-50 px-3 py-2 text-center text-sm border-r">
+                              {(() => {
+                                if (tableCategory.startingQuantity === null) return <span className="text-gray-400">-</span>;
+                                
+                                // Convert starting quantity to selected unit
+                                let displayQty = tableCategory.startingQuantity;
+                                if (tableCategory.startingUnitId && tableCategory.startingUnitId !== selectedUnitId) {
+                                  // Convert from starting unit to selected unit
+                                  const startingUnit = categoryUnitData?.availableUnits.find((u) => u.id === tableCategory.startingUnitId);
+                                  const selectedUnit = categoryUnitData?.availableUnits.find((u) => u.id === selectedUnitId);
+                                  
+                                  if (startingUnit && selectedUnit) {
+                                    const fromFactor = parseFloat(startingUnit.conversion_factor?.toString() || '1');
+                                    const toFactor = parseFloat(selectedUnit.conversion_factor?.toString() || '1');
+                                    displayQty = (tableCategory.startingQuantity * fromFactor) / toFactor;
+                                  }
+                                }
+                                
+                                // Color code: green for positive, red for negative
+                                const colorClass = displayQty >= 0 ? 'text-green-600' : 'text-red-600';
+                                return <span className={colorClass}>{formatQty(displayQty)}</span>;
+                              })()}
+                            </td>
                             {monthDays.map((day) => {
                               const dateKey = format(day, 'yyyy-MM-dd');
                               const dayData = tableCategory.dailyData.get(dateKey);
                               const isToday = isSameDay(day, new Date());
+                              
+                              // Convert quantities for display - sum converted values from actual records
+                              const displayPurchasesQty = dayData
+                                ? dayData.purchaseDetails.reduce((sum, detail) => {
+                                    const qty = parseFloat(detail.original_quantity);
+                                    return sum + convertQuantityBySymbol(
+                                      qty,
+                                      detail.original_unit_symbol || '',
+                                      selectedUnitId,
+                                      tableCategory.category.id
+                                    );
+                                  }, 0)
+                                : 0;
+
+                              const displayUsageQty = dayData
+                                ? dayData.saleExpenseDetails.reduce((sum, detail) => {
+                                    const qty = parseFloat(detail.ingredient_quantity);
+                                    return sum + convertQuantityBySymbol(
+                                      qty,
+                                      detail.unit_symbol,
+                                      selectedUnitId,
+                                      tableCategory.category.id
+                                    );
+                                  }, 0)
+                                : 0;
                               
                               return (
                                 <React.Fragment key={`${day.toISOString()}-cat`}>
@@ -585,17 +1002,37 @@ export default function InventoryTrackingTab() {
                                   >
                                     {dayData ? (
                                       <div className="space-y-0.5">
-                                        {dayData.purchasesQty !== 0 && (
-                                          <div className="text-green-600 cursor-help">
-                                            {formatQty(dayData.purchasesQty)}
+                                        {displayPurchasesQty !== 0 && (
+                                          <div 
+                                            className="text-green-600 cursor-pointer hover:underline"
+                                            onClick={() => handlePurchaseCellClick(
+                                              tableCategory.category.name,
+                                              selectedUnitId,
+                                              categoryUnitData?.availableUnits || [],
+                                              dateKey,
+                                              dayData.purchaseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForPurchaseDetails')}
+                                          >
+                                            {formatQty(displayPurchasesQty)}
                                           </div>
                                         )}
-                                        {dayData.usageQty !== 0 && (
-                                          <div className="text-red-600">
-                                            {formatQty(dayData.usageQty)}
+                                        {displayUsageQty !== 0 && (
+                                          <div 
+                                            className="text-red-600 cursor-pointer hover:underline"
+                                            onClick={() => handleExpenseCellClick(
+                                              tableCategory.category.name,
+                                              selectedUnitId,
+                                              categoryUnitData?.availableUnits || [],
+                                              dateKey,
+                                              dayData.saleExpenseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForDetails')}
+                                          >
+                                            -{formatQty(displayUsageQty)}
                                           </div>
                                         )}
-                                        {dayData.purchasesQty === 0 && dayData.usageQty === 0 && (
+                                        {displayPurchasesQty === 0 && displayUsageQty === 0 && (
                                           <div className="text-gray-400">0</div>
                                         )}
                                       </div>
@@ -611,21 +1048,41 @@ export default function InventoryTrackingTab() {
                                     {dayData ? (
                                       <div className="space-y-0.5">
                                         {dayData.purchasesAmount !== 0 && (
-                                          <div className="text-green-600 font-semibold">
-                                            {formatCurrencyCompact(dayData.purchasesAmount)}
+                                          <div 
+                                            className="text-green-600 font-semibold cursor-pointer hover:underline"
+                                            onClick={() => handlePurchaseCellClick(
+                                              tableCategory.category.name,
+                                              selectedUnitId,
+                                              categoryUnitData?.availableUnits || [],
+                                              dateKey,
+                                              dayData.purchaseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForPurchaseDetails')}
+                                          >
+                                            +{formatCurrency(dayData.purchasesAmount, 2)}
                                           </div>
                                         )}
                                         {dayData.usageAmount !== 0 && (
-                                          <div className="text-red-600 font-semibold">
-                                            {formatCurrencyCompact(dayData.usageAmount)}
+                                          <div 
+                                            className="text-red-600 font-semibold cursor-pointer hover:underline"
+                                            onClick={() => handleExpenseCellClick(
+                                              tableCategory.category.name,
+                                              selectedUnitId,
+                                              categoryUnitData?.availableUnits || [],
+                                              dateKey,
+                                              dayData.saleExpenseDetails
+                                            )}
+                                            title={t('expenses.inventoryTracking.clickForDetails')}
+                                          >
+                                            -{formatCurrency(dayData.usageAmount, 2)}
                                           </div>
                                         )}
                                         {dayData.purchasesAmount === 0 && dayData.usageAmount === 0 && (
-                                          <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
+                                          <div className="text-gray-400">{formatCurrency(0, 2)}</div>
                                         )}
                                       </div>
                                     ) : (
-                                      <div className="text-gray-400">{formatCurrencyCompact(0)}</div>
+                                      <div className="text-gray-400">{formatCurrency(0, 2)}</div>
                                     )}
                                   </td>
                                   {/* Spacing column between days */}
@@ -634,13 +1091,37 @@ export default function InventoryTrackingTab() {
                               );
                             })}
                             <td className="px-2 py-2 text-center text-xs border-x whitespace-nowrap">
-                              <div className={totalQty > 0 ? 'text-green-600' : totalQty < 0 ? 'text-red-600' : 'text-gray-900'}>
-                                {formatQty(totalQty)}
+                              <div className="space-y-0.5">
+                                {totalPurchasesQty !== 0 && (
+                                  <div className="text-green-600 font-semibold">
+                                    +{formatQty(totalPurchasesQty)}
+                                  </div>
+                                )}
+                                {totalUsageQty !== 0 && (
+                                  <div className="text-red-600 font-semibold">
+                                    -{formatQty(totalUsageQty)}
+                                  </div>
+                                )}
+                                {totalPurchasesQty === 0 && totalUsageQty === 0 && (
+                                  <div className="text-gray-400">0</div>
+                                )}
                               </div>
                             </td>
                             <td className="px-2 py-2 text-center text-xs whitespace-nowrap">
-                              <div className={totalAmount > 0 ? 'text-green-600 font-bold' : totalAmount < 0 ? 'text-red-600 font-bold' : 'text-gray-900 font-bold'}>
-                                {formatCurrencyCompact(totalAmount)}
+                              <div className="space-y-0.5">
+                                {totalPurchasesAmount !== 0 && (
+                                  <div className="text-green-600 font-semibold">
+                                    +{formatCurrency(totalPurchasesAmount, 2)}
+                                  </div>
+                                )}
+                                {totalUsageAmount !== 0 && (
+                                  <div className="text-red-600 font-semibold">
+                                    -{formatCurrency(totalUsageAmount, 2)}
+                                  </div>
+                                )}
+                                {totalPurchasesAmount === 0 && totalUsageAmount === 0 && (
+                                  <div className="text-gray-400">{formatCurrency(0, 2)}</div>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -702,6 +1183,68 @@ export default function InventoryTrackingTab() {
           onSectionUpdated={handleSectionUpdated}
         />
       )}
+
+      {/* Expense Detail Modal - shows sale expenses from OFD */}
+      <ExpenseDetailModal
+        isOpen={isExpenseDetailModalOpen}
+        onClose={() => {
+          setIsExpenseDetailModalOpen(false);
+          setExpenseDetailData(null);
+        }}
+        categoryName={expenseDetailData?.categoryName || ''}
+        selectedUnitId={expenseDetailData?.selectedUnitId || 0}
+        availableUnits={expenseDetailData?.availableUnits || []}
+        date={expenseDetailData?.date || ''}
+        saleExpenses={expenseDetailData?.saleExpenses || []}
+      />
+
+      {/* Purchase Detail Modal - shows invoices purchases */}
+      <PurchaseDetailModal
+        isOpen={isPurchaseDetailModalOpen}
+        onClose={() => {
+          setIsPurchaseDetailModalOpen(false);
+          setPurchaseDetailData(null);
+        }}
+        categoryName={purchaseDetailData?.categoryName || ''}
+        selectedUnitId={purchaseDetailData?.selectedUnitId || 0}
+        availableUnits={purchaseDetailData?.availableUnits || []}
+        date={purchaseDetailData?.date || ''}
+        purchases={purchaseDetailData?.purchases || []}
+      />
+
+      {/* Starting Inventory Modal */}
+      <StartingInventoryModal
+        isOpen={isStartingInventoryModalOpen}
+        onClose={() => setIsStartingInventoryModalOpen(false)}
+        year={currentDate.getFullYear()}
+        month={currentDate.getMonth() + 1}
+        categories={allCategories}
+        onSave={() => {
+          setIsStartingInventoryModalOpen(false);
+          loadData(); // Reload data to reflect changes
+        }}
+      />
+
+      {/* Close Month Modal */}
+      <CloseMonthModal
+        isOpen={isCloseMonthModalOpen}
+        onClose={() => setIsCloseMonthModalOpen(false)}
+        onConfirm={handleCloseMonth}
+        monthName={format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
+        loading={isClosingMonth}
+      />
+
+      {/* Reopen Month Modal */}
+      <ReopenMonthModal
+        isOpen={isReopenMonthModalOpen}
+        onClose={() => setIsReopenMonthModalOpen(false)}
+        onConfirm={confirmReopenMonth}
+        monthName={format(currentDate, 'LLLL yyyy', { locale: dateLocale })}
+        currentActiveMonthName={
+          allPeriods.find(p => p.status === 'ACTIVE' && p.id !== currentPeriod?.id)?.name
+        }
+        loading={isClosingMonth}
+      />
     </div>
   );
 }

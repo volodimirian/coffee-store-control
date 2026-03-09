@@ -24,6 +24,8 @@ import BillingSuppliers from "~/pages/billing/Suppliers";
 import BillingCategories from "~/pages/billing/Categories";
 import BillingUnits from "~/pages/billing/Units";
 import TechCards from "~/pages/tech-cards/TechCards";
+import OFDIntegration from "~/pages/OFDIntegration";
+import SalesSync from "~/components/SalesSync";
 import NotFound from "~/pages/NotFound";
 import ProtectedRoute from "~/routes/ProtectedRoute";
 import Register from "~/pages/Register";
@@ -74,6 +76,8 @@ export default function App() {
             <Route path="locations" element={<Locations />} />
             <Route path="employees" element={<Employees />} />
             <Route path="tech-cards" element={<TechCards />} />
+            <Route path="ofd-integration" element={<OFDIntegration />} />
+            <Route path="sales-sync" element={<SalesSync />} />
             
             {/* Expenses with nested routes */}
             <Route path="expenses" element={<Expenses />}>

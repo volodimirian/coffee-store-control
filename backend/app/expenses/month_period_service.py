@@ -115,7 +115,8 @@ class MonthPeriodService:
         session: AsyncSession,
         business_id: int,
     ) -> Optional[MonthPeriod]:
-        """Get the current active period for a business."""
+        """Get the current active period for a business.
+        Returns the most recent active period if multiple exist (data corruption case)."""
         query = select(MonthPeriod).where(
             and_(
                 MonthPeriod.business_id == business_id,
@@ -125,7 +126,8 @@ class MonthPeriodService:
         ).order_by(MonthPeriod.year.desc(), MonthPeriod.month.desc())
         
         result = await session.execute(query)
-        return result.scalar_one_or_none()
+        # Use first() instead of scalar_one_or_none() to handle multiple active periods gracefully
+        return result.scalars().first()
 
     @staticmethod
     async def count_periods_by_business(
@@ -175,13 +177,25 @@ class MonthPeriodService:
         session: AsyncSession,
         period_id: int,
     ) -> bool:
-        """Close a period (change status to CLOSED)."""
+        """Close a period (change status to CLOSED) and calculate inventory balances."""
         period = await MonthPeriodService.get_period_by_id(session, period_id)
         if not period:
             return False
 
         if str(getattr(period, 'status')) == str(MonthPeriodStatus.CLOSED):
             return True  # Already closed
+
+        # Calculate inventory balances for all categories before closing
+        from app.expenses.inventory_balance_service import InventoryBalanceService
+        try:
+            await InventoryBalanceService.recalculate_all_balances_for_period(
+                session, period_id
+            )
+        except Exception as e:
+            # Log error but continue with closing
+            print(f"[MonthPeriod] Warning: Failed to recalculate balances for period {period_id}: {e}")
+            # Don't fail the close operation if balance calculation fails
+            pass
 
         # Set status to closed
         setattr(period, 'status', MonthPeriodStatus.CLOSED)
@@ -193,12 +207,29 @@ class MonthPeriodService:
         session: AsyncSession,
         period_id: int,
     ) -> bool:
-        """Reopen a closed period (change status to ACTIVE)."""
+        """Reopen a closed period (change status to ACTIVE).
+        Ensures only one period is active by closing all other active periods."""
         period = await MonthPeriodService.get_period_by_id(session, period_id, include_inactive=True)
         if not period:
             return False
 
-        # Set status to active
+        business_id = getattr(period, 'business_id')
+        
+        # First, close ALL other active periods for this business
+        query = select(MonthPeriod).where(
+            and_(
+                MonthPeriod.business_id == business_id,
+                MonthPeriod.status == MonthPeriodStatus.ACTIVE,
+                MonthPeriod.id != period_id,
+            )
+        )
+        result = await session.execute(query)
+        other_active_periods = result.scalars().all()
+        
+        for other_period in other_active_periods:
+            setattr(other_period, 'status', MonthPeriodStatus.CLOSED)
+        
+        # Now set this period to active
         setattr(period, 'status', MonthPeriodStatus.ACTIVE)
         await session.flush()
         return True
@@ -281,11 +312,9 @@ class MonthPeriodService:
         if from_status == to_status:
             return True, "No change needed"
 
-        # Can't have multiple active periods
-        if to_status == MonthPeriodStatus.ACTIVE:
-            current_active = await MonthPeriodService.get_current_period(session, business_id)
-            if current_active and getattr(current_active, 'id') != period_id:
-                return False, f"Business already has an active period: {current_active.name}"
+        # Note: We don't block reopening if another period is active
+        # because reopen_period() will automatically close other active periods
+        # This allows users to reopen closed periods for corrections
 
         # Allow ACTIVE -> CLOSED and CLOSED -> ACTIVE transitions
         valid_transitions = {

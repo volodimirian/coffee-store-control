@@ -15,6 +15,7 @@ from app.expenses.invoice_router import router as invoices_router
 from app.expenses.inventory_balance_router import router as inventory_balance_router
 from app.expenses.inventory_tracking_router import router as inventory_tracking_router
 from app.tech_cards.router import router as tech_cards_router
+from app.ofd_integration.router import router as ofd_router
 from app.core.db import engine
 from app.core.config import settings
 from app.core_models import Base
@@ -96,3 +97,6 @@ app.include_router(inventory_tracking_router, prefix=f"{settings.api_prefix}/exp
 
 # Technology cards routes
 app.include_router(tech_cards_router, prefix=f"{settings.api_prefix}/tech-cards", tags=["tech-cards"])
+
+# OFD Integration routes
+app.include_router(ofd_router, prefix=f"{settings.api_prefix}/ofd", tags=["ofd-integration"])

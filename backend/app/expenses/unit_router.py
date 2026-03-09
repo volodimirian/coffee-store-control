@@ -1,6 +1,6 @@
 """API router for unit management endpoints."""
 
-from typing import Annotated, Optional
+from typing import Annotated, Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -107,6 +107,29 @@ async def get_business_units(
     )
 
     return UnitListOut(units=[UnitOut.from_orm(unit) for unit in units], total=total)
+
+
+@router.get("/{unit_id}/convertible", response_model=List[UnitOut])
+async def get_convertible_units(
+    unit_id: int,
+    auth: Annotated[dict, Depends(require_resource_permission(
+        Resource.UNITS,
+        Action.VIEW,
+        business_id_extractor=extract_business_id_from_unit,
+    ))],
+    session: AsyncSession = Depends(get_db_dep),
+):
+    """Get all units that can be converted to/from the given unit.
+    
+    Returns units in the same conversion family (same base unit).
+    Permission: view_unit
+    """
+    convertible_units = await UnitService.get_convertible_units(
+        session=session,
+        unit_id=unit_id,
+    )
+    
+    return [UnitOut.from_orm(unit) for unit in convertible_units]
 
 
 @router.get("/business/{business_id}/hierarchy", response_model=UnitHierarchyResponse)
