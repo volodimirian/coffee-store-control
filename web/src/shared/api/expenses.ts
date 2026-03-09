@@ -186,6 +186,30 @@ export const monthPeriodsApi = {
   delete: async (periodId: number): Promise<void> => {
     await api.delete(`/expenses/periods/${periodId}`);
   },
+
+  /**
+   * Close a period (finalize month calculations)
+   */
+  close: async (periodId: number): Promise<MonthPeriod> => {
+    const response = await api.post<MonthPeriod>(`/expenses/periods/${periodId}/close`);
+    return response.data;
+  },
+
+  /**
+   * Reopen a closed period (allow corrections)
+   */
+  reopen: async (periodId: number): Promise<MonthPeriod> => {
+    const response = await api.post<MonthPeriod>(`/expenses/periods/${periodId}/reopen`);
+    return response.data;
+  },
+
+  /**
+   * Archive a closed period (permanent historical record)
+   */
+  archive: async (periodId: number): Promise<MonthPeriod> => {
+    const response = await api.post<MonthPeriod>(`/expenses/periods/${periodId}/archive`);
+    return response.data;
+  },
 };
 
 // ============ Expense Sections API ============

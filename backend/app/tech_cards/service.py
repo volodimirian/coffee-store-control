@@ -536,7 +536,7 @@ class StartingInventoryService:
             existing.created_at = datetime.utcnow()
             await db.commit()
             await db.refresh(existing)
-            return existing
+            record = existing
         else:
             # Create new
             new_record = StartingInventory(
@@ -551,7 +551,39 @@ class StartingInventoryService:
             db.add(new_record)
             await db.commit()
             await db.refresh(new_record)
-            return new_record
+            record = new_record
+        
+        # CRITICAL: Trigger recalculation of inventory_balance for this month
+        # This ensures closing_balance is updated so next month gets correct opening
+        from app.expenses.models import MonthPeriod
+        from app.expenses.inventory_balance_service import InventoryBalanceService
+        
+        try:
+            # Find period for this month
+            period_query = select(MonthPeriod).where(
+                and_(
+                    MonthPeriod.business_id == business_id,
+                    MonthPeriod.year == year,
+                    MonthPeriod.month == month,
+                )
+            )
+            period_result = await db.execute(period_query)
+            period = period_result.scalar_one_or_none()
+            
+            if period:
+                # Recalculate balance for this category in this period
+                print(f"[StartingInventory] Manual entry set for category {category_id}, triggering recalculation for period {period.id}")
+                await InventoryBalanceService.recalculate_balance_for_category(
+                    db, category_id, int(period.id)
+                )
+                await db.commit()
+                print("[StartingInventory] Successfully recalculated inventory balance")
+        except Exception as e:
+            print(f"[StartingInventory] Warning: Failed to recalculate inventory balance: {e}")
+            # Don't fail the main operation
+            pass
+        
+        return record
 
     @staticmethod
     async def bulk_upsert(
@@ -605,6 +637,7 @@ class StartingInventoryService:
         # Find previous month period
         period_query = select(MonthPeriod).where(
             and_(
+                MonthPeriod.business_id == business_id,
                 MonthPeriod.year == prev_year,
                 MonthPeriod.month == prev_month,
             )

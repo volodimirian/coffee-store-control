@@ -193,14 +193,15 @@ class InventoryTrackingService:
 
                         # Build purchase detail - invoice_number is from related Invoice
                         invoice_num = f"#{cast(int, item.invoice_id)}"  # Default fallback
-                        original_unit_symbol = units_map.get(original_unit_id) if was_converted else None
+                        # ALWAYS provide original_unit_symbol for frontend unit conversion
+                        original_unit_symbol = units_map.get(original_unit_id)
 
                         purchase_details.append(
                             PurchaseDetailSchema(
                                 invoice_number=invoice_num,
                                 original_quantity=original_qty,
-                                original_unit_id=original_unit_id if was_converted else None,
-                                original_unit_symbol=original_unit_symbol,
+                                original_unit_id=original_unit_id,  # Always provide for frontend conversion
+                                original_unit_symbol=original_unit_symbol,  # Always provide for frontend conversion
                                 converted_quantity=converted_qty,
                                 was_converted=was_converted,
                             )

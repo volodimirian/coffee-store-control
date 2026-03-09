@@ -41,7 +41,11 @@
     "confirmDeletionMessage": "Are you sure you want to delete this item? This action cannot be undone.",
     "all": "All",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "unit": "Unit",
+    "notes": "Notes",
+    "optional": "optional",
+    "saveAll": "Save All"
   },
   "navigation": {
     "home": "Home",
@@ -667,6 +671,38 @@
         "amount": "Amount",
         "total": "Total",
         "sectionTotal": "Section Total"
+      }
+    },
+    "startingInventory": {
+      "setStartingInventory": "Set Starting Inventory",
+      "starting": "Starting",
+      "monthYear": "{{month}}/{{year}}",
+      "actualQuantity": "Actual Quantity",
+      "calculated": "Calculated",
+      "discrepancy": "Discrepancy",
+      "notesPlaceholder": "Reason for discrepancy (optional)",
+      "title": "Starting Inventory",
+      "noDataToSave": "No data to save"
+    },
+    "periods": {
+      "closeMonth": "Close Month",
+      "reopenMonth": "Reopen Month",
+      "closeWarning": "You are about to close this month:",
+      "closeEffect1": "New invoices and expenses cannot be added",
+      "closeEffect2": "All balance calculations will be finalized",
+      "closeEffect3": "Data will be used for the next month",
+      "canReopen": "You can reopen the month",
+      "reopenHint": "if corrections are needed.",
+      "confirmClose": "Close Month",
+      "reopenWarning": "You are about to reopen {{month}} for corrections.",
+      "willClose": "Will be closed",
+      "reopenNote": "Important",
+      "reopenNoteText": "After making changes, make sure to close this month again so the data flows correctly to the next period.",
+      "confirmReopen": "Reopen Month",
+      "status": {
+        "active": "Active",
+        "closed": "Closed",
+        "archived": "Archived"
       }
     },
     "reports": {

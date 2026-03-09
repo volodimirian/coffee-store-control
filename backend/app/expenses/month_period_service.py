@@ -177,13 +177,25 @@ class MonthPeriodService:
         session: AsyncSession,
         period_id: int,
     ) -> bool:
-        """Close a period (change status to CLOSED)."""
+        """Close a period (change status to CLOSED) and calculate inventory balances."""
         period = await MonthPeriodService.get_period_by_id(session, period_id)
         if not period:
             return False
 
         if str(getattr(period, 'status')) == str(MonthPeriodStatus.CLOSED):
             return True  # Already closed
+
+        # Calculate inventory balances for all categories before closing
+        from app.expenses.inventory_balance_service import InventoryBalanceService
+        try:
+            await InventoryBalanceService.recalculate_all_balances_for_period(
+                session, period_id
+            )
+        except Exception as e:
+            # Log error but continue with closing
+            print(f"[MonthPeriod] Warning: Failed to recalculate balances for period {period_id}: {e}")
+            # Don't fail the close operation if balance calculation fails
+            pass
 
         # Set status to closed
         setattr(period, 'status', MonthPeriodStatus.CLOSED)

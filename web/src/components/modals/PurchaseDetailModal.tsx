@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { parseISO, format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import type { PurchaseDetail } from '~/shared/api/expenses';
+import type { Unit } from '~/shared/api/types';
 import { formatCurrency } from '~/shared/lib/helpers';
 
 interface PurchaseDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   categoryName: string;
-  unitSymbol: string;
+  selectedUnitId: number;
+  availableUnits: Unit[];
   date: string; // YYYY-MM-DD
   purchases: PurchaseDetail[];
 }
@@ -18,7 +20,8 @@ export default function PurchaseDetailModal({
   isOpen,
   onClose,
   categoryName,
-  unitSymbol,
+  selectedUnitId,
+  availableUnits,
   date,
   purchases,
 }: PurchaseDetailModalProps) {
@@ -30,13 +33,33 @@ export default function PurchaseDetailModal({
   // Fix timezone issue - parse date correctly to avoid date shift
   const formattedDate = format(parseISO(date + 'T12:00:00'), 'dd MMMM yyyy', { locale: dateLocale });
 
-  // Calculate totals
+  // Find selected unit for display
+  const selectedUnit = availableUnits.find((u) => u.id === selectedUnitId);
+  const displayUnitSymbol = selectedUnit?.symbol || '';
+
+  // Convert quantity from invoice unit to selected display unit
+  const convertModalQuantity = (qty: number, fromUnitSymbol: string): number => {
+    // Find unit by symbol from the invoice data
+    const fromUnit = availableUnits.find((u) => u.symbol === fromUnitSymbol);
+    const toUnit = availableUnits.find((u) => u.id === selectedUnitId);
+
+    if (!fromUnit || !toUnit || fromUnit.id === selectedUnitId) {
+      return qty;
+    }
+
+    const fromFactor = parseFloat(fromUnit.conversion_factor?.toString() || '1');
+    const toFactor = parseFloat(toUnit.conversion_factor?.toString() || '1');
+
+    return (qty * fromFactor) / toFactor;
+  };
+
+  // Calculate totals with conversion
   const totalQuantity = purchases.reduce(
-    (sum, purchase) => sum + parseFloat(purchase.original_quantity),
+    (sum, purchase) => sum + convertModalQuantity(parseFloat(purchase.original_quantity), purchase.original_unit_symbol || displayUnitSymbol),
     0
   );
 
-  // Group by invoice number
+  // Group by invoice number with conversion
   const groupedByInvoice = purchases.reduce((acc, purchase) => {
     const key = purchase.invoice_number;
     if (!acc[key]) {
@@ -47,7 +70,7 @@ export default function PurchaseDetailModal({
       };
     }
     acc[key].items.push(purchase);
-    acc[key].totalQty += parseFloat(purchase.original_quantity);
+    acc[key].totalQty += convertModalQuantity(parseFloat(purchase.original_quantity), purchase.original_unit_symbol || displayUnitSymbol);
     return acc;
   }, {} as Record<string, { invoiceNumber: string; items: PurchaseDetail[]; totalQty: number }>);
 
@@ -118,7 +141,7 @@ export default function PurchaseDetailModal({
                             {invoice.items.length}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                            {formatCurrency(invoice.totalQty, 2, '')} {unitSymbol}
+                            {formatCurrency(invoice.totalQty, 2, '')} {displayUnitSymbol}
                           </td>
                         </tr>
                       ))}
@@ -154,23 +177,26 @@ export default function PurchaseDetailModal({
                       </thead>
                       <tbody className="divide-y divide-gray-200 bg-white">
                         {purchases.map((purchase, idx) => {
+                          const originalQty = parseFloat(purchase.original_quantity);
+                          const originalUnitSymbol = purchase.original_unit_symbol || displayUnitSymbol;
+                          const convertedQty = convertModalQuantity(originalQty, originalUnitSymbol);
+                          const wasConverted = originalUnitSymbol !== displayUnitSymbol;
+                          
                           return (
                             <tr key={idx} className="hover:bg-gray-50">
                               <td className="px-4 py-3 text-sm text-gray-900">
                                 {purchase.invoice_number}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-700 text-right">
-                                {formatCurrency(parseFloat(purchase.original_quantity), 2, '')}
+                                {formatCurrency(originalQty, 2, '')}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-700 text-right">
-                                {purchase.was_converted 
-                                  ? purchase.original_unit_symbol 
-                                  : unitSymbol}
+                                {originalUnitSymbol}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                {purchase.was_converted ? (
+                                {wasConverted ? (
                                   <span className="text-blue-600">
-                                    {formatCurrency(parseFloat(purchase.converted_quantity || '0'), 2, '')} {unitSymbol}
+                                    {formatCurrency(convertedQty, 2, '')} {displayUnitSymbol}
                                   </span>
                                 ) : (
                                   <span className="text-gray-400">—</span>
@@ -195,10 +221,10 @@ export default function PurchaseDetailModal({
               {t('expenses.inventoryTracking.totalInvoices')}: <span className="font-semibold">{Object.keys(groupedByInvoice).length}</span>
             </div>
             <div className="flex items-center gap-6">
-              <div className="text-sm">
+              <div className="text-sm">displayU
                 <span className="text-gray-600">{t('expenses.inventoryTracking.totalQuantity')}:</span>{' '}
                 <span className="font-semibold text-gray-900">
-                  {formatCurrency(totalQuantity, 2, '')} {unitSymbol}
+                  {formatCurrency(totalQuantity, 2, '')} {displayUnitSymbol}
                 </span>
               </div>
               <button

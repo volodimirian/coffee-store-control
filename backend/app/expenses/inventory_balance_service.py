@@ -1,7 +1,7 @@
 """Service layer for inventory balance calculations."""
 
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,13 @@ from app.expenses.models import (
     InvoiceStatus,
     Unit,
 )
+
+# Import OFD integration models for sale expenses
+try:
+    from app.ofd_integration.models import SaleIngredientExpense, Sale, SaleItem
+    OFD_AVAILABLE = True
+except ImportError:
+    OFD_AVAILABLE = False
 
 
 class InventoryBalanceService:
@@ -57,20 +64,23 @@ class InventoryBalanceService:
         )
 
         if existing_balance:
-            # Update existing balance
+            # Update existing balance - ALWAYS update opening_balance too!
+            setattr(existing_balance, 'opening_balance', opening_balance)
             if purchases_total is not None:
                 setattr(existing_balance, 'purchases_total', purchases_total)
             if usage_total is not None:
                 setattr(existing_balance, 'usage_total', usage_total)
             
-            # Recalculate closing balance
-            opening = getattr(existing_balance, 'opening_balance')
+            # Recalculate closing balance with NEW values
+            opening = opening_balance  # Use the NEW opening balance passed in
             purchases = getattr(existing_balance, 'purchases_total')
             usage = getattr(existing_balance, 'usage_total')
             new_closing_balance = opening + purchases - usage
             setattr(existing_balance, 'closing_balance', new_closing_balance)
             setattr(existing_balance, 'last_calculated', datetime.utcnow())
             setattr(existing_balance, 'updated_at', datetime.utcnow())
+            
+            print(f"[InventoryBalance] UPDATED balance for category {category_id}, period {month_period_id}: opening={opening}, purchases={purchases}, usage={usage}, closing={new_closing_balance}")
             
             await session.flush()
             await session.refresh(existing_balance)
@@ -83,6 +93,8 @@ class InventoryBalanceService:
                 usage_total = Decimal("0")
                 
             closing_balance = opening_balance + purchases_total - usage_total
+            
+            print(f"[InventoryBalance] CREATED new balance for category {category_id}, period {month_period_id}: opening={opening_balance}, purchases={purchases_total}, usage={usage_total}, closing={closing_balance}")
             
             new_balance = InventoryBalance(
                 category_id=category_id,
@@ -177,7 +189,8 @@ class InventoryBalanceService:
         category_id: int,
         month_period_id: int,
     ) -> Decimal:
-        """Calculate total usage for a category in a specific month."""
+        """Calculate total usage for a category in a specific month.
+        Includes both manual ExpenseRecords AND OFD sales (SaleIngredientExpense)."""
         # Get category to know default unit
         category_result = await session.execute(
             select(ExpenseCategory).where(ExpenseCategory.id == category_id)
@@ -188,7 +201,25 @@ class InventoryBalanceService:
         
         default_unit_id = getattr(category, 'default_unit_id')
         
-        # Get all expense records for this category and period
+        # Get the month period to determine date range
+        period_result = await session.execute(
+            select(MonthPeriod).where(MonthPeriod.id == month_period_id)
+        )
+        period = period_result.scalars().first()
+        if not period:
+            return Decimal("0")
+        
+        year = getattr(period, 'year')
+        month = getattr(period, 'month')
+        
+        # Calculate month date range
+        month_start = date(year, month, 1)
+        if month == 12:
+            month_end = date(year + 1, 1, 1)
+        else:
+            month_end = date(year, month + 1, 1)
+        
+        # PART 1: Get all manual expense records for this category and period
         result = await session.execute(
             select(ExpenseRecord)
             .where(
@@ -215,6 +246,38 @@ class InventoryBalanceService:
                     session, record_quantity, record_unit_id, default_unit_id
                 )
                 total += converted_quantity
+        
+        # PART 2: Add OFD sales (SaleIngredientExpense) if available
+        if OFD_AVAILABLE:
+            try:
+                # Query sale_ingredient_expenses for this category in the month
+                sales_expenses_stmt = (
+                    select(SaleIngredientExpense)
+                    .join(SaleIngredientExpense.sale_item)
+                    .join(SaleItem.sale)
+                    .where(
+                        and_(
+                            SaleIngredientExpense.category_id == category_id,
+                            Sale.business_id == getattr(period, 'business_id'),
+                            func.date(Sale.receipt_datetime) >= month_start,
+                            func.date(Sale.receipt_datetime) < month_end,
+                        )
+                    )
+                )
+                
+                sales_result = await session.execute(sales_expenses_stmt)
+                sales_expenses = sales_result.scalars().all()
+                
+                # Add sales quantities (already in category's default unit)
+                for sale_expense in sales_expenses:
+                    # SaleIngredientExpense.quantity is already in the category's default unit
+                    sale_qty = Decimal(str(getattr(sale_expense, 'quantity')))
+                    total += sale_qty
+                    
+            except Exception as e:
+                # If OFD tables don't exist or query fails, continue with manual records only
+                print(f"[InventoryBalance] Warning: Could not load OFD sale expenses for category {category_id}: {e}")
+                pass
         
         return total
 
@@ -270,7 +333,10 @@ class InventoryBalanceService:
         category_id: int,
         month_period_id: int,
     ) -> InventoryBalance:
-        """Fully recalculate balance for a category in a specific month."""
+        """Fully recalculate balance for a category in a specific month.
+        
+        Uses manual starting_inventory if set, otherwise previous month's closing balance.
+        """
         # Get category info for default unit
         category_result = await session.execute(
             select(ExpenseCategory).where(ExpenseCategory.id == category_id)
@@ -279,16 +345,53 @@ class InventoryBalanceService:
         if not category:
             raise ValueError(f"Category {category_id} not found")
 
-        # Calculate components
-        opening_balance = await InventoryBalanceService.get_previous_month_closing_balance(
-            session, category_id, month_period_id
+        # Get the month period details
+        period_result = await session.execute(
+            select(MonthPeriod).where(MonthPeriod.id == month_period_id)
         )
+        period = period_result.scalars().first()
+        if not period:
+            raise ValueError(f"Period {month_period_id} not found")
+        
+        business_id = getattr(period, 'business_id')
+        year = getattr(period, 'year')
+        month = getattr(period, 'month')
+
+        # Check for MANUAL starting inventory entry for this month
+        # If exists, use it as opening balance (takes priority over calculated)
+        from app.tech_cards.models import StartingInventory
+        first_day = date(year, month, 1)
+        
+        manual_start_query = select(StartingInventory).where(
+            and_(
+                StartingInventory.business_id == business_id,
+                StartingInventory.category_id == category_id,
+                StartingInventory.inventory_date == first_day,
+            )
+        )
+        manual_start_result = await session.execute(manual_start_query)
+        manual_starting = manual_start_result.scalar_one_or_none()
+        
+        if manual_starting:
+            # Use manual starting inventory as opening balance
+            opening_balance = Decimal(str(getattr(manual_starting, 'quantity')))
+            print(f"[InventoryBalance] Using MANUAL starting inventory for category {category_id}: {opening_balance}")
+        else:
+            # No manual entry, calculate from previous month's closing balance
+            opening_balance = await InventoryBalanceService.get_previous_month_closing_balance(
+                session, category_id, month_period_id
+            )
+            print(f"[InventoryBalance] Using CALCULATED opening balance for category {category_id}: {opening_balance}")
+        
+        # Calculate purchases and usage
         purchases_total = await InventoryBalanceService.calculate_purchases_for_category(
             session, category_id, month_period_id
         )
         usage_total = await InventoryBalanceService.calculate_usage_for_category(
             session, category_id, month_period_id
         )
+        
+        print(f"[InventoryBalance] Category {category_id}: opening={opening_balance}, purchases={purchases_total}, usage={usage_total}, closing={opening_balance + purchases_total - usage_total}")
 
         # Create or update balance
         balance = await InventoryBalanceService.create_or_update_balance(
@@ -309,27 +412,30 @@ class InventoryBalanceService:
         month_period_id: int,
     ) -> List[InventoryBalance]:
         """Recalculate balances for all categories in a specific month period."""
-        # Get all categories that have transactions in this period or previous periods
-        categories_with_transactions = await session.execute(
-            select(ExpenseCategory.id)
-            .join(
-                ExpenseRecord, 
-                ExpenseRecord.category_id == ExpenseCategory.id,
-                isouter=True
-            )
-            .join(
-                InvoiceItem,
-                InvoiceItem.category_id == ExpenseCategory.id,
-                isouter=True
-            )
-            .where(
-                (ExpenseRecord.month_period_id == month_period_id)
-                | (InvoiceItem.id.isnot(None))
-            )
-            .distinct()
+        # Get the period to find business_id
+        period_result = await session.execute(
+            select(MonthPeriod).where(MonthPeriod.id == month_period_id)
         )
+        period = period_result.scalars().first()
+        if not period:
+            return []
         
-        category_ids = [row[0] for row in categories_with_transactions.fetchall()]
+        business_id = getattr(period, 'business_id')
+        
+        # Get ALL active categories for the business (through sections)
+        # This ensures we calculate balances even for categories with no transactions
+        from app.expenses.models import ExpenseSection
+        categories_result = await session.execute(
+            select(ExpenseCategory)
+            .join(ExpenseSection)
+            .where(
+                ExpenseSection.business_id == business_id,
+                ExpenseCategory.is_active == True,
+                ExpenseSection.is_active == True,
+            )
+        )
+        categories = categories_result.scalars().all()
+        category_ids = [int(getattr(cat, 'id')) for cat in categories]
         
         # Recalculate balance for each category
         recalculated_balances = []

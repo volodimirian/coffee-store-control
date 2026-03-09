@@ -182,7 +182,13 @@ class StartingInventoryListOut(BaseModel):
 
 
 class StartingInventoryWithCalculated(StartingInventoryOut):
-    """Schema for starting inventory with calculated comparison."""
+    """Schema for starting inventory with calculated comparison.
+    
+    quantity: Manual entry if set, otherwise None (frontend should use calculated_quantity)
+    calculated_quantity: Opening balance from previous month's closing
+    discrepancy: Difference between manual and calculated
+    """
+    quantity: Optional[Decimal] = Field(None, max_digits=10, decimal_places=3, description="Manual quantity (None if not set)")
     calculated_quantity: Decimal = Field(..., description="Calculated opening balance from previous month")
     discrepancy: Decimal = Field(..., description="Difference between manual and calculated")
 

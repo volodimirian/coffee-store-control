@@ -449,6 +449,9 @@ async def get_starting_inventory_for_month(
             session, business_id, category.id, year, month
         )
         
+        # Debug logging
+        print(f"[DEBUG] Category: {category.name}, Calculated: {calculated}, Type: {type(calculated)}")
+        
         manual_record = manual_map.get(category.id)
         
         if manual_record:
@@ -482,7 +485,7 @@ async def get_starting_inventory_for_month(
                 "id": 0,  # No manual record exists
                 "business_id": business_id,
                 "category_id": category.id,
-                "quantity": "0",  # No manual entry
+                "quantity": None,  # No manual entry - frontend will use calculated_quantity
                 "unit_id": category.default_unit_id,
                 "inventory_date": first_day.isoformat(),
                 "notes": None,
